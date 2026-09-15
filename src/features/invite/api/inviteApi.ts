@@ -1,6 +1,7 @@
 import { getAuthBasePath } from '@/auth/authConfig';
 import { authServiceJson } from '@/auth/authServiceClient';
 import { ApiError, parseApiError } from '@/lib/apiErrors';
+import { genericFailureMessage } from '@/lib/authErrorMessages';
 import type { PlatformRole } from '@/features/users/api/usersApi';
 
 export type InvitePreview = {
@@ -14,6 +15,8 @@ export type InvitePreview = {
   requiresAccountCreation: boolean;
   requiresPassword: boolean;
   requiresWhatsapp: boolean;
+  /** O e-mail já tem conta: o convite só é aceito por quem estiver logado nela. */
+  requiresLogin: boolean;
 };
 
 export type CreateInviteResponse = {
@@ -25,7 +28,11 @@ export type CreateInviteResponse = {
     expiresAt: string;
     status: string;
   };
-  inviteLink: string;
+  /**
+   * Só fora de produção. O link carrega o token, e o token é segredo de quem recebe o convite —
+   * em produção ele chega apenas pelo e-mail.
+   */
+  inviteLink?: string;
   inviteToken?: string;
   emailSent?: boolean;
   emailSkipReason?: string;
@@ -85,6 +92,7 @@ export const inviteApi = {
       informationDeclaration: true;
       acceptedTerms: true;
       acceptedTermsVersion: string;
+      acceptedTermsLocale?: string;
     },
   ) =>
     publicAuthJson<{
@@ -111,5 +119,5 @@ export function getInviteErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Não foi possível concluir a operação.';
+  return genericFailureMessage();
 }

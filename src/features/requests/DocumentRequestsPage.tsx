@@ -17,21 +17,22 @@ import {
   cancelDocumentRequest,
   createDocumentRequest,
   listDocumentRequests,
-  REQUEST_STATUS_LABEL,
+  REQUEST_STATUS_LABEL_KEYS,
   type DocumentRequestDirection,
   type DocumentRequestItem,
 } from './api/documentRequestsApi';
 import { RequestDocumentModal } from './components/RequestDocumentModal';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Onde o documento que cumpriu o pedido de fato aparece.
  *
  * Quem pediu chega nele pela concessão criada no cumprimento, e a listagem principal da Biblioteca
- * não carrega concessões — só "Compartilhados comigo" carrega. Apontar para `/biblioteca` abriria
+ * não carrega concessões — só "Compartilhados comigo" carrega. Apontar para `/library` abriria
  * uma lista sem o item.
  */
 function fulfilledDocumentPath(documentId: string): string {
-  return `/biblioteca/compartilhados?documentId=${encodeURIComponent(documentId)}`;
+  return `/library/shared?documentId=${encodeURIComponent(documentId)}`;
 }
 
 const STATUS_VARIANT: Record<DocumentRequestItem['status'], 'pending' | 'success' | 'neutral'> = {
@@ -49,6 +50,8 @@ const STATUS_VARIANT: Record<DocumentRequestItem['status'], 'pending' | 'success
  * trabalho de qualquer pessoa, não do administrador: é essa a diferença para a fila de Auditoria.
  */
 export function DocumentRequestsPage() {
+  const { t } = useTranslation('requests');
+
   const { tenant } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -64,10 +67,10 @@ export function DocumentRequestsPage() {
    * novo, e a lista viraria refém do endereço.
    */
   useEffect(() => {
-    if (searchParams.get('novo') !== '1') return;
+    if (searchParams.get('new') !== '1') return;
     setModalOpen(true);
     const next = new URLSearchParams(searchParams);
-    next.delete('novo');
+    next.delete('new');
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -127,22 +130,22 @@ export function DocumentRequestsPage() {
   const createMutation = useMutation({
     mutationFn: createDocumentRequest,
     onSuccess: async () => {
-      toast.success('Pedido enviado.');
+      toast.success(t('documentRequestsPage.created'));
       setModalOpen(false);
       // Quem acabou de pedir quer ver o que pediu, não o que lhe pediram.
       setDirection('sent');
       await invalidate();
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível enviar o pedido.'),
+    onError: (error) => showApiErrorToast(error, t('documentRequestsPage.createFailed')),
   });
 
   const cancelMutation = useMutation({
     mutationFn: cancelDocumentRequest,
     onSuccess: async () => {
-      toast.success('Pedido cancelado.');
+      toast.success(t('documentRequestsPage.cancelled'));
       await invalidate();
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível cancelar o pedido.'),
+    onError: (error) => showApiErrorToast(error, t('documentRequestsPage.cancelFailed')),
   });
 
   const items = requestsQuery.data ?? [];
@@ -157,14 +160,14 @@ export function DocumentRequestsPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="register-label text-doqyn-subtle">BIBLIOTECA</p>
-          <h1 className="type-display text-doqyn-text">Pedidos</h1>
+          <p className="register-label text-doqyn-subtle">{t('common:nav.biblioteca')}</p>
+          <h1 className="type-display text-doqyn-text">{t('documentRequestsPage.pedidos')}</h1>
           <p className="type-body text-doqyn-muted">
-            Documentos que você pediu a alguém, e os que pediram a você.
+            {t('documentRequestsPage.documentosQueVocePediu')}
           </p>
         </div>
         <Button type="button" onClick={() => setModalOpen(true)}>
-          Pedir documento
+          {t('documentRequestsPage.pedirDocumento')}
         </Button>
       </header>
 
@@ -180,7 +183,11 @@ export function DocumentRequestsPage() {
             }
             onClick={() => setDirection(value)}
           >
-            {value === 'received' ? 'Pediram a você' : 'Você pediu'}
+            {t(
+              value === 'received'
+                ? 'documentRequestsPage.tabReceived'
+                : 'documentRequestsPage.tabSent',
+            )}
           </button>
         ))}
       </div>
@@ -188,12 +195,16 @@ export function DocumentRequestsPage() {
       <DataTable
         data={items}
         keyExtractor={(item) => item._id}
-        emptyMessage={received ? 'Ninguém pediu nada a você' : 'Você ainda não pediu nada'}
-        emptyDescription={
+        emptyMessage={t(
           received
-            ? 'Quando alguém pedir um documento a você, ele aparece aqui.'
-            : 'Peça um documento a alguém e acompanhe por aqui.'
-        }
+            ? 'documentRequestsPage.emptyReceivedTitle'
+            : 'documentRequestsPage.emptySentTitle',
+        )}
+        emptyDescription={t(
+          received
+            ? 'documentRequestsPage.emptyReceivedDescription'
+            : 'documentRequestsPage.emptySentDescription',
+        )}
         onRowClick={(item) => {
           // Atendido leva ao documento; o resto não tem para onde ir ainda.
           if (item.fulfilledDocumentId) navigate(fulfilledDocumentPath(item.fulfilledDocumentId));
@@ -201,7 +212,7 @@ export function DocumentRequestsPage() {
         columns={[
           {
             key: 'title',
-            header: 'Pedido',
+            header: t('documentRequestsPage.columns.title'),
             render: (item) => (
               <div className="min-w-0">
                 <TruncatedText as="p" className="font-medium text-doqyn-text">
@@ -213,7 +224,9 @@ export function DocumentRequestsPage() {
           },
           {
             key: 'party',
-            header: received ? 'Quem pediu' : 'De quem',
+            header: received
+              ? t('documentRequestsPage.columns.requestedBy')
+              : t('documentRequestsPage.columns.requestedFrom'),
             render: (item) => {
               const party = received ? item.requestedBy : item.requestedFrom;
               return (
@@ -237,19 +250,19 @@ export function DocumentRequestsPage() {
           },
           {
             key: 'category',
-            header: 'Categoria',
+            header: t('documentRequestsPage.columns.category'),
             render: (item) =>
               item.categoryName || item.categoryId ? (
                 <span className="text-doqyn-muted">{item.categoryName ?? item.categoryId}</span>
               ) : (
                 // Pedido para fora não tem categoria: o documento nasce e mora no acervo de quem
                 // envia, e nenhuma categoria daqui o alcança.
-                <span className="text-doqyn-subtle">fora do seu acervo</span>
+                <span className="text-doqyn-subtle">{t('documentRequestsPage.foraDoAcervo')}</span>
               ),
           },
           {
             key: 'dueAt',
-            header: 'Prazo',
+            header: t('documentRequestsPage.columns.dueAt'),
             className: 'w-[168px]',
             render: (item) => (
               <span className="whitespace-nowrap font-mono text-micro tabular-nums text-doqyn-subtle">
@@ -259,11 +272,11 @@ export function DocumentRequestsPage() {
           },
           {
             key: 'status',
-            header: 'Status',
+            header: t('documentRequestsPage.columns.status'),
             className: 'w-[116px]',
             render: (item) => (
               <Badge variant={STATUS_VARIANT[item.status]} dot>
-                {REQUEST_STATUS_LABEL[item.status]}
+                {t(REQUEST_STATUS_LABEL_KEYS[item.status])}
               </Badge>
             ),
           },
@@ -276,18 +289,18 @@ export function DocumentRequestsPage() {
               const actions: TableRowAction[] = [
                 {
                   // Só quem recebeu o pedido cumpre, e só enquanto ele está aberto.
-                  label: 'Enviar documento',
+                  label: t('documentRequestsPage.actions.upload'),
                   onClick: () => pickFileFor(item),
                   hidden: !received || item.status !== 'pending',
                 },
                 {
-                  label: 'Abrir documento',
+                  label: t('documentRequestsPage.actions.open'),
                   onClick: () => navigate(fulfilledDocumentPath(documentId ?? '')),
                   hidden: !documentId,
                 },
                 {
                   // Cancelar é de quem pediu, e só enquanto ninguém enviou.
-                  label: 'Cancelar pedido',
+                  label: t('documentRequestsPage.actions.cancel'),
                   tone: 'danger',
                   onClick: () => cancelMutation.mutate(item._id),
                   hidden: received || item.status !== 'pending',

@@ -1,0 +1,35 @@
+{
+  "title": {
+    "sign": "Documento para firmar · DOQYN",
+    "share": "Documento compartido · DOQYN"
+  },
+  "description": {
+    "sign": "Alguien solicitó tu firma en un documento. Abre el enlace para verlo y firmar.",
+    "share": "Se compartió un documento contigo. Abre el enlace para acceder."
+  },
+  "unavailable": {
+    "titleSign": "Firma no disponible · DOQYN",
+    "titleShare": "Documento compartido no disponible · DOQYN",
+    "descriptionSign": "Este enlace de firma ya no está disponible.",
+    "descriptionShare": "Este enlace para compartir ya no está disponible.",
+    "cta": "Intentar abrir",
+    "status": "No disponible"
+  },
+  "status": {
+    "shareWaiting": "Esperando aceptación",
+    "shareActive": "Documento compartido",
+    "signPending": "Firma pendiente"
+  },
+  "cta": {
+    "shareAccept": "Aceptar y abrir",
+    "shareOpen": "Abrir documento",
+    "sign": "Abrir y firmar"
+  },
+  "page": {
+    "eyebrowSign": "Solicitud de firma",
+    "eyebrowShareVia": "Compartido vía {{tenant}}",
+    "eyebrowShare": "Compartido de forma segura",
+    "documentFallback": "Documento",
+    "footer": "Gestión segura, inteligente y rastreable de documentos empresariales."
+  }
+}

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { TrackingSummary } from '@/types/document-tracking';
+import { useTranslation } from 'react-i18next';
 
 type TrackingSummaryStripProps = {
   summary: TrackingSummary | undefined;
@@ -27,24 +28,47 @@ type StripEntry = {
  * alguma coisa.
  */
 export function TrackingSummaryStrip({ summary, loading = false }: TrackingSummaryStripProps) {
+  const { t } = useTranslation('tracking');
+
   const entries: StripEntry[] = [
-    { key: 'totalEvents', label: 'Eventos', value: summary?.totalEvents ?? 0 },
-    { key: 'previews', label: 'Previews', value: summary?.previews ?? 0 },
-    { key: 'downloads', label: 'Downloads', value: summary?.downloads ?? 0 },
+    {
+      key: 'totalEvents',
+      label: t('trackingSummaryStrip.totalEvents'),
+      value: summary?.totalEvents ?? 0,
+    },
+    { key: 'previews', label: t('trackingSummaryStrip.previews'), value: summary?.previews ?? 0 },
+    {
+      key: 'downloads',
+      label: t('trackingSummaryStrip.downloads'),
+      value: summary?.downloads ?? 0,
+    },
     {
       key: 'accessDenied',
-      label: 'Acesso negado',
+      label: t('trackingSummaryStrip.accessDenied'),
       value: summary?.accessDenied ?? 0,
       tone: 'warning',
     },
-    { key: 'errors', label: 'Erros', value: summary?.errors ?? 0, tone: 'danger' },
-    { key: 'uniqueDocuments', label: 'Documentos', value: summary?.uniqueDocuments ?? 0 },
-    { key: 'uniqueActors', label: 'Usuários ativos', value: summary?.uniqueActors ?? 0 },
+    {
+      key: 'errors',
+      label: t('trackingSummaryStrip.errors'),
+      value: summary?.errors ?? 0,
+      tone: 'danger',
+    },
+    {
+      key: 'uniqueDocuments',
+      label: t('trackingSummaryStrip.uniqueDocuments'),
+      value: summary?.uniqueDocuments ?? 0,
+    },
+    {
+      key: 'uniqueActors',
+      label: t('trackingSummaryStrip.uniqueActors'),
+      value: summary?.uniqueActors ?? 0,
+    },
   ];
 
   return (
     <section
-      aria-label="Resumo do tracking"
+      aria-label={t('trackingSummaryStrip.resumoDoTracking')}
       className="grid shrink-0 gap-px border-y border-doqyn-border-subtle bg-doqyn-border-subtle/75 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7"
     >
       {entries.map(({ key, label, value, tone = 'default' }) => (

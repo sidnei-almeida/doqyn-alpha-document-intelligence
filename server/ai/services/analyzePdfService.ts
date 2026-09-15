@@ -28,6 +28,10 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
+  detectDocumentLanguage,
+  type DocumentLanguageContext,
+} from '../utils/detectDocumentLanguage.js';
+import {
   buildTextExtractionReviewResponse,
   isInsufficientTextAfterOcr,
   isVisionOcrFailure,
@@ -96,7 +100,12 @@ async function proposeNameWithoutClass(input: {
   chunks: RetrievedChunk[];
   classification: ClassificationResult;
   originalFileName: string;
-  context: { requestId?: string; jobId: string; companyId: string; database?: string };
+  context: {
+    requestId?: string;
+    jobId: string;
+    companyId: string;
+    database?: string;
+  } & DocumentLanguageContext;
 }): Promise<{ fileName: string | null; roles: DocumentNamingRoles | undefined }> {
   try {
     const extraction = await input.analysisProvider.extractMetadata({
@@ -160,6 +169,8 @@ export async function analyzePdfBuffer(input: {
   ownerUserId?: string;
   jobId?: string;
   requestContext?: AnalyzeRequestContext;
+  /** Idioma de quem enviou: resumo e tipo do nome sugerido saem nele. Ausente, português. */
+  outputLocale?: string;
 }): Promise<AnalyzePdfResponse> {
   assertAiProviderConfigured();
   const analysisProvider = resolveAnalysisProvider();
@@ -239,11 +250,18 @@ export async function analyzePdfBuffer(input: {
 
   textCharCount = extracted.charCount;
   const pageCount = extracted.pageCount;
+  // Antes da classificação e sem modelo: decide só se o prompt ganha instrução de idioma.
+  const documentLanguage = detectDocumentLanguage(extracted.text);
+  const languageContext: DocumentLanguageContext = {
+    documentLanguage,
+    outputLocale: input.outputLocale,
+  };
   timer.mark('textExtraction');
 
   logAnalyzeStage('analyze-pdf texto extraído', context, {
     textCharCount,
     pageCount,
+    documentLanguage,
     truncated: extracted.truncated,
     textSource: extracted.source,
     ocrFallbackUsed: extracted.ocrFallbackUsed,
@@ -397,6 +415,7 @@ export async function analyzePdfBuffer(input: {
       jobId,
       companyId: input.companyId,
       database: rulesLoad.database,
+      ...languageContext,
     },
   });
   timer.mark('classification');
@@ -449,6 +468,7 @@ export async function analyzePdfBuffer(input: {
         truncated: extracted.truncated,
         source: extracted.source,
         ocrFallbackUsed: extracted.ocrFallbackUsed,
+        detectedLanguage: documentLanguage,
       },
       classification,
       extraction: null,
@@ -533,6 +553,7 @@ export async function analyzePdfBuffer(input: {
         jobId,
         companyId: input.companyId,
         database: rulesLoad.database,
+        ...languageContext,
       },
     });
 
@@ -583,6 +604,7 @@ export async function analyzePdfBuffer(input: {
         truncated: extracted.truncated,
         source: extracted.source,
         ocrFallbackUsed: extracted.ocrFallbackUsed,
+        detectedLanguage: documentLanguage,
       },
       classification,
       extraction: null,
@@ -636,6 +658,7 @@ export async function analyzePdfBuffer(input: {
         truncated: extracted.truncated,
         source: extracted.source,
         ocrFallbackUsed: extracted.ocrFallbackUsed,
+        detectedLanguage: documentLanguage,
       },
       classification: {
         ...classification,
@@ -681,6 +704,7 @@ export async function analyzePdfBuffer(input: {
       jobId,
       companyId: input.companyId,
       database: rulesLoad.database,
+      ...languageContext,
     },
   });
   const extraction = refined.extraction;
@@ -826,6 +850,7 @@ export async function analyzePdfBuffer(input: {
       truncated: extracted.truncated,
       source: extracted.source,
       ocrFallbackUsed: extracted.ocrFallbackUsed,
+      detectedLanguage: documentLanguage,
     },
     classification,
     extraction,

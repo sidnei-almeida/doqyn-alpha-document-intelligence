@@ -240,14 +240,14 @@ describe('document trash — frontend lixeira e desativados', () => {
     const toolbar = read('src/features/library/components/BulkSelectionToolbar.tsx');
     assert.ok(toolbar.includes('selectedFolderCount'));
     assert.ok(toolbar.includes('hasFolderSelection'));
-    assert.ok(toolbar.includes('Pastas e categorias não podem ser excluídas'));
+    assert.ok(toolbar.includes('.foldersCantDelete'));
     assert.ok(toolbar.includes('isTrashView'));
   });
 
   it('lixeira mostra Restaurar; desativados mostra Recuperar; sem exclusão permanente', () => {
     const toolbar = read('src/features/library/components/BulkSelectionToolbar.tsx');
-    assert.ok(toolbar.includes('Restaurar'));
-    assert.ok(toolbar.includes('Recuperar'));
+    assert.ok(toolbar.includes('.restaurar'));
+    assert.ok(toolbar.includes('.recuperar'));
     assert.ok(toolbar.includes('onReactivate'));
     assert.equal(toolbar.includes('Excluir permanentemente'), false);
     assert.equal(toolbar.includes('onPermanentDelete'), false);
@@ -268,7 +268,7 @@ describe('document trash — frontend lixeira e desativados', () => {
       menu.indexOf("{state.kind === 'folder' && ("),
       menu.indexOf("{state.kind === 'file' && ("),
     );
-    assert.ok(folderBlock.includes('Excluir categoria'));
+    assert.ok(folderBlock.includes('.excluirCategoria'));
     // Categoria não vai para a lixeira: ela some, e os documentos dela vão para Sem categoria.
     assert.equal(folderBlock.includes('Mover para lixeira'), false);
     // Sem categoria é o destino de todo mundo, e por isso não se apaga.
@@ -277,7 +277,7 @@ describe('document trash — frontend lixeira e desativados', () => {
 
   it('menu de arquivo tem Mover para lixeira fora da lixeira', () => {
     const menu = read('src/features/library/components/ExplorerContextMenu.tsx');
-    assert.ok(menu.includes('Mover para lixeira'));
+    assert.ok(menu.includes('.moverParaLixeira'));
     assert.ok(menu.includes('isTrashView'));
     assert.ok(menu.includes('isDeactivatedView'));
     assert.ok(menu.includes('onTrashFile'));
@@ -301,7 +301,7 @@ describe('document trash — frontend lixeira e desativados', () => {
     // Quem não administra lê e não altera.
     assert.ok(company.includes('governsOrganization'));
     assert.ok(retention.includes('settings-retention-preview'));
-    assert.ok(retention.includes('desativado'));
+    assert.ok(retention.includes('trashRetentionSettingsSection.preview'));
     // O estado sujo subiu para `OrganizationSection`, que é quem tem a barra de salvar: a
     // seção de retenção divide o mesmo botão com as preferências de envio.
     assert.ok(company.includes('dirty'));
@@ -311,21 +311,23 @@ describe('document trash — frontend lixeira e desativados', () => {
   it('confirmMessages não inclui permanent delete', () => {
     const messages = read('src/components/confirm/confirmMessages.ts');
     assert.ok(messages.includes('buildMoveToTrashConfirm'));
-    assert.ok(messages.includes('desativado'));
+    assert.ok(messages.includes('.description'));
     assert.equal(messages.includes('buildPermanentDeleteConfirm'), false);
   });
 
   it('tracking display traduz eventos de lixeira e desativados', () => {
-    const display = read('src/features/tracking/utils/trackingDisplay.ts');
-    assert.ok(display.includes('document.trash_moved'));
-    assert.ok(display.includes('document.reactivated'));
-    assert.ok(display.includes('document.deactivated'));
+    // As frases saíram do código para o catálogo na extração de i18n; é lá que se prova que a
+    // ação tem rótulo.
+    const acoes = JSON.parse(read('src/i18n/catalog/pt-BR/tracking.json')).actionLabel.document;
+    assert.ok(acoes.trash_moved);
+    assert.ok(acoes.reactivated);
+    assert.ok(acoes.deactivated);
   });
 
   it('collections inclui desativados e lixeira sem filtro archived', () => {
     const collections = read('src/features/library/collections.ts');
     assert.ok(collections.includes("'desativados'"));
-    assert.ok(collections.includes("slug: 'desativados'"));
+    assert.ok(collections.includes("slug: 'deactivated'"));
     const lixeiraBlock = collections.slice(
       collections.indexOf("case 'lixeira'"),
       collections.indexOf('default:'),
@@ -360,9 +362,9 @@ describe('document trash — frontend lixeira e desativados', () => {
       constants.match(/export const NAV_ITEMS_LIBRARY_VIEWS = \[[\s\S]*?\] as const;/)?.[0] ?? '';
     const adminBlock =
       constants.match(/export const NAV_ITEMS_ADMIN = \[[\s\S]*?\] as const;/)?.[0] ?? '';
-    assert.ok(adminBlock.includes("path: '/biblioteca/desativados'"));
+    assert.ok(adminBlock.includes("path: '/library/deactivated'"));
     assert.ok(adminBlock.includes('adminOnly: true'));
-    assert.ok(adminBlock.includes('Desativados'));
+    assert.ok(adminBlock.includes('nav.desativados'));
     assert.ok(!libraryViewsBlock.includes('Desativados'));
     assert.ok(sidebar.includes('canManageDeactivated'));
     assert.ok(sidebar.includes('adminNavItems'));

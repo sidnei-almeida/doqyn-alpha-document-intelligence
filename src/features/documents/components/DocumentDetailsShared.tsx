@@ -5,6 +5,8 @@ import type { DocumentStatus } from '@/types/document';
 import type { DocumentListItem, DocumentSearchMeta } from '@/types/document-library';
 import { buildStandardDetailsFields } from '@/features/document-update-version/utils/documentMetadataDisplay';
 import { getPreviewStatusLabel } from '../utils/previewErrors';
+import { i18n } from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 type DetailFieldProps = {
   label: string;
@@ -32,6 +34,8 @@ type DocumentStandardFichaProps = {
 
 /** Ficha standard (partes, datas, validade) — única fonte para drawer e viewer. */
 export function DocumentStandardFicha({ metadata, searchMeta }: DocumentStandardFichaProps) {
+  const { t } = useTranslation('documents');
+
   const fields = buildStandardDetailsFields({ metadata, searchMeta });
   if (fields.length === 0) return null;
 
@@ -47,7 +51,9 @@ export function DocumentStandardFicha({ metadata, searchMeta }: DocumentStandard
 
   return (
     <div>
-      <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">Ficha</p>
+      <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
+        {t('documentDetailsShared.ficha')}
+      </p>
       {summary ? (
         <div className="border-t border-doqyn-border-subtle py-2">
           <p className="text-[11px] text-doqyn-muted">{summary.label}</p>
@@ -79,9 +85,11 @@ function validityHint(validityDate: string): string | undefined {
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   const days = Math.round((startOfDay(target) - startOfDay(new Date())) / 86_400_000);
 
-  if (days < 0) return `Vencido há ${Math.abs(days)} dia(s).`;
-  if (days === 0) return 'Vence hoje.';
-  return `Vence em ${days} dia(s).`;
+  if (days < 0) {
+    return i18n.t('documents:documentDetailsShared.validity.expired', { count: Math.abs(days) });
+  }
+  if (days === 0) return i18n.t('documents:documentDetailsShared.validity.today');
+  return i18n.t('documents:documentDetailsShared.validity.inDays', { count: days });
 }
 
 type DocumentSystemDetailsProps = {
@@ -109,30 +117,41 @@ export function DocumentSystemDetails({
   showPreviewStatus = false,
   searchMeta,
 }: DocumentSystemDetailsProps) {
+  const { t } = useTranslation('documents');
+
   const validityDate = searchMeta?.validityDate ?? null;
   return (
     <dl className="divide-y divide-doqyn-border-subtle border-t border-doqyn-border-subtle">
-      <DocumentDetailField label="Categoria">
+      <DocumentDetailField label={t('documentDetailsShared.categoria')}>
         {document.categoryName ?? document.documentType ?? '—'}
       </DocumentDetailField>
-      <DocumentDetailField label="Proprietário">{document.ownerName ?? '—'}</DocumentDetailField>
-      <DocumentDetailField label="Enviado por">
+      <DocumentDetailField label={t('documentDetailsShared.proprietario')}>
+        {document.ownerName ?? '—'}
+      </DocumentDetailField>
+      <DocumentDetailField label={t('documentDetailsShared.enviadoPor')}>
         {document.createdBy?.displayName ?? '—'}
       </DocumentDetailField>
       {document.updatedByName ? (
-        <DocumentDetailField label="Última atualização por">
+        <DocumentDetailField label={t('documentDetailsShared.ultimaAtualizacaoPor')}>
           {document.updatedByName}
         </DocumentDetailField>
       ) : null}
-      <DocumentDetailField label="Criado">{formatDate(document.createdAt)}</DocumentDetailField>
-      <DocumentDetailField label="Atualizado">{formatDate(document.updatedAt)}</DocumentDetailField>
+      <DocumentDetailField label={t('documentDetailsShared.criado')}>
+        {formatDate(document.createdAt)}
+      </DocumentDetailField>
+      <DocumentDetailField label={t('documentDetailsShared.atualizado')}>
+        {formatDate(document.updatedAt)}
+      </DocumentDetailField>
       {validityDate ? (
-        <DocumentDetailField label="Vencimento" hint={validityHint(validityDate)}>
+        <DocumentDetailField
+          label={t('documentDetailsShared.vencimento')}
+          hint={validityHint(validityDate)}
+        >
           {formatDate(validityDate)}
         </DocumentDetailField>
       ) : null}
       {showPreviewStatus ? (
-        <DocumentDetailField label="Preview">
+        <DocumentDetailField label={t('documentDetailsShared.preview')}>
           {getPreviewStatusLabel(previewStatus ?? document.preview?.status)}
         </DocumentDetailField>
       ) : null}
@@ -167,14 +186,20 @@ export function DocumentDetailsSections({
   fichaLoading = false,
   versionSlot,
 }: DocumentDetailsSectionsProps) {
-  const name = displayName ?? document.currentFileName ?? document.displayName ?? 'Documento';
+  const { t } = useTranslation('documents');
+
+  const name =
+    displayName ??
+    document.currentFileName ??
+    document.displayName ??
+    t('documentDetailsShared.documento');
 
   return (
     <div className="flex flex-col gap-3">
       {showHeader ? (
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
-            Documento
+            {t('documentDetailsShared.documento')}
           </p>
           <TruncatedText className="mt-1 break-words text-[13px] font-medium text-doqyn-text">
             {name}
@@ -200,7 +225,7 @@ export function DocumentDetailsSections({
       {versionSlot}
 
       {fichaLoading ? (
-        <p className="text-[11px] text-doqyn-muted">Carregando ficha…</p>
+        <p className="text-[11px] text-doqyn-muted">{t('documentDetailsShared.carregandoFicha')}</p>
       ) : (
         <DocumentStandardFicha metadata={metadata} searchMeta={searchMeta} />
       )}

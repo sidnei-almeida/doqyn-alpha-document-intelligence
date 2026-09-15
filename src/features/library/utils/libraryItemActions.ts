@@ -40,7 +40,7 @@ export function buildFileItemActions(
   doc: DocumentListItem,
   handlers: FileItemActionHandlers,
 ): Array<{
-  label: string;
+  labelKey: string;
   onClick: () => void;
   tone?: 'default' | 'danger';
   hidden?: boolean;
@@ -50,23 +50,43 @@ export function buildFileItemActions(
   const canTracking = Boolean(doc.permissions?.canViewTracking);
 
   return [
-    { label: 'Abrir', onClick: () => handlers.onOpen(doc), hidden: !canPreview },
-    { label: 'Visualizar', onClick: () => handlers.onPreview(doc), hidden: !canPreview },
-    { label: 'Mover para pasta', onClick: () => handlers.onMove?.(doc), hidden: !handlers.onMove },
-    { label: 'Compartilhar', onClick: () => handlers.onShare?.(doc), hidden: !handlers.onShare },
     {
-      label: 'Solicitar assinatura',
+      labelKey: 'library:itemAction.abrir',
+      onClick: () => handlers.onOpen(doc),
+      hidden: !canPreview,
+    },
+    {
+      labelKey: 'library:itemAction.visualizar',
+      onClick: () => handlers.onPreview(doc),
+      hidden: !canPreview,
+    },
+    {
+      labelKey: 'library:itemAction.moverParaPasta',
+      onClick: () => handlers.onMove?.(doc),
+      hidden: !handlers.onMove,
+    },
+    {
+      labelKey: 'library:itemAction.compartilhar',
+      onClick: () => handlers.onShare?.(doc),
+      hidden: !handlers.onShare,
+    },
+    {
+      labelKey: 'library:itemAction.solicitarAssinatura',
       onClick: () => handlers.onRequestSignature?.(doc),
       hidden: !handlers.onRequestSignature,
     },
-    { label: 'Baixar', onClick: () => handlers.onDownload(doc), hidden: !canDownload },
     {
-      label: 'Histórico de versões',
+      labelKey: 'library:itemAction.baixar',
+      onClick: () => handlers.onDownload(doc),
+      hidden: !canDownload,
+    },
+    {
+      labelKey: 'library:itemAction.historicoDeVersoes',
       onClick: () => handlers.onTracking(doc),
       hidden: !canTracking,
     },
     {
-      label: 'Mover para lixeira',
+      labelKey: 'library:itemAction.moverParaLixeira',
       onClick: () => handlers.onTrash?.(doc),
       tone: 'danger' as const,
       hidden: !handlers.onTrash,

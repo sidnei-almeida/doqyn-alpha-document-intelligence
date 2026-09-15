@@ -73,9 +73,8 @@ describe('document ownership filters', () => {
 
   it('business filtra estritamente por tenantId, sem ramo para doc sem dono', () => {
     const filter = buildDocumentOwnershipFilter(businessCtx);
-    assert.deepEqual(filter, {
-      $or: [{ tenantId: 'company_acme_ab12cd' }, { companyId: 'company_acme_ab12cd' }],
-    });
+    // Sem `$or` no topo: uma busca que grave o próprio `$or` na mesma consulta apagava o escopo.
+    assert.deepEqual(filter, { tenantId: 'company_acme_ab12cd' });
 
     // O ramo `{ tenantId: { $exists: false } }` era inofensivo em coleção dedicada e vira
     // vazamento entre tenants em coleção compartilhada: todo tenant enxergaria todo documento

@@ -6,6 +6,11 @@ import {
   MAX_POSITIVE_KEYWORDS_PER_CLASS,
 } from '../constants.js';
 import { formatChunksForPrompt } from '../../services/retrievalProvider.js';
+import {
+  isForeignDocumentLanguage,
+  languageNameForPrompt,
+  type DocumentLanguage,
+} from './detectDocumentLanguage.js';
 
 export type CompactDocumentClassForClassifier = {
   classId: string;
@@ -81,6 +86,7 @@ export function estimateLegacyClassifierPromptChars(
 export function buildCompactClassifierPrompt(
   chunks: RetrievedChunk[],
   classes: DocumentClassRule[],
+  options: { documentLanguage?: DocumentLanguage } = {},
 ): {
   prompt: string;
   compactChunks: RetrievedChunk[];
@@ -89,6 +95,15 @@ export function buildCompactClassifierPrompt(
   const compactClasses = toCompactDocumentClasses(classes);
   const compactChunks = limitClassifierChunks(chunks);
   const classesJson = JSON.stringify(compactClasses);
+  /**
+   * Classe e documento em idiomas diferentes. As classes são dado do tenant, escritas na língua de
+   * quem as criou; o documento chega na língua de quem o redigiu. Sem esta linha o modelo tende a
+   * ler a diferença de idioma como falta de correspondência. Documento em português não recebe a
+   * linha, e o prompt dele fica idêntico ao medido.
+   */
+  const languageRule = isForeignDocumentLanguage(options.documentLanguage)
+    ? `\n- O documento está em ${languageNameForPrompt(options.documentLanguage)}, e as classes foram escritas pelo tenant, possivelmente em outro idioma. Idioma diferente não é sinal de que a classe não serve: decida pelo que o documento É.`
+    : '';
 
   const prompt = `Classifique o documento usando apenas as classes abaixo.
 
@@ -125,7 +140,7 @@ Regras:
   diferente de "a descrição não cita este tipo" — veja a regra da descrição acima.
 - Em evidence, cite os trechos que revelam a natureza do documento, não os que apenas repetem uma
   palavra-chave.
-- Responda apenas JSON válido.
+- Responda apenas JSON válido.${languageRule}
 
 Classes:
 ${classesJson}

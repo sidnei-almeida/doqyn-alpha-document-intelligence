@@ -1,0 +1,72 @@
+{
+  "accessMatrixTable": {
+    "ajusteABuscaOu": "Adjust the search or the category to see the matrix.",
+    "celulaVaziaSemAcesso": "empty cell = no access",
+    "compartilharCom": "Share with",
+    "documento": "Document",
+    "esteAcessoVemDa": "This access comes from the rule. Open Rules",
+    "nenhumDocumentoNestaSelecao": "No document in this selection",
+    "origem": "Source",
+    "pode": "Can",
+    "revogarCompartilhamento": "Revoke share",
+    "semAcessoAEste": "No access to this document.",
+    "accessOf": "{{name}}'s access"
+  },
+  "groupAccessMatrixTable": {
+    "concederOuRemoverEm": "Grant or remove under Rules",
+    "documento": "Document",
+    "memberCount_one": "{{count}} person",
+    "memberCount_other": "{{count}} people",
+    "nenhumDocumentoNestaSelecao": "No document in this selection",
+    "nenhumGrupoConfigurado": "No group set up",
+    "noGroupsHint": "Create groups in Rules to govern access by team instead of person by person.",
+    "granted": "{{verb}}: allowed",
+    "denied": "{{verb}}: not allowed"
+  },
+  "matrixPage": {
+    "buscarNaMatriz": "Search the matrix",
+    "buscarNaMatriz2": "Search the matrix",
+    "categoria": "Category",
+    "documentCount_one": "{{count}} document",
+    "documentCount_other": "{{count}} documents",
+    "filtrarPorCategoria": "Filter by category",
+    "groupAxis_one": "{{count}} group",
+    "groupAxis_other": "{{count}} groups",
+    "lenteDaMatriz": "Matrix lens",
+    "matrizDeDocumentos": "Document matrix",
+    "montandoAMatriz": "Building the matrix",
+    "naoFoiPossivelMontar": "Could not build the matrix",
+    "peopleAxis_one": "{{count}} person",
+    "peopleAxis_other": "{{count}} people",
+    "eyebrow": "Governance",
+    "lens": {
+      "people": {
+        "label": "By person",
+        "description": "Who reads each document, and where the access comes from."
+      },
+      "groups": {
+        "label": "By group",
+        "description": "What the rule grants each group, verb by verb."
+      }
+    },
+    "allCategories": "All categories",
+    "shareCreated": "Share created.",
+    "shareRevoked": "Share revoked."
+  },
+  "origin": {
+    "owner": "Owner",
+    "admin": "Administrator",
+    "governance": "Category rule",
+    "share": "Shared"
+  },
+  "verb": {
+    "canView": "View",
+    "canDownload": "Download",
+    "canUpdate": "Edit",
+    "canAudit": "Audit",
+    "canShare": "Share"
+  },
+  "noAccess": "no access",
+  "noCategory": "Uncategorized",
+  "loadFailed": "Couldn't load the matrix."
+}

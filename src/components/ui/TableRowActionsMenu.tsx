@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { DropdownMenuItem } from '@/components/ui/DropdownMenuItem';
 import { IconButton } from './IconButton';
+import { useTranslation } from 'react-i18next';
 
 export type TableRowAction = {
   label: string;
@@ -19,6 +20,8 @@ type TableRowActionsMenuProps = {
 };
 
 export function TableRowActionsMenu({ actions, align = 'right' }: TableRowActionsMenuProps) {
+  const { t } = useTranslation('components');
+
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const visibleActions = actions.filter((action) => !action.hidden);
@@ -30,7 +33,11 @@ export function TableRowActionsMenu({ actions, align = 'right' }: TableRowAction
       className={cn('relative', align === 'right' && 'flex justify-end')}
       onClick={(event) => event.stopPropagation()}
     >
-      <IconButton ref={anchorRef} label="Ações da linha" onClick={() => setOpen((value) => !value)}>
+      <IconButton
+        ref={anchorRef}
+        label={t('tableRowActionsMenu.acoesDaLinha')}
+        onClick={() => setOpen((value) => !value)}
+      >
         <Icon name="more_horiz" size={ICON_SIZE.sm} />
       </IconButton>
 

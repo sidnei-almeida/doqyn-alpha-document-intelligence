@@ -8,6 +8,7 @@ import {
 import { buildVersionComparisonRows } from '../src/features/document-update-version/utils/versionComparison.ts';
 import type { AnalyzePdfResponse } from '../src/features/document-send/services/analyzePdf.ts';
 import type { DocumentDetailResponse } from '../src/types/document-library.ts';
+import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 describe('metadataKeyNormalize', () => {
   it('unifica capitalizações e labels em chave canônica', () => {
@@ -55,6 +56,7 @@ describe('metadataKeyNormalize', () => {
 
 describe('buildStandardDetailsFields', () => {
   it('monta ficha standard com validade inferida', async () => {
+    initI18nForTests();
     const { buildStandardDetailsFields } =
       await import('../src/features/document-update-version/utils/documentMetadataDisplay.ts');
 
@@ -96,6 +98,7 @@ describe('buildStandardDetailsFields', () => {
   });
 
   it('validade sem âncora fica não determinada', async () => {
+    initI18nForTests();
     const { buildStandardDetailsFields } =
       await import('../src/features/document-update-version/utils/documentMetadataDisplay.ts');
 

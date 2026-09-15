@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n';
+import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import { buildRequestHeaders, createRequestId } from '../utils/workflowLogHelpers';
@@ -76,15 +78,16 @@ export async function confirmUpdateDocumentVersion(
     | null;
 
   if (!response.ok) {
-    const message =
-      data && 'message' in data && data.message
-        ? data.message
-        : 'Não foi possível atualizar o documento.';
+    const serverMessage = (data && 'message' in data && data.message) || undefined;
+    const code = (data && 'code' in data && data.code) || undefined;
+    const message = code
+      ? getFriendlyAuthErrorMessage(code, serverMessage)
+      : (serverMessage ?? i18n.t('documentSend:confirmError.updateFailed'));
     throw new Error(message);
   }
 
   if (!data || !('documentId' in data)) {
-    throw new Error('Resposta inválida ao atualizar documento.');
+    throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaAtualizar'));
   }
 
   return {

@@ -16,14 +16,16 @@ export const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
 export const DEFAULT_GROQ_MAX_OUTPUT_TOKENS = 4000;
 export const DEFAULT_GROQ_REQUEST_TIMEOUT_MS = 25_000;
 /**
- * Dimensionados para a janela de 131k tokens do llama-4-scout (~460k chars).
- * Documento empresarial de ~100 páginas cabe no contexto; o teto antigo
- * (10 páginas / 30k chars) era o rate limit do plano gratuito da Groq
- * (6k TPM), não um limite do modelo. Em dev no plano gratuito, mantenha os
- * valores baixos via .env ou a análise devolve 429.
+ * Quanto do documento entra no pipeline: ~300 páginas densas (~3.300 chars por página).
+ *
+ * Os tetos antigos (10 páginas / 30k chars, depois 30 / 30k na VPS) eram o rate limit do plano
+ * gratuito da Groq, não um limite do modelo. O modelo nunca lê o texto inteiro — classificador e
+ * extrator recebem só os trechos selecionados —, então o texto a mais vira busca e embedding, não
+ * prompt. Acima disto quem pesa é a memória do worker (1 GB na VPS), não a inferência. Com a Groq
+ * no plano gratuito, baixe os valores no .env ou a análise devolve 429.
  */
-export const DEFAULT_PDF_ANALYSIS_MAX_INPUT_CHARS = 300_000;
-export const DEFAULT_PDF_ANALYSIS_MAX_PAGES = 100;
+export const DEFAULT_PDF_ANALYSIS_MAX_INPUT_CHARS = 1_000_000;
+export const DEFAULT_PDF_ANALYSIS_MAX_PAGES = 300;
 /** Chunks enviados ao extrator. Antes fixo em 8 (~14k chars), o que descartava
  * quase todo documento longo mesmo com o texto já extraído. */
 export const DEFAULT_EXTRACTION_MAX_CHUNKS = 40;

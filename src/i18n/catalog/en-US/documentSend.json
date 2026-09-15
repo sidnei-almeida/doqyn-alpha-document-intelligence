@@ -1,0 +1,131 @@
+{
+  "analysisError": {
+    "uploadStorageTitle": "Upload to storage failed",
+    "uploadStorageMessage": "Could not upload the document to storage. Try again.",
+    "semAcompanhamentoTitle": "Analysis without tracking",
+    "falhaNaAnaliseTitle": "Analysis failed",
+    "resultadoIndisponivelTitle": "Analysis result unavailable",
+    "resultadoIndisponivelMessage": "Analysis finished with no result available. Try again.",
+    "respostaInvalidaFila": "Invalid response from the server (async queue)",
+    "respostaInvalida": "Invalid response from the server",
+    "respostaInvalidaSalvar": "Invalid response while saving the document.",
+    "respostaInvalidaAprovacao": "Invalid response while submitting the document for approval.",
+    "respostaInvalidaAtualizar": "Invalid response while updating the document.",
+    "naoFoiPossivelAnalisarTitle": "Could not analyze the document",
+    "prepareUploadFailed": "Error preparing the document upload",
+    "storageFailed": "Couldn't send the document to storage.",
+    "analysisFailed": "The document analysis failed.",
+    "noResult": "Analysis finished with no result available.",
+    "analyzeFailed": "Error analyzing document"
+  },
+  "documentNamingSection": {
+    "digiteONomeFinal": "Type the final file name",
+    "modoDeNomeacaoDo": "File naming mode",
+    "nomeDoArquivoSalvo": "Saved file name",
+    "previewDoNomeFinal": "Preview of the final name",
+    "sugestaoDaIaOpcional": "AI suggestion (optional):"
+  },
+  "metadataField": {
+    "nomeOriginal": "Original name",
+    "nomeSugerido": "Suggested name",
+    "classeIdentificada": "Identified class",
+    "statusDaAnalise": "Analysis status",
+    "confiancaDaClassificacao": "Classification confidence",
+    "justificativa": "Rationale",
+    "camposAusentes": "Missing fields",
+    "versaoSugerida": "Suggested version",
+    "textoExtraido": "Extracted text",
+    "statusDePersistencia": "Persistence status",
+    "armazenamentoDeArquivo": "File storage"
+  },
+  "metadataValue": {
+    "analiseConcluida": "Analysis complete",
+    "requerRevisao": "Needs review",
+    "erroNaAnalise": "Analysis error",
+    "caracteres_one": "{{count}} character",
+    "caracteres_other": "{{count}} characters",
+    "caracteresTruncado_one": "{{count}} character (truncated)",
+    "caracteresTruncado_other": "{{count}} characters (truncated)",
+    "metadadosConfirmados": "Metadata confirmed",
+    "pendente": "Pending"
+  },
+  "reviewWorkflowSettingsPanel": {
+    "aceitaAnalisesConfiaveisApos": "Accepts confident analyses after the configured wait.",
+    "aguardar": "Wait",
+    "aplicarEstaConfiguracaoAos": "Apply this setting to the next files in the batch",
+    "ativarModoAutomatico": "Turn on automatic mode",
+    "aumentarSegundos": "Increase seconds",
+    "comportamentoAoEnviarVarios": "Behavior when uploading several files at once.",
+    "configuracoesDaRevisao": "Review settings",
+    "configuracoesDaRevisao2": "Review settings",
+    "configuracoesDaRevisao3": "Review settings",
+    "continuarAutomaticamenteQuandoEstiver": "Continue automatically when it is confident",
+    "controleOQueA": "Control what the AI is allowed to suggest on its own.",
+    "controleRevisaoAutomaticaNomeacao": "Control automatic review, naming and batch behavior in this session.",
+    "defineQuandoAAnalise": "Sets when the analysis may proceed without manual input.",
+    "diminuirSegundos": "Decrease seconds",
+    "exigirRevisaoManualCom": "Require manual review when fields are missing",
+    "exigirRevisaoManualCom2": "Require manual review when fields are missing",
+    "exigirRevisaoManualEm": "Require manual review on low confidence",
+    "exigirRevisaoManualEm2": "Require manual review on low confidence",
+    "nomeDoDocumento": "Document name",
+    "nomeDoDocumento2": "Document name",
+    "nomesSaoSanitizadosSem": "Names are sanitized (no slashes or path traversal), capped at about 180 characters and forced to the .pdf extension. Tax IDs do not go into the suggested name automatically while the protection is on.",
+    "nomesSaoSanitizadosSem2": "Names are sanitized (no slashes or path traversal), capped at about 180 characters and forced to the .pdf extension. Tax IDs do not go into the suggested name automatically while the protection is on.",
+    "nuncaIncluirCpfCnpj": "Never include a tax ID in the suggested name",
+    "pararParaRevisaoQuando": "Stop for review when there is a conflict",
+    "permitirIaSugerirNome": "Let the AI suggest a standardized name",
+    "politicaDeNomeacaoPadrao": "Default naming policy",
+    "politicaPadraoAplicadaApos": "Default policy applied after the AI analysis.",
+    "protecaoDeNomes": "Name protection",
+    "revisaoAutomatica": "Automatic review",
+    "revisaoAutomatica2": "Automatic review",
+    "secondsSuffix": "sec",
+    "segundosAntesDaRevisao": "Seconds before the automatic review",
+    "seguranca": "Security",
+    "sugestoesDaIa": "AI suggestions",
+    "sugestoesDaIa2": "AI suggestions",
+    "uploadEmLote": "Batch upload",
+    "uploadEmLote2": "Batch upload",
+    "autoSummary": "Auto · {{seconds}}s"
+  },
+  "confidenceBadge": {
+    "high": "High confidence",
+    "review": "Review",
+    "low": "Needs review"
+  },
+  "namingMode": {
+    "aiSuggested": {
+      "label": "AI-suggested name",
+      "description": "Recommended pattern using the extracted metadata."
+    },
+    "original": {
+      "label": "Original upload name",
+      "description": "Keeps the file as uploaded (sanitized)."
+    },
+    "manual": {
+      "label": "Manual name",
+      "description": "Type the final name you want."
+    }
+  },
+  "namingPolicy": {
+    "label": {
+      "original": "Keep original name",
+      "aiSuggested": "Use AI-suggested name",
+      "askEachFile": "Ask for each file",
+      "manualRequired": "Manual name required"
+    },
+    "description": {
+      "original": "Keeps the file as uploaded (sanitized).",
+      "aiSuggested": "Applies the standardized name suggested by the analysis.",
+      "askEachFile": "Shows the naming choice when reviewing each file.",
+      "manualRequired": "Requires typing the final name before confirming."
+    }
+  },
+  "documentTypeUnknown": "Undefined",
+  "confirmError": {
+    "saveFailed": "Couldn't save the document.",
+    "approvalFailed": "Couldn't send the document for approval.",
+    "updateFailed": "Couldn't update the document."
+  }
+}

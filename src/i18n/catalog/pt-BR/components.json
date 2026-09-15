@@ -1,0 +1,143 @@
+{
+  "authBrandLogo": {
+    "doqyn": "Doqyn"
+  },
+  "authShell": {
+    "ambienteCorporativoSeguro": "Ambiente corporativo seguro"
+  },
+  "authSplitShell": {
+    "ambienteCorporativoSeguro": "Ambiente corporativo seguro",
+    "doqyn": "Doqyn"
+  },
+  "calendarPanel": {
+    "hoje": "Hoje",
+    "limpar": "Limpar",
+    "mesAnterior": "Mês anterior",
+    "proximoMes": "Próximo mês"
+  },
+  "confirmProvider": {
+    "typeToConfirm": "Digite <word>{{word}}</word> para confirmar:",
+    "typeExactly": "Digite exatamente {{word}} para liberar."
+  },
+  "countrySelect": {
+    "buscarPais": "Buscar país",
+    "nenhumPaisEncontrado": "Nenhum país encontrado.",
+    "selecionarPais": "Selecionar país",
+    "pais": "País"
+  },
+  "filterBar": {
+    "limparFiltros": "Limpar filtros"
+  },
+  "globalSearchCommand": {
+    "buscarDocumentos": "Buscar documentos",
+    "buscarDocumentos2": "Buscar documentos",
+    "limparBusca": "Limpar busca"
+  },
+  "headerUserMenu": {
+    "configuracoes": "Configurações",
+    "conta": "Conta",
+    "menuDoUsuario": "Menu do usuário",
+    "sair": "Sair"
+  },
+  "helpMenu": {
+    "ajuda": "Ajuda",
+    "ajuda2": "Ajuda",
+    "centralDeAjuda": "Central de ajuda",
+    "ondeFicaCadaCoisa": "Onde fica cada coisa, em 2 min",
+    "verOTour": "Ver o tour"
+  },
+  "input": {
+    "hidePassword": "Ocultar senha",
+    "showPassword": "Mostrar senha"
+  },
+  "modal": {
+    "fechar": "Fechar"
+  },
+  "routeLoadingFallback": {
+    "carregandoModulo": "Carregando módulo",
+    "carregandoModulo2": "Carregando módulo..."
+  },
+  "sidebar": {
+    "administracao": "Administração"
+  },
+  "sidebarBrandLogo": {
+    "doqyn": "Doqyn"
+  },
+  "sidebarEdgeToggle": {
+    "collapse": "Recolher barra lateral (Ctrl + \\)",
+    "expand": "Expandir barra lateral (Ctrl + \\)"
+  },
+  "sidebarUsage": {
+    "armazenamento": "Armazenamento",
+    "armazenamentoUsado": "Armazenamento usado",
+    "documentCount_one": "{{count}} documento",
+    "documentCount_other": "{{count}} documentos",
+    "ofQuota": "de {{quota}}",
+    "percentUsed": "{{percent}} usado",
+    "tooltip": "Armazenamento · {{used}}",
+    "tooltipWithQuota": "Armazenamento · {{used}} de {{quota}} ({{percent}})"
+  },
+  "tableRowActionsMenu": {
+    "acoesDaLinha": "Ações da linha"
+  },
+  "termsAcceptanceCheckbox": {
+    "doDoqyn": "do DOQYN.",
+    "eDeclaroCienciaDa": "e declaro ciência da",
+    "liEAceitoOs": "Li e aceito os",
+    "politicaDePrivacidade": "Política de Privacidade",
+    "termosECondicoesDe": "Termos e Condições de Uso",
+    "helper": "Recomendamos que você leia os termos antes de continuar."
+  },
+  "theme": {
+    "darkHint": "Casca quase preta, painel grafite",
+    "darkLabel": "Escuro",
+    "lightHint": "Casca cinza-clara, painel de papel",
+    "lightLabel": "Claro",
+    "standardHint": "Casca grafite, painel de papel",
+    "standardLabel": "Padrão",
+    "toggleAriaLabel": "Tema: {{current}}. Trocar para {{next}}.",
+    "toggleTitle": "Tema: {{current}}. {{hint}}. Clique para {{next}}."
+  },
+  "uploadDropzone": {
+    "arrasteODocumentoOu": "Arraste o documento ou clique para selecionar",
+    "formats": "PDF, Word, Excel ou imagens",
+    "maxSize": "até {{size}}"
+  },
+  "versionBadge": {
+    "versaoAtual": "Versão atual"
+  },
+  "userFallback": "Usuário",
+  "workspaceRefreshButton": {
+    "label": "Atualizar"
+  },
+  "dataTable": {
+    "empty": "Nenhum registro encontrado"
+  },
+  "dateField": {
+    "placeholder": "Escolher data",
+    "calendar": "Calendário"
+  },
+  "inlineErrorHint": {
+    "message": "Não foi possível carregar os dados."
+  },
+  "progress": {
+    "label": "Progresso"
+  },
+  "promptDialog": {
+    "required": "Este campo é obrigatório.",
+    "wait": "Aguarde…"
+  },
+  "reviewBeforeSubmitDialog": {
+    "confirm": "Confirmar e enviar",
+    "submitting": "Enviando…"
+  },
+  "select": {
+    "placeholder": "Selecionar"
+  },
+  "skeletonList": {
+    "loading": "Carregando"
+  },
+  "whatsappInput": {
+    "incomplete": "WhatsApp incompleto."
+  }
+}

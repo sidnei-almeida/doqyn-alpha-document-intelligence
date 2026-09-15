@@ -9,6 +9,7 @@ import {
   buildTrackingEventsQuery,
   formatTrackingAction,
 } from '../src/features/tracking/utils/trackingDisplay.ts';
+import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 describe('workflow logs minimalistas', () => {
   it('summarizeWorkflowLogMessage prioriza friendlyTitle', () => {
@@ -45,6 +46,7 @@ describe('tracking page helpers', () => {
   });
 
   it('formatTrackingAction usa labels em português', () => {
+    initI18nForTests();
     assert.equal(formatTrackingAction('document.preview_viewed'), 'Preview visualizado');
     assert.equal(formatTrackingAction('document.download_denied'), 'Download negado');
   });

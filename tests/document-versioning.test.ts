@@ -186,7 +186,7 @@ describe('ExplorerContextMenu atualização', () => {
       new URL('../src/features/library/components/ExplorerContextMenu.tsx', import.meta.url),
       'utf8',
     );
-    assert.ok(source.includes('Atualizar documento'));
+    assert.ok(source.includes('.atualizarDocumento'));
     assert.ok(source.includes('canUpdate'));
     assert.ok(!source.includes('Atualizar versão'));
   });

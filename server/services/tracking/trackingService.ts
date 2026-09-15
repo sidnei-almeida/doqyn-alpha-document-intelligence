@@ -5,6 +5,7 @@ import type {
   DocumentAuditEventInput,
 } from '../../audit/documentAuditTypes.js';
 import { sanitizeAuditMetadata } from '../../utils/sanitizeAuditMetadata.js';
+import type { AuditMessageParams } from '../../i18n/index.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
   buildSecurityAuditRestricted,
@@ -149,7 +150,6 @@ export async function emitAccessDeniedEvent(
       action,
       severity: 'warning',
       status: 'denied',
-      description: 'Acesso ao documento negado.',
       documentId: input.documentId,
       versionId: input.versionId,
       target: input.documentId
@@ -189,7 +189,8 @@ export async function emitDocumentFailureEvent(
   req: (Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] }) | undefined,
   input: {
     action: string;
-    description: string;
+    /** Variante da frase no catálogo `auditEvents` (`context`). */
+    params?: AuditMessageParams;
     documentId?: string;
     versionId?: string;
     error: unknown;
@@ -210,7 +211,7 @@ export async function emitDocumentFailureEvent(
       severity: 'error',
       status: 'failed',
       result: 'error',
-      description: input.description,
+      params: input.params,
       documentId: input.documentId,
       versionId: input.versionId,
       target: input.documentId
@@ -251,7 +252,9 @@ export async function emitClientTrackingEvent(
     ctx,
     {
       action: input.action,
-      description: `Evento do cliente: ${input.action}`,
+      // O preview que falha no navegador tem frase própria: o servidor serviu, quem não abriu foi o
+      // cliente. As outras ações do cliente usam a frase padrão da ação.
+      params: input.action === 'document.preview_failed' ? { context: 'client' } : {},
       documentId: input.documentId,
       versionId: input.versionId,
       metadata,

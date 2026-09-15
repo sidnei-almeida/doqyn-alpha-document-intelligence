@@ -1,5 +1,6 @@
 import { Icon } from '@/components/ui/Icon';
 import { GROUP_PALETTE, type GroupColor } from '@shared/groupPalette';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Roda de cores do grupo.
@@ -12,19 +13,23 @@ import { GROUP_PALETTE, type GroupColor } from '@shared/groupPalette';
 export function GroupPalettePicker({
   value,
   onChange,
-  label = 'Cor do grupo',
+  label: labelProp,
 }: {
   value: GroupColor;
   onChange: (color: GroupColor) => void;
   label?: string;
 }) {
+  const { t } = useTranslation('rules');
+  const label = labelProp ?? t('groupPalettePicker.label');
   const selected = GROUP_PALETTE.find((entry) => entry.key === value);
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3">
         <span className="register-label text-doqyn-subtle">{label}</span>
-        <span className="type-caption text-doqyn-muted">{selected?.label}</span>
+        <span className="type-caption text-doqyn-muted">
+          {selected ? t(`groupPalette.${selected.key}`) : null}
+        </span>
       </div>
 
       <div className="group-palette" role="radiogroup" aria-label={label}>
@@ -36,8 +41,8 @@ export function GroupPalettePicker({
               type="button"
               role="radio"
               aria-checked={isActive}
-              aria-label={entry.label}
-              title={entry.label}
+              aria-label={t(`groupPalette.${entry.key}`)}
+              title={t(`groupPalette.${entry.key}`)}
               onClick={() => onChange(entry.key)}
               className="group-palette__swatch"
               data-color={entry.key}

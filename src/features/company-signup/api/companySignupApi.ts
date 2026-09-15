@@ -1,4 +1,6 @@
 import { getAuthBasePath } from '@/auth/authConfig';
+import { parseApiError } from '@/lib/apiErrors';
+import { i18n } from '@/i18n';
 
 export type CompanySignupInput = {
   companyName: string;
@@ -14,6 +16,8 @@ export type CompanySignupInput = {
   whatsapp: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
+  /** Idioma em que os termos foram lidos. Ver `acceptedTermsLocale` em `src/legal/terms.ts`. */
+  acceptedTermsLocale?: string;
   /** Ver `individualSignupApi.ts`: ausentes no cadastro a partir de sessão existente. */
   email?: string;
   password?: string;
@@ -47,7 +51,7 @@ export async function submitCompanySignup(
   };
 
   if (!response.ok) {
-    throw new Error(data.message ?? 'Não foi possível cadastrar a empresa.');
+    throw await parseApiError(response, i18n.t('auth:companySignupPage.apiFailed'), data);
   }
 
   return data;

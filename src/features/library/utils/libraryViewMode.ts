@@ -10,15 +10,16 @@ import type { LibraryViewMode } from '../types/library';
 
 export const VIEW_MODE_ORDER: readonly LibraryViewMode[] = ['grid', 'list'];
 
-export const VIEW_MODE_LABELS: Record<LibraryViewMode, string> = {
-  grid: 'Visualização em grade',
-  list: 'Visualização em lista',
+/** Chaves do namespace `library`; a tela traduz. */
+export const VIEW_MODE_LABEL_KEYS: Record<LibraryViewMode, string> = {
+  grid: 'viewMode.grid',
+  list: 'viewMode.list',
 };
 
 /** Como a vista se chama no meio de uma frase — "Clique para lista." */
-export const VIEW_MODE_SHORT_LABELS: Record<LibraryViewMode, string> = {
-  grid: 'grade',
-  list: 'lista',
+export const VIEW_MODE_SHORT_KEYS: Record<LibraryViewMode, string> = {
+  grid: 'viewMode.shortGrid',
+  list: 'viewMode.shortList',
 };
 
 export const VIEW_MODE_ICONS: Record<LibraryViewMode, string> = {

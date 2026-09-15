@@ -6,6 +6,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { DocumentExpiryEditor } from '@/features/expiry/components/DocumentExpiryEditor';
 import type { DocumentListItem } from '@/types/document-library';
 import { DocumentNameField } from './DocumentNameField';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Ficha de metadados do documento, aberta da própria Biblioteca.
@@ -21,6 +22,8 @@ export function DocumentMetadataDrawer({
   document: DocumentListItem | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('library');
+
   if (!document) return null;
 
   const fileName = document.currentFileName ?? document.displayName ?? document.documentId;
@@ -28,7 +31,7 @@ export function DocumentMetadataDrawer({
 
   return (
     <WorkspaceSideDrawer
-      title="Metadados do documento"
+      title={t('documentMetadataDrawer.metadadosDoDocumento')}
       onClose={onClose}
       testId="document-metadata-drawer"
       zIndexClass="z-[95]"
@@ -36,15 +39,17 @@ export function DocumentMetadataDrawer({
         <header className="flex items-start justify-between gap-3 border-b border-doqyn-border-subtle px-5 py-4">
           <div className="min-w-0 flex-1">
             {/* O eyebrow era acento; acento é para o que se clica. */}
-            <p className="register-label text-doqyn-subtle">Metadados</p>
+            <p className="register-label text-doqyn-subtle">
+              {t('documentMetadataDrawer.metadados')}
+            </p>
             <TruncatedText as="h2" className="type-h2 mt-1 text-doqyn-text">
               {fileName}
             </TruncatedText>
             <p className="mt-1 text-caption text-doqyn-muted">
-              {document.categoryName ?? 'Sem categoria'}
+              {document.categoryName ?? t('explorerRootHome.semCategoria')}
             </p>
           </div>
-          <IconButton label="Fechar metadados" onClick={onClose}>
+          <IconButton label={t('documentMetadataDrawer.fecharMetadados')} onClick={onClose}>
             <Icon name="close" size={ICON_SIZE.sm} />
           </IconButton>
         </header>

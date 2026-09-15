@@ -2,11 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { useTranslation } from 'react-i18next';
 
 type QuickLink = {
   id: string;
-  label: string;
-  description: string;
+  /** Chaves do namespace `dashboard`; a tela traduz. */
+  labelKey: string;
+  descriptionKey: string;
   path: string;
   icon: string;
 };
@@ -14,29 +16,29 @@ type QuickLink = {
 const ADMIN_LINKS: QuickLink[] = [
   {
     id: 'rules',
-    label: 'Regras e categorias',
-    description: 'Mapa de acesso e extração',
+    labelKey: 'overviewQuickAccessPanel.links.rules.label',
+    descriptionKey: 'overviewQuickAccessPanel.links.rules.description',
     path: '/rules',
     icon: 'balance',
   },
   {
     id: 'users',
-    label: 'Usuários e grupos',
-    description: 'Membros e permissões',
+    labelKey: 'overviewQuickAccessPanel.links.users.label',
+    descriptionKey: 'overviewQuickAccessPanel.links.users.description',
     path: '/users',
     icon: 'group',
   },
   {
     id: 'upload-ia',
-    label: 'Upload e IA',
-    description: 'Revisão e nomeação',
+    labelKey: 'overviewQuickAccessPanel.links.uploadAi.label',
+    descriptionKey: 'overviewQuickAccessPanel.links.uploadAi.description',
     path: '/settings?section=upload-ia',
     icon: 'neurology',
   },
   {
     id: 'settings',
-    label: 'Configurações da conta',
-    description: 'Perfil, tema e segurança',
+    labelKey: 'overviewQuickAccessPanel.links.settings.label',
+    descriptionKey: 'overviewQuickAccessPanel.links.settings.description',
     path: '/settings',
     icon: 'settings',
   },
@@ -45,15 +47,15 @@ const ADMIN_LINKS: QuickLink[] = [
 const OPERATIONAL_LINKS: QuickLink[] = [
   {
     id: 'preferencias',
-    label: 'Preferências',
-    description: 'Tema e experiência',
+    labelKey: 'overviewQuickAccessPanel.links.preferences.label',
+    descriptionKey: 'overviewQuickAccessPanel.links.preferences.description',
     path: '/settings?section=perfil',
     icon: 'tune',
   },
   {
     id: 'perfil',
-    label: 'Minha conta',
-    description: 'Perfil e identidade',
+    labelKey: 'overviewQuickAccessPanel.links.account.label',
+    descriptionKey: 'overviewQuickAccessPanel.links.account.description',
     path: '/settings?section=perfil',
     icon: 'settings',
   },
@@ -65,13 +67,15 @@ const OPERATIONAL_LINKS: QuickLink[] = [
  * quando só pode existir uma.
  */
 export function OverviewQuickAccessPanel({ isAdmin }: { isAdmin: boolean }) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
   const links = isAdmin ? ADMIN_LINKS : OPERATIONAL_LINKS;
 
   return (
     <OverviewPanelShell
-      title="Acesso rápido"
-      subtitle="Governança e configurações em um clique"
+      title={t('overviewQuickAccessPanel.acessoRapido')}
+      subtitle={t('overviewQuickAccessPanel.subtitle')}
       titleId="overview-quick-access-title"
       bodyClassName="flex flex-col"
       data-testid="overview-quick-access"
@@ -90,8 +94,8 @@ export function OverviewQuickAccessPanel({ isAdmin }: { isAdmin: boolean }) {
             aria-hidden
           />
           <span className="min-w-0 flex-1">
-            <span className="block text-label font-medium text-doqyn-text">{link.label}</span>
-            <span className="overview-row-meta mt-0.5 block">{link.description}</span>
+            <span className="block text-label font-medium text-doqyn-text">{t(link.labelKey)}</span>
+            <span className="overview-row-meta mt-0.5 block">{t(link.descriptionKey)}</span>
           </span>
           <Icon
             name="chevron_right"

@@ -5,6 +5,7 @@ import {
   decodeSortOptionValue,
   encodeSortOptionValue,
 } from '../utils/libraryFilterOptions';
+import { useTranslation } from 'react-i18next';
 
 type SortMenuProps = {
   sort: LibrarySortKey;
@@ -13,17 +14,19 @@ type SortMenuProps = {
 };
 
 export function SortMenu({ sort, direction, onChange }: SortMenuProps) {
+  const { t } = useTranslation('library');
+
   const value = encodeSortOptionValue(sort, direction);
 
   return (
     <ToolbarSelect
       icon="swap_vert"
-      label="Ordenar por"
+      label={t('sortMenu.ordenarPor')}
       value={value}
       defaultValue={encodeSortOptionValue('updatedAt', 'desc')}
       options={SORT_FILTER_OPTIONS.map((option) => ({
         value: encodeSortOptionValue(option.sort, option.direction),
-        label: option.label,
+        label: t(option.labelKey),
       }))}
       onChange={(next) => {
         const resolved = decodeSortOptionValue(next);

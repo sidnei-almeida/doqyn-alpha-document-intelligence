@@ -21,7 +21,7 @@ describe('visualização dentro da pasta', () => {
   it('ExplorerFolderFiles é lista explorador sem card administrativo', () => {
     const files = readSrc('features/library/components/ExplorerFolderFiles.tsx');
     assert.ok(files.includes('variant="explorer"'));
-    assert.ok(files.includes('Modificado'));
+    assert.ok(files.includes('.modificado'));
     assert.equal(files.includes('border border-doqyn-border'), false);
   });
 
@@ -42,7 +42,7 @@ describe('visualização dentro da pasta', () => {
 
   it('empty state da pasta fala o vocabulário comum, sem pictograma', () => {
     const empty = readSrc('features/library/components/EmptyFolderState.tsx');
-    assert.ok(empty.includes('Enviar documento'));
+    assert.ok(empty.includes("t('emptyFolderState.upload')"));
     assert.ok(empty.includes('library-empty-state'));
     /**
      * A proibição anterior — não usar `EmptyState` — nasceu quando ele era um bloco preenchido de
@@ -61,8 +61,8 @@ describe('visualização dentro da pasta', () => {
     // "Atualizado" migrou para o componente compartilhado com o viewer.
     const shared = readSrc('features/documents/components/DocumentDetailsShared.tsx');
     assert.ok(panel.includes('DocumentDetailsShared'));
-    assert.ok(shared.includes('Atualizado'));
-    assert.ok(panel.includes('Visualizar'));
+    assert.ok(shared.includes('.atualizado'));
+    assert.ok(panel.includes('.visualizar'));
     assert.ok(panel.includes('/tracking?documentId='));
     assert.equal(panel.includes('DetailsPanelTabs'), false);
   });

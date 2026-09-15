@@ -15,12 +15,15 @@ import { Badge } from '@/components/ui/Badge';
 import { showAppToast } from '@/shared/feedback/appFeedback';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { accountProfileApi } from '../../api/accountProfileApi';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Identidade tem salvamento próprio: nome e sobrenome só valem depois de "Salvar identidade".
  * A foto continua valendo no instante do envio — é ação, não campo de formulário.
  */
 export function ProfileSettingsSection() {
+  const { t } = useTranslation('settings');
+
   const { user, roles, tenant, refreshUser } = useAuth();
   const isIndividual = isIndividualTenant(tenant?.tenantType);
   const profileQuery = useProfileMe(Boolean(user?.id));
@@ -57,14 +60,14 @@ export function ProfileSettingsSection() {
       await refreshUser();
       showAppToast({
         type: 'success',
-        title: 'Identidade salva',
-        message: 'Seu nome já aparece assim no app.',
+        title: t('profileSettingsSection.identitySaved'),
+        message: t('profileSettingsSection.identitySavedMessage'),
       });
     } catch (error) {
       showAppToast({
         type: 'error',
-        title: 'Não foi possível salvar',
-        message: error instanceof Error ? error.message : 'Tente novamente.',
+        title: t('profileSettingsSection.saveFailed'),
+        message: error instanceof Error ? error.message : t('profileSettingsSection.tryAgain'),
       });
     } finally {
       setSaving(false);
@@ -92,7 +95,9 @@ export function ProfileSettingsSection() {
       setPreviewUrl(null);
     } catch (error) {
       setPreviewUrl(null);
-      setLocalError(error instanceof Error ? error.message : 'Não foi possível enviar a foto.');
+      setLocalError(
+        error instanceof Error ? error.message : t('profileSettingsSection.photoUploadFailed'),
+      );
     }
   }
 
@@ -103,7 +108,9 @@ export function ProfileSettingsSection() {
       await refreshUser();
       setPreviewUrl(null);
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : 'Não foi possível remover a foto.');
+      setLocalError(
+        error instanceof Error ? error.message : t('profileSettingsSection.photoRemoveFailed'),
+      );
     }
   }
 
@@ -116,8 +123,8 @@ export function ProfileSettingsSection() {
             disabled={isBusy}
             onClick={() => fileInputRef.current?.click()}
             className="settings-profile-avatar-trigger group relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-doqyn-accent-active/40 focus-visible:ring-offset-2 focus-visible:ring-offset-doqyn-bg disabled:opacity-60"
-            aria-label="Alterar foto"
-            title="Alterar foto"
+            aria-label={t('profileSettingsSection.alterarFoto')}
+            title={t('profileSettingsSection.alterarFoto2')}
           >
             <UserAvatar
               name={user?.name}
@@ -155,11 +162,11 @@ export function ProfileSettingsSection() {
               disabled={isBusy}
               onClick={() => void handleRemove()}
             >
-              Remover foto
+              {t('profileSettingsSection.removerFoto')}
             </Button>
           ) : (
             <p className="type-caption max-w-[8rem] text-center text-doqyn-subtle">
-              JPG, PNG ou WebP · até 5 MB
+              {t('profileSettingsSection.jpgPngOuWebp')}
             </p>
           )}
           <input
@@ -174,7 +181,7 @@ export function ProfileSettingsSection() {
         <div className="settings-identity__fields">
           <Input
             variant="rule"
-            label="Nome"
+            label={t('profileSettingsSection.nome')}
             value={firstName}
             maxLength={80}
             autoComplete="given-name"
@@ -182,7 +189,7 @@ export function ProfileSettingsSection() {
           />
           <Input
             variant="rule"
-            label="Sobrenome"
+            label={t('profileSettingsSection.sobrenome')}
             value={lastName}
             maxLength={80}
             autoComplete="family-name"
@@ -193,7 +200,7 @@ export function ProfileSettingsSection() {
 
       <dl className="settings-register-facts">
         <div>
-          <dt className="register-label text-doqyn-subtle">E-mail</dt>
+          <dt className="register-label text-doqyn-subtle">{t('profileSettingsSection.eMail')}</dt>
           <dd className="type-body mt-0.5 break-words text-doqyn-text">{user?.email ?? '—'}</dd>
         </div>
         {/* Em PF o `displayName` do tenant é o nome da própria pessoa, então a linha repetia
@@ -201,14 +208,16 @@ export function ProfileSettingsSection() {
             inexistente. Some em vez de virar "Conta: Fulano". */}
         {isIndividual ? null : (
           <div>
-            <dt className="register-label text-doqyn-subtle">Organização</dt>
+            <dt className="register-label text-doqyn-subtle">
+              {t('profileSettingsSection.organizacao')}
+            </dt>
             <dd className="type-body mt-0.5 break-words text-doqyn-text">
               {tenant?.displayName ?? user?.companyName ?? '—'}
             </dd>
           </div>
         )}
         <div>
-          <dt className="register-label text-doqyn-subtle">Papéis</dt>
+          <dt className="register-label text-doqyn-subtle">{t('profileSettingsSection.papeis')}</dt>
           <dd className="mt-1">
             {roles.length ? (
               <PlatformRoleChips roles={platformRoles} className="flex flex-wrap gap-1.5" />
@@ -236,7 +245,7 @@ export function ProfileSettingsSection() {
           disabled={!dirty || saving}
           onClick={() => void handleSaveIdentity()}
         >
-          {saving ? 'Salvando…' : 'Salvar identidade'}
+          {saving ? t('profileSettingsSection.saving') : t('profileSettingsSection.saveIdentity')}
         </Button>
       </div>
     </SettingsSectionBody>

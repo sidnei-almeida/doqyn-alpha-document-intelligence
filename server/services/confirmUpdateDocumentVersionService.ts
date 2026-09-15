@@ -16,6 +16,7 @@ import {
 } from '../utils/documentMutationFields.js';
 import { logger } from '../utils/logger.js';
 import { getStorageProvider } from '../storage/index.js';
+import { enqueueStoragePromotionJob } from '../queues/storagePromotionQueue.js';
 import {
   enqueueScheduledDocumentPreview,
   scheduleDocumentPreviewForVersion,
@@ -38,6 +39,7 @@ import {
   mapVersionMetadata,
   persistConfirmedVersionFile,
   projectDocumentSearchMeta,
+  type StagingPromotionRequest,
 } from './confirm/confirmVersionShared.js';
 import { assertCanUpdateExistingDocument } from './documentVersionService.js';
 import {
@@ -222,10 +224,26 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     throw error;
   }
 
+  // O mesmo job não confirma duas vezes — ver o comentário em `confirmAnalysisPersistence`.
+  if (
+    data.jobId &&
+    (await input.ctx.collections.processingJobs.findOne({ _id: data.jobId } as Record<
+      string,
+      unknown
+    >))
+  ) {
+    throw new ConfirmAnalysisError(
+      'Esta análise já foi confirmada.',
+      'ANALYSIS_ALREADY_CONFIRMED',
+      409,
+    );
+  }
+
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;
   let confirmedPdfBuffer: Buffer | null = null;
+  let stagingPromotion: StagingPromotionRequest | null = null;
 
   try {
     const persisted = await persistConfirmedVersionFile({
@@ -243,6 +261,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     });
     versionStorage = persisted.storage;
     confirmedPdfBuffer = persisted.buffer;
+    stagingPromotion = persisted.promotion;
     persistedObjectKey = versionStorage.primary.objectKey;
     persistedBucketAlias = versionStorage.primary.bucketAlias;
   } catch (error) {
@@ -379,10 +398,11 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     });
     await processingJobs.insertOne(processingJob);
 
-    if (confirmedPdfBuffer) {
+    if (confirmedPdfBuffer || stagingPromotion) {
       await scheduleChunkPersistenceAfterVersionConfirm({
         ctx: input.ctx,
         pdfBuffer: confirmedPdfBuffer,
+        primary: versionStorage.primary,
         documentId,
         versionId,
         versionLabel,
@@ -406,8 +426,33 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
         requestId: input.requestId,
       });
     }
+
+    if (stagingPromotion) {
+      // Fora do caminho de quem espera: a versão já vale apontando para o provisório, e a cópia para
+      // a chave definitiva não pode segurar a resposta nem desfazer a versão se falhar.
+      await enqueueStoragePromotionJob({
+        tenantId,
+        ownerUserId: input.ctx.userId,
+        documentId,
+        versionId,
+        bucket: stagingPromotion.bucket,
+        stagingKey: stagingPromotion.stagingKey,
+        destinationKey: stagingPromotion.destinationKey,
+        contentType: stagingPromotion.contentType,
+        requestId: input.requestId,
+      }).catch((error: unknown) => {
+        logger.warn('promoção do arquivo não enfileirada; a versão segue no provisório', {
+          requestId: input.requestId,
+          documentId,
+          versionId,
+          reason: error instanceof Error ? error.message : 'unknown',
+        });
+      });
+    }
   } catch (error) {
-    if (persistedObjectKey) {
+    // O provisório pertence ao job, não a esta tentativa: apagá-lo aqui tiraria o arquivo de outra
+    // confirmação do mesmo job que já tenha dado certo.
+    if (persistedObjectKey && !stagingPromotion) {
       await getStorageProvider()
         ?.deleteDocumentVersion(persistedObjectKey, tenantId, persistedBucketAlias)
         .catch(() => undefined);
@@ -460,7 +505,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   const auditEvents: DocumentAuditEventInput[] = [
     {
       action: 'document.review_confirmed',
-      description: `Nova versão ${versionLabel} confirmada após análise.`,
+      params: { context: 'newVersion', versionLabel },
       documentId,
       versionId,
       analysisJobId: jobId,
@@ -483,7 +528,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
     },
     {
       action: 'document.version_created',
-      description: `Versão ${versionLabel} criada para documento existente.`,
+      params: { context: 'existing', versionLabel },
       documentId,
       versionId,
       target: documentTarget,
@@ -507,7 +552,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   if (versionStorage.primary.status === 'stored') {
     auditEvents.push({
       action: 'document.storage_promoted',
-      description: 'Arquivo da nova versão promovido ao storage definitivo.',
+      params: { context: 'newVersion' },
       documentId,
       versionId,
       target: documentTarget,
@@ -528,7 +573,7 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   if (previewResult.slot.status === 'ready') {
     auditEvents.push({
       action: 'document.preview_generated',
-      description: 'Preview da nova versão gerado com sucesso.',
+      params: { context: 'newVersion' },
       documentId,
       versionId,
       target: documentTarget,

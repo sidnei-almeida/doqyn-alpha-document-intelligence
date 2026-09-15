@@ -31,6 +31,7 @@ import {
   canRevokeSignatureRequestEntry,
   isSignatureRequestEntryOpen,
 } from '@/features/signature/utils/signatureRequestStatus';
+import { useTranslation } from 'react-i18next';
 
 type DocumentSignaturesDrawerProps = {
   document: DocumentListItem | null;
@@ -46,23 +47,14 @@ function mapRequestStatusToSummaryStatus(status: string): DocumentSignatureSumma
   return 'none';
 }
 
-function requestStatusLabel(status: string): string {
-  switch (status) {
-    case 'pending':
-    case 'partially_signed':
-      return 'Pendente';
-    case 'signed':
-      return 'Assinado';
-    case 'declined':
-      return 'Recusado';
-    case 'expired':
-      return 'Expirado';
-    case 'cancelled':
-      return 'Cancelado';
-    default:
-      return status;
-  }
-}
+const REQUEST_STATUS_KEYS: Record<string, string> = {
+  pending: 'documentSignaturesDrawer.status.pending',
+  partially_signed: 'documentSignaturesDrawer.status.pending',
+  signed: 'common:signatureStatus.signed',
+  declined: 'common:signatureStatus.declined',
+  expired: 'common:signatureStatus.expired',
+  cancelled: 'common:signatureStatus.cancelled',
+};
 
 function SignatureRequestCard({
   entry,
@@ -81,8 +73,11 @@ function SignatureRequestCard({
   downloadingEvidence: string | null;
   revokingId: string | null;
 }) {
+  const { t } = useTranslation('signature');
+
   const signer = entry.signers[0];
   const verificationCode = entry.signature?.verificationCode;
+  const statusKey = REQUEST_STATUS_KEYS[entry.status];
 
   return (
     <section className="rounded-[4px] border border-doqyn-border-subtle p-4">
@@ -90,7 +85,7 @@ function SignatureRequestCard({
         <Badge
           variant={signatureSummaryBadgeVariant(mapRequestStatusToSummaryStatus(entry.status))}
         >
-          {requestStatusLabel(entry.status)}
+          {statusKey ? t(statusKey) : entry.status}
         </Badge>
         {verificationCode ? (
           <span className="font-mono text-micro text-doqyn-subtle">{verificationCode}</span>
@@ -99,7 +94,7 @@ function SignatureRequestCard({
 
       <dl className="mt-3 space-y-2 text-caption">
         <div>
-          <dt className="text-doqyn-muted">Signatário</dt>
+          <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.signatario')}</dt>
           <dd className="text-doqyn-text">{signer?.name ?? '—'}</dd>
           <dd className="text-doqyn-subtle">{signer?.emailMasked ?? '—'}</dd>
           {signer?.phoneMasked ? <dd className="text-doqyn-subtle">{signer.phoneMasked}</dd> : null}
@@ -108,22 +103,22 @@ function SignatureRequestCard({
           ) : null}
         </div>
         <div>
-          <dt className="text-doqyn-muted">Solicitado por</dt>
+          <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.solicitadoPor')}</dt>
           <dd>{entry.requestedByName}</dd>
         </div>
         <div>
-          <dt className="text-doqyn-muted">Solicitado em</dt>
+          <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.solicitadoEm')}</dt>
           <dd>{formatDateTime(entry.createdAt)}</dd>
         </div>
         {entry.signature?.signedAt ? (
           <div>
-            <dt className="text-doqyn-muted">Assinado em</dt>
+            <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.assinadoEm')}</dt>
             <dd>{formatDateTime(entry.signature.signedAt)}</dd>
           </div>
         ) : null}
         {entry.expiresAt ? (
           <div>
-            <dt className="text-doqyn-muted">Expira em</dt>
+            <dt className="text-doqyn-muted">{t('documentSignaturesDrawer.expiraEm')}</dt>
             <dd>{formatDateTime(entry.expiresAt)}</dd>
           </div>
         ) : null}
@@ -146,7 +141,11 @@ function SignatureRequestCard({
             onClick={() => onRevoke(entry)}
             data-testid="signature-drawer-revoke"
           >
-            {revokingId === entry.signatureRequestId ? 'Revogando…' : 'Revogar'}
+            {t(
+              revokingId === entry.signatureRequestId
+                ? 'documentSignaturesDrawer.revoking'
+                : 'documentSignaturesDrawer.revoke',
+            )}
           </Button>
         ) : null}
         {entry.signature?.hasSignedPdf ? (
@@ -160,7 +159,11 @@ function SignatureRequestCard({
             }
             data-testid="signature-drawer-download-signed"
           >
-            {downloadingSigned === entry.signatureRequestId ? 'Baixando…' : 'Baixar PDF assinado'}
+            {t(
+              downloadingSigned === entry.signatureRequestId
+                ? 'documentSignaturesDrawer.downloading'
+                : 'documentSignaturesDrawer.downloadSignedPdf',
+            )}
           </Button>
         ) : null}
         {entry.signature?.hasEvidence ? (
@@ -171,7 +174,11 @@ function SignatureRequestCard({
             disabled={downloadingEvidence === entry.signatureRequestId}
             onClick={() => onDownloadEvidence(entry.signatureRequestId)}
           >
-            {downloadingEvidence === entry.signatureRequestId ? 'Baixando…' : 'Baixar evidências'}
+            {t(
+              downloadingEvidence === entry.signatureRequestId
+                ? 'documentSignaturesDrawer.downloading'
+                : 'documentSignaturesDrawer.downloadEvidence',
+            )}
           </Button>
         ) : null}
         {verificationCode ? (
@@ -180,7 +187,7 @@ function SignatureRequestCard({
             className="inline-flex items-center gap-1 text-caption text-doqyn-accent-active hover:underline"
             data-testid="signature-drawer-verification-link"
           >
-            Abrir validador
+            {t('documentSignaturesDrawer.abrirValidador')}
           </Link>
         ) : null}
       </div>
@@ -189,6 +196,8 @@ function SignatureRequestCard({
 }
 
 export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignaturesDrawerProps) {
+  const { t } = useTranslation('signature');
+
   const queryClient = useQueryClient();
   const { tenant, user } = useAuth();
   const confirm = useConfirm();
@@ -237,7 +246,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao baixar PDF assinado.');
+      setError(err instanceof Error ? err.message : t('shared.downloadSignedFailed'));
     } finally {
       setDownloadingSigned(null);
     }
@@ -251,18 +260,21 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       const url = URL.createObjectURL(blob);
       const anchor = window.document.createElement('a');
       anchor.href = url;
-      anchor.download = `evidencias-${signatureRequestId}.json`;
+      anchor.download = t('documentSignaturesDrawer.evidenceFileName', { id: signatureRequestId });
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao baixar evidências.');
+      setError(
+        err instanceof Error ? err.message : t('documentSignaturesDrawer.downloadEvidenceFailed'),
+      );
     } finally {
       setDownloadingEvidence(null);
     }
   };
 
   const handleRevoke = async (entry: DocumentSignatureRequestEntry) => {
-    const signerName = entry.signers[0]?.name ?? 'signatário';
+    // Sem nome, a confirmação usa a própria frase de signatário sem nome.
+    const signerName = entry.signers[0]?.name ?? '';
     const confirmed = await confirm(buildRevokeSignatureRequestConfirm(signerName));
     if (!confirmed) return;
 
@@ -270,7 +282,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
     setError(null);
     try {
       await cancelDocumentSignatureRequest(document.documentId, entry.signatureRequestId);
-      toast.success('Solicitação de assinatura revogada.');
+      toast.success(t('documentSignaturesDrawer.revoked'));
       await refetch();
       await invalidateSignatureQueries(queryClient, tenant?.tenantId ?? user?.companyId);
     } catch (err) {
@@ -280,12 +292,12 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
           err.code === 'SIGNATURE_REQUEST_NOT_CANCELLABLE' ||
           err.message.toLowerCase().includes('not found'))
       ) {
-        toast.message('Esta solicitação já não está mais disponível. Atualizando lista…');
+        toast.message(t('documentSignaturesDrawer.alreadyGone'));
         await refetch();
         await invalidateSignatureQueries(queryClient, tenant?.tenantId ?? user?.companyId);
         return;
       }
-      setError(err instanceof Error ? err.message : 'Falha ao revogar solicitação.');
+      setError(err instanceof Error ? err.message : t('documentSignaturesDrawer.revokeFailed'));
     } finally {
       setRevokingId(null);
     }
@@ -293,12 +305,12 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
 
   return (
     <WorkspaceSideDrawer
-      title="Assinaturas do documento"
+      title={t('documentSignaturesDrawer.assinaturasDoDocumento')}
       onClose={onClose}
       testId="document-signatures-drawer"
       overlayTestId="document-signatures-drawer-overlay"
       closeTestId="document-signatures-drawer-close"
-      closeAriaLabel="Fechar painel de assinaturas"
+      closeAriaLabel={t('documentSignaturesDrawer.closeAria')}
       zIndexClass="z-[90]"
       bodyClassName="py-4"
     >
@@ -313,14 +325,18 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
         ) : null}
       </div>
 
-      {isLoading ? <p className="text-caption text-doqyn-muted">Carregando assinaturas…</p> : null}
+      {isLoading ? (
+        <p className="text-caption text-doqyn-muted">
+          {t('documentSignaturesDrawer.carregandoAssinaturas')}
+        </p>
+      ) : null}
       {isError ? (
         <div className="space-y-2">
           <p className="text-caption text-doqyn-danger">
-            Não foi possível carregar as assinaturas.
+            {t('documentSignaturesDrawer.naoFoiPossivelCarregar')}
           </p>
           <Button type="button" size="sm" variant="secondary" onClick={() => void refetch()}>
-            Tentar novamente
+            {t('documentSignaturesDrawer.tentarNovamente')}
           </Button>
         </div>
       ) : null}
@@ -344,7 +360,7 @@ export function DocumentSignaturesDrawer({ document, onClose }: DocumentSignatur
       </div>
 
       {!isLoading && !isError && data?.items.length === 0 ? (
-        <EmptyHint bare>Nenhuma assinatura solicitada.</EmptyHint>
+        <EmptyHint bare>{t('documentSignaturesDrawer.nenhumaAssinaturaSolicitada')}</EmptyHint>
       ) : null}
     </WorkspaceSideDrawer>
   );

@@ -45,7 +45,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.external_share_revoked',
-          description: 'Compartilhamento externo revogado.',
           documentId,
           versionId: result.currentVersionId,
           metadata: sanitizeAuditMetadata({

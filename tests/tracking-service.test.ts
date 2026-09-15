@@ -13,6 +13,7 @@ import { sanitizeAuditMetadata } from '../server/utils/sanitizeAuditMetadata.js'
 import { ServiceError } from '../server/utils/serviceErrors.js';
 import { emitClientTrackingEvent } from '../server/services/tracking/trackingService.js';
 import type { DocumentAuditContext } from '../server/audit/documentAuditTypes.js';
+import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 const auditCtx: DocumentAuditContext = {
   tenantId: 'tenant_test',
@@ -111,6 +112,7 @@ describe('tracking display helpers', () => {
   });
 
   it('formatTrackingStatus traduz status', async () => {
+    initI18nForTests();
     const { formatTrackingStatus } =
       await import('../src/features/tracking/utils/trackingDisplay.ts');
     assert.equal(formatTrackingStatus('denied'), 'Negado');

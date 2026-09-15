@@ -1,0 +1,115 @@
+{
+  "categoryQuickPicker": {
+    "carregandoCategorias": "Carregando categorias…",
+    "categorias": "Categorias",
+    "filtrarCategorias": "Filtrar categorias",
+    "filtrarCategorias2": "Filtrar categorias",
+    "nenhumaCategoriaComEsse": "Nenhuma categoria com esse nome.",
+    "nenhumaCategoriaConfiguradaCrie": "Nenhuma categoria configurada. Crie uma em Regras antes de classificar à mão."
+  },
+  "quickFieldsEditor": {
+    "camposDoDocumento": "Campos do documento",
+    "carregandoCamposDaCategoria": "Carregando campos da categoria…",
+    "empty": "—",
+    "estaCategoriaNaoTem": "Esta categoria não tem campos configurados. O documento salva assim mesmo.",
+    "fill": "Preencher",
+    "missingRequired_one": "{{count}} obrigatório em branco",
+    "missingRequired_other": "{{count}} obrigatórios em branco",
+    "oQueVoceDigitar": "O que você digitar entra como preenchimento manual\n        na auditoria.",
+    "valorExtraidoPelaIa": "Valor extraído pela IA"
+  },
+  "reviewDrawer": {
+    "aCategoriaFinalSeguira": ". A categoria final seguirá a análise da IA.",
+    "aIaClassificouComo": "A IA classificou como:",
+    "aIaSugeriu": "A IA sugeriu",
+    "aguardandoRevisao": "aguardando revisão",
+    "categoria": "Categoria",
+    "changeCategory": "Trocar",
+    "closePicker": "Fechar",
+    "confiancaDaClassificacao": "Confiança da classificação",
+    "confirmSave": "Revisei os dados extraídos e confirmo o salvamento deste documento.",
+    "confirmSaveButton": "Confirmar e salvar",
+    "confirmSubmit": "Revisei os dados extraídos e confirmo o envio para aprovação deste documento.",
+    "deixarParaDepois": "Deixar para depois",
+    "fecharRevisao": "Fechar revisão",
+    "masVoceEstaEnviando": ", mas você está enviando para",
+    "nomeFinal": "Nome final",
+    "pastaAtual": "Pasta atual:",
+    "preferenciasDeUpload": "Preferências de upload",
+    "preferenciasDeUpload2": "Preferências de upload",
+    "submitForApprovalButton": "Enviar para aprovação",
+    "tipoDeDocumento": "Tipo de documento",
+    "umAdministradorRevisaraOs": "Um administrador revisará os metadados na Auditoria antes de publicar na\n            Biblioteca.",
+    "title": {
+      "requiresReview": "Revisão necessária",
+      "confirm": "Confirmar análise"
+    },
+    "category": {
+      "fromRequest": "Definida pelo pedido",
+      "unclassified": "A IA não conseguiu classificar"
+    },
+    "categoryHint": {
+      "fromRequest": "Escolhida por quem pediu o documento. Não é possível alterar aqui.",
+      "manual": "Escolhida por você. A IA fica registrada na auditoria.",
+      "ai": "Sugerida pela análise automática.",
+      "pick": "Escolha a categoria para salvar este documento."
+    }
+  },
+  "uploadDropOverlay": {
+    "aIaAnalisaraClassificara": "A IA analisará, classificará e preparará o documento para revisão antes de salvá-lo na\n            Biblioteca.",
+    "solteParaEnviarAo": "Solte para enviar ao DOQYN"
+  },
+  "uploadQueueDrawer": {
+    "autoAcceptIn": "Automático em {{seconds}}s",
+    "collapseQueue": "Recolher fila",
+    "expandQueue": "Expandir fila",
+    "filaDeUpload": "Fila de upload",
+    "itemProgress": "Progresso de {{fileName}}",
+    "limpar": "Limpar",
+    "pausar": "Pausar",
+    "preferenciasDeUpload": "Preferências de upload",
+    "preferenciasDeUpload2": "Preferências de upload",
+    "processedOf": "{{done}}/{{total}} processados",
+    "removerDaFila": "Remover da fila",
+    "revisar": "Revisar",
+    "tentarNovamente": "Tentar novamente",
+    "status": {
+      "queued": "Na fila",
+      "analyzing": "Analisando com IA…",
+      "review": "Aguardando revisão",
+      "confirming": "Salvando na Biblioteca…",
+      "awaitingApproval": "Aguardando aprovação do admin",
+      "aiPaused": "IA indisponível. Tente novamente",
+      "stillRunning": "Análise em andamento no servidor",
+      "done": "Salvo na Biblioteca",
+      "error": "Erro"
+    },
+    "savedIn": "Salvo em {{category}} · {{size}}",
+    "savedLibrary": "Salvo na Biblioteca · {{size}}",
+    "sentForApproval": "Enviado para aprovação · {{size}}",
+    "autoSaving": "Salvando automaticamente em {{seconds}}s · {{size}}",
+    "withSize": "{{label}} · {{size}}",
+    "headline": {
+      "review_one": "{{count}} arquivo aguardando revisão",
+      "review_other": "{{count}} arquivos aguardando revisão",
+      "processing_one": "{{count}} arquivo em processamento",
+      "processing_other": "{{count}} arquivos em processamento",
+      "savedAndApproval": "{{saved}} salvos · {{approval}} aguardando aprovação",
+      "processed_one": "{{count}} documento processado",
+      "processed_other": "{{count}} documentos processados",
+      "errors_one": "{{count}} upload com erro",
+      "errors_other": "{{count}} uploads com erro"
+    }
+  },
+  "provider": {
+    "savedIn": "Salvo em {{category}}.",
+    "openFolder": "Abrir pasta",
+    "invalidName": "Informe um nome válido para o arquivo.",
+    "sentForApproval": "\"{{name}}\" enviado para aprovação. Um administrador revisará na Auditoria.",
+    "saveFailed": "Não foi possível salvar o documento.",
+    "fileUnavailable": "Arquivo indisponível. Tente novamente.",
+    "reviewReady": "Análise concluída. Revise e confirme para salvar na Biblioteca.",
+    "analyzeFailed": "Erro ao analisar o documento."
+  },
+  "policySaveFailed": "Não foi possível salvar a política."
+}

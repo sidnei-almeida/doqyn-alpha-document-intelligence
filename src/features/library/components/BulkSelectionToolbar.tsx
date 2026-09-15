@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import type { DocumentListItem } from '@/types/document-library';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 type BulkSelectionToolbarProps = {
   selectedCount: number;
@@ -36,6 +37,8 @@ export function BulkSelectionToolbar({
   onRestore,
   onReactivate,
 }: BulkSelectionToolbarProps) {
+  const { t } = useTranslation('library');
+
   if (selectedCount === 0) return null;
 
   const selectedDocs = documents.filter((doc) => selectedFileIds.has(doc.documentId));
@@ -53,21 +56,21 @@ export function BulkSelectionToolbar({
   const canTrashAny = selectedDocs.some((doc) => doc.permissions?.canUpdate !== false);
   const deleteDisabled = hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny;
   const deleteTooltip = hasFolderSelection
-    ? 'Pastas e categorias não podem ser excluídas. Selecione apenas documentos.'
+    ? t('bulkSelectionToolbar.tooltip.foldersCantDelete')
     : !canTrashAny
-      ? 'Você não tem permissão para excluir os documentos selecionados.'
+      ? t('bulkSelectionToolbar.tooltip.noDeletePermission')
       : undefined;
   const archiveView = isTrashView || isDeactivatedView;
   const moveDisabled =
     hasFolderSelection || selectedDocumentIds.length === 0 || !canTrashAny || archiveView;
   const moveTooltip = hasFolderSelection
-    ? 'Selecione apenas documentos para mover.'
+    ? t('bulkSelectionToolbar.tooltip.onlyDocumentsMove')
     : isTrashView
-      ? 'Documentos na lixeira não podem ser movidos.'
+      ? t('bulkSelectionToolbar.tooltip.trashCantMove')
       : isDeactivatedView
-        ? 'Documentos desativados não podem ser movidos.'
+        ? t('bulkSelectionToolbar.tooltip.deactivatedCantMove')
         : !canTrashAny
-          ? 'Você não tem permissão para mover os documentos selecionados.'
+          ? t('bulkSelectionToolbar.tooltip.noMovePermission')
           : undefined;
 
   return (
@@ -77,9 +80,9 @@ export function BulkSelectionToolbar({
     >
       <div className="flex items-center gap-2.5">
         <span className="font-mono text-micro uppercase tracking-[0.14em] text-doqyn-accent-active">
-          {selectedCount} {selectedCount === 1 ? 'selecionado' : 'selecionados'}
+          {t('bulkSelectionToolbar.selected', { count: selectedCount })}
         </span>
-        <IconButton label="Limpar seleção" onClick={onClear}>
+        <IconButton label={t('bulkSelectionToolbar.limparSelecao')} onClick={onClear}>
           <Icon name="close" size={ICON_SIZE.xs} />
         </IconButton>
       </div>
@@ -95,7 +98,8 @@ export function BulkSelectionToolbar({
               onClick={() => singleFile && onPreview?.(singleFile)}
             >
               <Icon name="visibility" size={ICON_SIZE.sm} />
-              Visualizar
+
+              {t('bulkSelectionToolbar.visualizar')}
             </Button>
             <Button
               type="button"
@@ -105,7 +109,8 @@ export function BulkSelectionToolbar({
               onClick={() => onDownload(selectedDocs)}
             >
               <Icon name="download" size={ICON_SIZE.sm} />
-              Baixar
+
+              {t('bulkSelectionToolbar.baixar')}
             </Button>
             <Button
               type="button"
@@ -116,7 +121,8 @@ export function BulkSelectionToolbar({
               onClick={() => onMove?.()}
             >
               <Icon name="drive_file_move" size={ICON_SIZE.sm} />
-              Mover
+
+              {t('bulkSelectionToolbar.mover')}
             </Button>
           </>
         )}
@@ -130,7 +136,8 @@ export function BulkSelectionToolbar({
             onClick={() => onRestore?.(selectedDocumentIds)}
           >
             <Icon name="restore_from_trash" size={ICON_SIZE.sm} />
-            Restaurar
+
+            {t('bulkSelectionToolbar.restaurar')}
           </Button>
         ) : isDeactivatedView ? (
           <Button
@@ -141,7 +148,8 @@ export function BulkSelectionToolbar({
             onClick={() => onReactivate?.(selectedDocumentIds)}
           >
             <Icon name="replay" size={ICON_SIZE.sm} />
-            Recuperar
+
+            {t('bulkSelectionToolbar.recuperar')}
           </Button>
         ) : (
           <Button
@@ -154,7 +162,8 @@ export function BulkSelectionToolbar({
             onClick={() => onTrash?.(selectedDocumentIds)}
           >
             <Icon name="delete" size={ICON_SIZE.sm} />
-            Excluir
+
+            {t('bulkSelectionToolbar.excluir')}
           </Button>
         )}
       </div>

@@ -1,0 +1,74 @@
+{
+  "notice": "This text is a preliminary version for the development environment and must undergo legal review before being used in production.",
+  "section": {
+    "about": {
+      "title": "1. About DOQYN",
+      "p1": "DOQYN is a document intelligence platform for companies and individual users, with features for organizing, analyzing, governing and auditing documents.",
+      "p2": "By using DOQYN, you agree to these Terms and Conditions of Use in the version in force at the time of registration or of the access request."
+    },
+    "eligibility": {
+      "title": "2. Eligibility and user responsibility",
+      "p1": "You declare that you have the legal capacity to accept these terms and to provide true, complete and up-to-date information.",
+      "p2": "It is your responsibility to keep your contact details correct and to protect your access credentials."
+    },
+    "company-access": {
+      "title": "3. Company registration and access requests",
+      "p1": "Companies may be registered by authorized administrators. Users requesting access to an existing company depend on administrative approval.",
+      "p2": "Incorrect or incomplete information may delay or prevent access from being granted."
+    },
+    "individual": {
+      "title": "4. Individual use",
+      "p1": "Individual users may create individual access to manage personal documents in accordance with the platform's rules.",
+      "p2": "Use must respect the applicable law and the permissions granted within the workspace."
+    },
+    "documents": {
+      "title": "5. Uploading, analyzing and storing documents",
+      "p1": "Documents uploaded to the platform may be processed, classified, versioned and made available according to the permissions defined for your account or organization.",
+      "p2": "You are responsible for the content you upload and for the authorization to process it on the platform."
+    },
+    "ai": {
+      "title": "6. Use of artificial intelligence features",
+      "p1": "DOQYN may use automated and artificial intelligence features to support the analysis, classification and extraction of document information.",
+      "p2": "Automated results should be reviewed where necessary. They do not replace specialized human analysis in every case."
+    },
+    "governance": {
+      "title": "7. Permissions, groups and document governance",
+      "p1": "Access to documents, groups and features is controlled by roles, permissions and policies defined by the organization's administrators.",
+      "p2": "Access changes may be audited for operational and compliance purposes."
+    },
+    "responsibility": {
+      "title": "8. Responsibility for uploaded documents",
+      "p1": "You warrant that you have the right or the authorization to upload, share and process the documents made available in DOQYN.",
+      "p2": "Using the platform for unlawful or fraudulent content, or content that infringes third-party rights, is prohibited."
+    },
+    "security": {
+      "title": "9. Account security",
+      "p1": "Keep your password confidential and notify the organization or support if you suspect misuse.",
+      "p2": "Security measures are adopted proportionately, with no guarantee of absolute protection against every risk."
+    },
+    "limitations": {
+      "title": "10. Limitations on use",
+      "p1": "It is forbidden to attempt to bypass access controls, exploit vulnerabilities, overload the platform, or use it outside its intended purposes.",
+      "p2": "DOQYN may impose reasonable operational limits to preserve stability and security."
+    },
+    "suspension": {
+      "title": "11. Suspension or blocking of access",
+      "p1": "Access may be suspended or blocked in the event of a breach of these terms, a security risk, a legal requirement, or an administrative decision by the organization.",
+      "p2": "Relevant records may be retained for auditing in accordance with the applicable policy."
+    },
+    "audit": {
+      "title": "12. Auditing and operational records",
+      "p1": "Relevant events involving registration, access requests, approvals, changes and critical operations may be recorded for traceability.",
+      "p2": "These records are intended to support governance, support and operational compliance."
+    },
+    "changes": {
+      "title": "13. Changes to the terms",
+      "p1": "These terms may be updated. When a new version is issued, acceptance may be requested again during registration, access or use of the platform.",
+      "p2": "The version accepted and the date of acceptance may be recorded for auditing purposes."
+    },
+    "contact": {
+      "title": "14. Contact",
+      "p1": "For questions about these terms or about using the platform, use the official support or contact channels provided by your organization or by DOQYN."
+    }
+  }
+}

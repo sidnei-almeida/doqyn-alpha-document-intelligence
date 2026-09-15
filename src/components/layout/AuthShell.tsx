@@ -4,6 +4,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { AuthBrandLogo } from '@/components/brand/AuthBrandLogo';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const WIDTH_CLASS = {
   sm: 'max-w-[400px]',
@@ -45,6 +46,8 @@ export function AuthShell({
   showSecureBadge = false,
   className,
 }: AuthShellProps) {
+  const { t } = useTranslation('components');
+
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-doqyn-bg px-4 py-10">
       <div className="absolute right-4 top-4 z-10">
@@ -78,7 +81,8 @@ export function AuthShell({
         {showSecureBadge ? (
           <p className="mt-5 flex items-center justify-center gap-1.5 text-micro text-doqyn-subtle">
             <Icon name="shield" size={ICON_SIZE.xs} />
-            Ambiente corporativo seguro
+
+            {t('authShell.ambienteCorporativoSeguro')}
           </p>
         ) : null}
 

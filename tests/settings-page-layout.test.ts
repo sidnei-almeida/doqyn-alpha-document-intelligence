@@ -19,7 +19,7 @@ describe('SettingsPage layout', () => {
     assert.ok(page.includes('PageShell'));
     assert.ok(page.includes('SettingsLayout'));
     assert.ok(page.includes('settings-page'));
-    assert.ok(page.includes('SETTINGS_UI_PATTERN.pageEyebrow'));
+    assert.ok(page.includes("settingsPage.eyebrow'"));
     assert.ok(page.includes('meta.label'));
     assert.ok(layout.includes('settings-shell'));
     assert.ok(layout.includes('settings-content-panel'));
@@ -63,7 +63,7 @@ describe('SettingsPage layout', () => {
     assert.ok(sections.includes("scope: 'organization'"));
     assert.ok(nav.includes('SETTINGS_NAV_ITEMS') || nav.includes('items'));
 
-    const ids = [...sections.matchAll(/id: '([a-z-]+)',\n\s+label:/g)].map((m) => m[1]);
+    const ids = [...sections.matchAll(/id: '([a-z-]+)',\n\s+labelKey:/g)].map((m) => m[1]);
     assert.deepEqual(ids, ['conta', 'organizacao']);
   });
 

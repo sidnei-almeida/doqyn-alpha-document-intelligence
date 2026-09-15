@@ -1,9 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import { useTheme } from '@/contexts/useTheme';
 import { TOAST_DURATIONS } from '@/shared/feedback/appFeedback';
 
 export function AppToaster() {
   const { theme } = useTheme();
+  // O rótulo da região vem do sonner em inglês ("Notifications alt+T") e o portão não o vê: não
+  // é texto nosso, é padrão da biblioteca. `common` porque o toaster monta antes de qualquer feature.
+  const { t } = useTranslation('common');
 
   // O sonner só conhece claro e escuro. O `standard` mistura os dois, e o toast
   // vive fora das duas camadas (portal no body, superfície inverse nos dois
@@ -13,6 +17,7 @@ export function AppToaster() {
   return (
     <Toaster
       theme={toasterTheme}
+      containerAriaLabel={t('toaster.region')}
       position="bottom-center"
       offset={20}
       // Teto para quem chama `toast.*` do sonner direto, sem passar por `showAppToast`: o padrão

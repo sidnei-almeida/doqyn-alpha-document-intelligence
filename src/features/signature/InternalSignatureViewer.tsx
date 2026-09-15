@@ -10,6 +10,7 @@ import type { DocumentPreviewManifest } from '@/types/preview-manifest';
 import type { InternalSignatureSigningPayload } from '@/features/signature/api/signatureApi';
 import { fetchInternalSignaturePreviewAssetBlob } from '@/features/signature/api/signatureApi';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type InternalSignatureViewerProps = {
   manifest: DocumentPreviewManifest;
@@ -22,6 +23,8 @@ export function InternalSignatureViewer({
   payload,
   className,
 }: InternalSignatureViewerProps) {
+  const { t } = useTranslation('signature');
+
   const viewerActionsRef = useRef<ViewerActions | null>(null);
   const [viewerToolbar, setViewerToolbar] = useState<ViewerToolbarState>({
     scale: 1,
@@ -36,7 +39,7 @@ export function InternalSignatureViewer({
   const isPdfViewer = manifest.viewerType === 'pdf_pages';
 
   const subtitleParts = [
-    payload.versionLabel ? `Versão ${payload.versionLabel}` : '',
+    payload.versionLabel ? t('shared.versionLabel', { version: payload.versionLabel }) : '',
     payload.issuerName,
   ].filter(Boolean);
 
@@ -50,7 +53,10 @@ export function InternalSignatureViewer({
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0
-      ? `Página ${viewerToolbar.currentPage} de ${viewerToolbar.totalPages}`
+      ? t('shared.pageOf', {
+          current: viewerToolbar.currentPage,
+          total: viewerToolbar.totalPages,
+        })
       : undefined;
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {
@@ -86,7 +92,7 @@ export function InternalSignatureViewer({
           data-testid="internal-signature-preview-viewer"
         >
           <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
-            Visualização protegida para assinatura interna.
+            {t('internalSignatureViewer.visualizacaoProtegidaParaAssinatura')}
           </p>
           <ViewerComponent
             manifest={manifest}

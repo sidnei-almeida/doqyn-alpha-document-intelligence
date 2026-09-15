@@ -2,7 +2,7 @@ import type { Collection } from 'mongodb';
 import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoDocument, MongoDocumentVersion } from '../db/types.js';
-import { DOCUMENT_AUDIT_ACTION_LABELS } from '../audit/documentAuditTypes.js';
+import { renderAuditText, SERVER_DEFAULT_LOCALE } from '../i18n/index.js';
 import { isDocumentAdmin, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import { listGovernanceViewableCategoryIds } from '../tenancy/governanceAccessIndex.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
@@ -600,7 +600,7 @@ export async function getDashboardOverview(input: {
     .map((event) => ({
       id: event.id,
       action: event.action,
-      label: DOCUMENT_AUDIT_ACTION_LABELS[event.action] ?? event.description,
+      label: renderAuditText(SERVER_DEFAULT_LOCALE, event.action, 'label') ?? event.description,
       documentId: event.documentId,
       documentName:
         typeof event.metadata?.documentName === 'string' ? event.metadata.documentName : undefined,

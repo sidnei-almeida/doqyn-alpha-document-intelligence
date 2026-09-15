@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { getInitials } from '@/utils/rulesHelpers';
+import { useTranslation } from 'react-i18next';
 
 export type UserAvatarSize = 'sm' | 'md' | 'lg';
 
@@ -21,8 +22,9 @@ type UserAvatarProps = {
 };
 
 export function UserAvatar({ name, email, avatarUrl, size = 'md', className }: UserAvatarProps) {
+  const { t } = useTranslation('components');
   const [failed, setFailed] = useState(false);
-  const displayName = name?.trim() || email?.trim() || 'Usuário';
+  const displayName = name?.trim() || email?.trim() || t('userFallback');
   const initials = useMemo(() => getInitials(displayName), [displayName]);
   const showImage = Boolean(avatarUrl) && !failed;
 

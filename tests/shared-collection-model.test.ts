@@ -223,8 +223,7 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
       tenantId: 'company_x',
       tenantType: 'business',
     });
-    assert.deepEqual(buildDocumentOwnershipFilter(ctx), {
-      $or: [{ tenantId: 'company_x' }, { companyId: 'company_x' }],
-    });
+    // Só `tenantId`: um `$or` no escopo era apagado por qualquer busca que gravasse o próprio `$or`.
+    assert.deepEqual(buildDocumentOwnershipFilter(ctx), { tenantId: 'company_x' });
   });
 });

@@ -156,6 +156,11 @@ export type EmailLayoutInput = {
   blocks: string[];
   /** Última linha, em cinza miúdo: por que a pessoa recebeu isto, e o que ignorar significa. */
   footNote: string;
+  /**
+   * Idioma do texto, para o `lang` do documento. Leitor de tela e tradutor automático do cliente
+   * de e-mail decidem a pronúncia e a oferta de tradução por ele.
+   */
+  lang?: string;
 };
 
 export function renderEmailLayout(input: EmailLayoutInput): string {
@@ -171,7 +176,7 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
     .join('');
 
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="${escapeHtml(input.lang ?? 'pt-BR')}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

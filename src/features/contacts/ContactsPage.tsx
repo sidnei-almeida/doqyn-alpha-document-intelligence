@@ -19,6 +19,7 @@ import { RequestDocumentModal } from '@/features/requests/components/RequestDocu
 import type { FrequentContact } from '@/features/directory/api/frequentContactsApi';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
 import { SkeletonList } from '@/components/ui/SkeletonList';
+import { useTranslation } from 'react-i18next';
 
 /** Um recorte da grade — "da sua empresa" e "de outras" são regras diferentes, não filtros. */
 function ContactSection({
@@ -66,6 +67,8 @@ function ContactSection({
  * que achá-la de novo é a metade que faria a ação não valer a pena.
  */
 export function ContactsPage() {
+  const { t } = useTranslation('contacts');
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const contacts = useFrequentContacts('all', { limit: 100 });
@@ -126,12 +129,12 @@ export function ContactsPage() {
   const createMutation = useMutation({
     mutationFn: createDocumentRequest,
     onSuccess: () => {
-      toast.success('Pedido enviado.');
+      toast.success(t('contactsPage.pedidoEnviado'));
       closeAll();
       void queryClient.invalidateQueries({ queryKey: ['document-requests'] });
       void queryClient.invalidateQueries({ queryKey: ['frequent-contacts'] });
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível enviar o pedido.'),
+    onError: (error) => showApiErrorToast(error, t('contactsPage.erroPedido')),
   });
 
   // `?? []` cria um array novo a cada render, e um `useMemo` que depende dele nunca reaproveita
@@ -143,40 +146,38 @@ export function ContactsPage() {
   return (
     <div className="space-y-5">
       <header>
-        <p className="register-label text-doqyn-subtle">BIBLIOTECA</p>
-        <h1 className="type-display text-doqyn-text">Contatos</h1>
-        <p className="type-body text-doqyn-muted">
-          Com quem você troca documento, do mais acionado para o menos.
-        </p>
+        <p className="register-label text-doqyn-subtle">{t('common:nav.biblioteca')}</p>
+        <h1 className="type-display text-doqyn-text">{t('contactsPage.contatos')}</h1>
+        <p className="type-body text-doqyn-muted">{t('contactsPage.comQuemVoceTroca')}</p>
       </header>
 
       <AddContactField />
 
       {contacts.isLoading ? (
-        <SkeletonList rows={5} media twoLines label="Carregando contatos" />
+        <SkeletonList rows={5} media twoLines label={t('contactsPage.carregandoContatos')} />
       ) : todos.length === 0 ? (
         // O aviso de vazio do app é sem moldura: `EmptyState` nasceu para tirar exatamente a
         // caixa preenchida de canto arredondado que eu tinha escrito aqui.
         <EmptyState
-          title="Nenhum contato ainda"
-          description="A lista cresce sozinha conforme você compartilha, pede assinatura e requisita documentos. Para adiantar, salve alguém pelo nome de usuário no campo acima."
+          title={t('contactsPage.nenhumContatoAinda')}
+          description={t('contactsPage.aListaCresceSozinha')}
           action={
-            <Button type="button" size="sm" onClick={() => navigate('/biblioteca')}>
-              Ir para a Biblioteca
+            <Button type="button" size="sm" onClick={() => navigate('/library')}>
+              {t('contactsPage.irParaABiblioteca')}
             </Button>
           }
         />
       ) : (
         <>
           <ContactSection
-            title="Da sua empresa"
-            hint="Compartilhar com essas pessoas vale na hora, sem aceite."
+            title={t('contactsPage.daSuaEmpresa')}
+            hint={t('contactsPage.hintInterno')}
             contacts={internos}
             onAction={handleAction}
           />
           <ContactSection
-            title="De fora daqui"
-            hint="O documento continua no acervo de quem envia, e o acesso depende de aceite."
+            title={t('contactsPage.deForaDaqui')}
+            hint={t('contactsPage.hintExterno')}
             contacts={externos}
             onAction={handleAction}
           />

@@ -98,7 +98,7 @@ describe('nomenclatura inteligente de documentos', () => {
       version: 'v1',
     });
 
-    assert.match(result, /Paulao_Comercio/i);
+    assert.match(result, /Paulão_Comércio/i);
     assert.match(result, /Cliente_Beta/i);
     assert.match(result, /_e_/i);
   });

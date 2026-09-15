@@ -19,11 +19,14 @@ import { canConfirmDocumentMetadata } from '@/lib/documentAdminAccess';
 import { useUploadQueueContext } from '../uploadQueueContext';
 import { CategoryQuickPicker } from './CategoryQuickPicker';
 import { QuickFieldsEditor } from './QuickFieldsEditor';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Revisão pós-análise RAG na fila da Biblioteca — respeita preferências de nomeação e confirmação.
  */
 export function ReviewDrawer() {
+  const { t } = useTranslation('upload');
+
   const { items, reviewItemId, reviewSettings, closeReview, confirmReview, setItemNamingChoice } =
     useUploadQueueContext();
   const { hasAnyRole } = useAuth();
@@ -141,10 +144,10 @@ export function ReviewDrawer() {
     <WorkspaceSideDrawer
       title={
         requiresReview
-          ? 'Revisão necessária'
+          ? t('reviewDrawer.title.requiresReview')
           : isDocumentAdmin
-            ? 'Confirmar análise'
-            : 'Enviar para aprovação'
+            ? t('reviewDrawer.title.confirm')
+            : t('reviewDrawer.submitForApprovalButton')
       }
       onClose={closeReview}
       testId="upload-review-drawer"
@@ -156,26 +159,27 @@ export function ReviewDrawer() {
           <div className="min-w-0 flex-1">
             <p className="text-eyebrow uppercase text-doqyn-primary">
               {requiresReview
-                ? 'Revisão necessária'
+                ? t('reviewDrawer.title.requiresReview')
                 : isDocumentAdmin
-                  ? 'Confirmar análise'
-                  : 'Enviar para aprovação'}
+                  ? t('reviewDrawer.title.confirm')
+                  : t('reviewDrawer.submitForApprovalButton')}
             </p>
             <TruncatedText as="h2" className="mt-0.5 text-body font-semibold text-doqyn-text">
               {item.fileName}
             </TruncatedText>
             {queuePosition && queuePosition.total > 1 && (
               <p className="mt-1 text-micro text-doqyn-muted">
-                {queuePosition.current} de {queuePosition.total} aguardando revisão
+                {queuePosition.current} de {queuePosition.total}{' '}
+                {t('reviewDrawer.aguardandoRevisao')}
               </p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <Tooltip label="Preferências de upload">
+            <Tooltip label={t('reviewDrawer.preferenciasDeUpload')}>
               <Link
                 to="/settings?section=upload-ia"
                 className="explorer-icon-btn shrink-0"
-                aria-label="Preferências de upload"
+                aria-label={t('reviewDrawer.preferenciasDeUpload2')}
                 onClick={closeReview}
               >
                 <Icon name="settings" size={ICON_SIZE.sm} />
@@ -185,7 +189,7 @@ export function ReviewDrawer() {
               type="button"
               onClick={closeReview}
               className="explorer-icon-btn shrink-0"
-              aria-label="Fechar revisão"
+              aria-label={t('reviewDrawer.fecharRevisao')}
               data-testid="upload-review-drawer-close"
             >
               <Icon name="close" size={ICON_SIZE.sm} />
@@ -207,21 +211,23 @@ export function ReviewDrawer() {
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-eyebrow uppercase text-doqyn-muted">Categoria</p>
+              <p className="text-eyebrow uppercase text-doqyn-muted">
+                {t('reviewDrawer.categoria')}
+              </p>
               <p className="mt-0.5 text-body font-medium text-doqyn-text">
                 {fulfillsRequest
-                  ? (item.context?.categoryName ?? 'Definida pelo pedido')
+                  ? (item.context?.categoryName ?? t('reviewDrawer.category.fromRequest'))
                   : (manualCategory?.name ??
-                    (aiClassId ? aiClassName : 'A IA não conseguiu classificar'))}
+                    (aiClassId ? aiClassName : t('reviewDrawer.category.unclassified')))}
               </p>
               <p className="mt-0.5 text-micro text-doqyn-muted">
                 {fulfillsRequest
-                  ? 'Escolhida por quem pediu o documento. Não é possível alterar aqui.'
+                  ? t('reviewDrawer.categoryHint.fromRequest')
                   : manualCategory
-                    ? 'Escolhida por você. A IA fica registrada na auditoria.'
+                    ? t('reviewDrawer.categoryHint.manual')
                     : aiClassId
-                      ? 'Sugerida pela análise automática.'
-                      : 'Escolha a categoria para salvar este documento.'}
+                      ? t('reviewDrawer.categoryHint.ai')
+                      : t('reviewDrawer.categoryHint.pick')}
               </p>
             </div>
 
@@ -231,7 +237,7 @@ export function ReviewDrawer() {
                 onClick={() => setShowCategoryPicker((current) => !current)}
                 className="shrink-0 rounded-[4px] px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
               >
-                {showCategoryPicker ? 'Fechar' : 'Trocar'}
+                {t(showCategoryPicker ? 'reviewDrawer.closePicker' : 'reviewDrawer.changeCategory')}
               </button>
             )}
           </div>
@@ -257,10 +263,10 @@ export function ReviewDrawer() {
               />
               <div className="min-w-0">
                 <p className="text-caption font-medium text-doqyn-text">
-                  Pasta atual: {uploadDestination}
+                  {t('reviewDrawer.pastaAtual')} {uploadDestination}
                 </p>
                 <p className="mt-0.5 text-micro text-doqyn-muted">
-                  A IA classificou como: {aiClassName}
+                  {t('reviewDrawer.aIaClassificouComo')} {aiClassName}
                 </p>
               </div>
             </div>
@@ -286,8 +292,9 @@ export function ReviewDrawer() {
               className="mt-0.5 shrink-0 text-doqyn-warning"
             />
             <p className="text-caption text-doqyn-warning">
-              A IA sugeriu <strong>{aiClassName}</strong>, mas você está enviando para{' '}
-              <strong>{uploadDestination}</strong>. A categoria final seguirá a análise da IA.
+              {t('reviewDrawer.aIaSugeriu')} <strong>{aiClassName}</strong>
+              {t('reviewDrawer.masVoceEstaEnviando')} <strong>{uploadDestination}</strong>
+              {t('reviewDrawer.aCategoriaFinalSeguira')}
             </p>
           </div>
         )}
@@ -321,15 +328,15 @@ export function ReviewDrawer() {
         <dl className="space-y-2">
           {!showNaming && (
             <ReviewField
-              label="Nome final"
+              label={t('reviewDrawer.nomeFinal')}
               value={finalPreview !== '—' ? finalPreview : metadata.suggestedName}
             />
           )}
-          <ReviewField label="Tipo de documento" value={metadata.documentType} />
+          <ReviewField label={t('reviewDrawer.tipoDeDocumento')} value={metadata.documentType} />
           {reviewSettings.aiClassificationEnabled && (
             <div>
               <dt className="text-eyebrow uppercase text-doqyn-subtle">
-                Confiança da classificação
+                {t('reviewDrawer.confiancaDaClassificacao')}
               </dt>
               <dd className="mt-1">
                 <ConfidenceBadge score={metadata.confidenceScore} />
@@ -353,18 +360,17 @@ export function ReviewDrawer() {
             onChange={(event) => setReviewChecked(event.target.checked)}
             className="mt-0.5"
           />
-          Revisei os dados extraídos e confirmo o{' '}
-          {isDocumentAdmin ? 'salvamento' : 'envio para aprovação'} deste documento.
+
+          {t(isDocumentAdmin ? 'reviewDrawer.confirmSave' : 'reviewDrawer.confirmSubmit')}
         </label>
         {!isDocumentAdmin && (
           <p className="mt-2 text-micro text-doqyn-muted">
-            Um administrador revisará os metadados na Auditoria antes de publicar na
-            Biblioteca.
+            {t('reviewDrawer.umAdministradorRevisaraOs')}
           </p>
         )}
         <div className="mt-3 flex justify-end gap-2">
           <Button type="button" variant="secondary" size="sm" onClick={closeReview}>
-            Deixar para depois
+            {t('reviewDrawer.deixarParaDepois')}
           </Button>
           <Button
             type="button"
@@ -375,7 +381,11 @@ export function ReviewDrawer() {
             {isConfirming && (
               <Icon name="progress_activity" size={ICON_SIZE.sm} className="animate-spin" />
             )}
-            {isDocumentAdmin ? 'Confirmar e salvar' : 'Enviar para aprovação'}
+            {t(
+              isDocumentAdmin
+                ? 'reviewDrawer.confirmSaveButton'
+                : 'reviewDrawer.submitForApprovalButton',
+            )}
           </Button>
         </div>
       </footer>

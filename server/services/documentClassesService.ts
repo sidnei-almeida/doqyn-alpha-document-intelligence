@@ -3,6 +3,7 @@ import type { MongoDocumentClass, MongoDocumentClassPermissions } from '../db/ty
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { classIdFromSlug, slugifyName } from '../utils/slugify.js';
+import { compareNames } from '../utils/textCollation.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
 import { withClassRuleFieldsFromContext } from '../tenancy/tenantQuery.js';
@@ -46,9 +47,11 @@ function serializeDocumentClass(docClass: MongoDocumentClass) {
 
 export async function listDocumentClasses(tenantId: string, opts?: ClassServiceOpts) {
   const { collections, scope } = await resolveClassContext(tenantId, opts);
-  const classes = await collections.documentCategories.find(scope).sort({ name: 1 }).toArray();
+  const classes = (await collections.documentCategories
+    .find(scope)
+    .toArray()) as MongoDocumentClass[];
 
-  return (classes as MongoDocumentClass[]).map(serializeDocumentClass);
+  return classes.sort((a, b) => compareNames(a.name, b.name)).map(serializeDocumentClass);
 }
 
 export async function createDocumentClass(

@@ -1,8 +1,21 @@
+/* eslint-disable i18next/no-literal-string --
+ * Este arquivo desenha o **conteúdo de um documento**, não a interface do app.
+ *
+ * A distinção é a mesma que o plano de i18n faz entre idioma da interface e idioma do
+ * documento: o DOQYN lê contratos, notas e habilitações na língua em que eles foram
+ * escritos, e a antessala mostra exatamente isso acontecendo. Traduzir o contrato simulado
+ * para o idioma da tela inverteria a premissa do produto — passaria a sugerir que ele só lê
+ * documentos na língua de quem está olhando.
+ *
+ * O que **é** interface aqui são os rótulos que o DOQYN extrai e assenta ao lado da página
+ * — esses passaram para o catálogo, com o resto da onda 6.2.
+ */
 import { useRef, useState } from 'react';
 import type { AnimationEvent } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { DoqynMark } from '@/components/brand/DoqynMark';
+import { useTranslation } from 'react-i18next';
 
 /**
  * O painel da antessala — o DOQYN lendo um documento atrás do outro.
@@ -39,14 +52,14 @@ import { DoqynMark } from '@/components/brand/DoqynMark';
  */
 
 /** Cada extração assenta no instante em que a varredura cruza a linha dela. */
-type Anno = { top: string; label: string; value: string; delay: number };
+type Anno = { top: string; labelKey: string; valueKey: string; delay: number };
 
 type DocumentSpec = {
   id: string;
-  eyebrow: string;
-  title: string;
+  eyebrowKey: string;
+  titleKey: string;
   /** O selo do pé: contrato termina assinado, desenho aprovado, tabela conferida. */
-  stamp: string;
+  stampKey: string;
   hash: string;
   body: React.ReactNode;
   annotations: Anno[];
@@ -56,27 +69,29 @@ type DocumentSpec = {
  *  de tarja cinza: é a cláusula que dá sentido ao fio da extração que sai dali.
  *  Larguras irregulares de propósito — bloco retangular perfeito lê como
  *  placeholder, não como texto. */
-type Block = { clause?: string; lines: number[] };
+type Block = { clauseKey?: string; lines: number[] };
 
 const CONTRACT_BLOCKS: Block[] = [
   { lines: [92, 88, 96, 64] },
-  { clause: 'Cláusula 1ª — Do objeto', lines: [94, 90, 96, 71] },
-  { clause: 'Cláusula 4ª — Da vigência', lines: [88, 96, 90, 62] },
-  { clause: 'Cláusula 7ª — Do preço e do pagamento', lines: [92, 86, 94, 68] },
-  { clause: 'Cláusula 9ª — Do foro', lines: [90, 54] },
+  { clauseKey: 'contract.clause1', lines: [94, 90, 96, 71] },
+  { clauseKey: 'contract.clause4', lines: [88, 96, 90, 62] },
+  { clauseKey: 'contract.clause7', lines: [92, 86, 94, 68] },
+  { clauseKey: 'contract.clause9', lines: [90, 54] },
 ];
 
 function ContractBody() {
+  const { t } = useTranslation('auth');
+
   return (
     <div className="mt-5 flex flex-1 flex-col gap-4" aria-hidden>
       {CONTRACT_BLOCKS.map((block, b) => (
         <div key={b} className="flex flex-col gap-[6px]">
-          {block.clause ? (
+          {block.clauseKey ? (
             <span
               className="auth-write mb-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-[#A4AEB4]"
               style={{ animationDelay: `${640 + b * 190}ms` }}
             >
-              {block.clause}
+              {t(`antechamberDocument.${block.clauseKey}`)}
             </span>
           ) : null}
           {block.lines.map((width, i) => (
@@ -118,6 +133,8 @@ function ContractBody() {
  * do parágrafo.
  */
 function DrawingBody() {
+  const { t } = useTranslation('auth');
+
   return (
     <div className="mt-5 flex flex-1 flex-col" aria-hidden>
       <svg
@@ -167,7 +184,7 @@ function DrawingBody() {
         <rect x="112" y="206" width="64" height="26" stroke="#D5DCE0" strokeWidth="1" />
         <path d="M112 218 H176 M144 218 V232" stroke="#E4E9EC" strokeWidth="0.9" />
         <text x="116" y="215" fontSize="6" fill="#A4AEB4" fontFamily="monospace">
-          PAV. TÉRREO
+          {t('antechamberDocument.pavTerreo')}
         </text>
       </svg>
     </div>
@@ -205,6 +222,8 @@ const TABLE_ROWS: Array<[number, number, number]> = [
 ];
 
 function TableBody() {
+  const { t } = useTranslation('auth');
+
   return (
     <div className="mt-5 flex flex-1 flex-col" aria-hidden>
       {/* cabeçalho */}
@@ -212,14 +231,14 @@ function TableBody() {
         className="auth-write flex items-end gap-3 border-b border-[#C9D1D6] pb-2"
         style={{ animationDelay: '640ms' }}
       >
-        {['Item', 'Qtd.', 'Valor'].map((head, i) => (
+        {['invoice.headItem', 'invoice.headQty', 'invoice.headValue'].map((head, i) => (
           <span
             key={head}
             className={`font-mono text-[7.5px] uppercase tracking-[0.12em] text-[#8B979E] ${
               i === 0 ? 'flex-1' : i === 1 ? 'w-9 text-right' : 'w-14 text-right'
             }`}
           >
-            {head}
+            {t(`antechamberDocument.${head}`)}
           </span>
         ))}
       </div>
@@ -255,7 +274,7 @@ function TableBody() {
         style={{ animationDelay: '2280ms' }}
       >
         <span className="font-mono text-[7.5px] uppercase tracking-[0.12em] text-[#8B979E]">
-          Total do período
+          {t('antechamberDocument.totalDoPeriodo')}
         </span>
         <span className="font-mono text-[10px] text-[#14181B]">1.284.900,00</span>
       </div>
@@ -277,26 +296,28 @@ const BARCODE = [
 ];
 
 const INVOICE_ROWS: Array<[string, number]> = [
-  ['Transporte rodoviário — rota SP/PR', 78],
-  ['Armazenagem — 12 dias', 62],
-  ['Seguro de carga', 54],
-  ['Coleta em domicílio', 47],
-  ['Pedágio — eixo suspenso', 39],
-  ['Reentrega autorizada', 44],
-  ['Manuseio de carga paletizada', 66],
-  ['Escolta armada — trecho 2', 58],
-  ['Ad valorem sobre a mercadoria', 71],
-  ['Taxa de emissão', 41],
+  ['invoice.row1', 78],
+  ['invoice.row2', 62],
+  ['invoice.row3', 54],
+  ['invoice.row4', 47],
+  ['invoice.row5', 39],
+  ['invoice.row6', 44],
+  ['invoice.row7', 66],
+  ['invoice.row8', 58],
+  ['invoice.row9', 71],
+  ['invoice.row10', 41],
 ];
 
 /** O bloco de tributos: é o que faz a folha ler como nota, e não como recibo. */
 const INVOICE_TAXES: Array<[string, string]> = [
-  ['ICMS 12%', '5.846,44'],
-  ['PIS 1,65%', '803,89'],
-  ['COFINS 7,6%', '3.702,75'],
+  ['invoice.tax1', 'invoice.tax1Value'],
+  ['invoice.tax2', 'invoice.tax2Value'],
+  ['invoice.tax3', 'invoice.tax3Value'],
 ];
 
 function InvoiceBody() {
+  const { t } = useTranslation('auth');
+
   return (
     <div className="mt-5 flex flex-1 flex-col gap-4" aria-hidden>
       {/* A chave vem no alto, como na nota impressa: é o primeiro campo que
@@ -306,7 +327,7 @@ function InvoiceBody() {
         style={{ animationDelay: '620ms' }}
       >
         <span className="font-mono text-[7px] uppercase tracking-[0.14em] text-[#A4AEB4]">
-          Chave de acesso
+          {t('antechamberDocument.chaveDeAcesso')}
         </span>
         <span className="font-mono text-[8px] leading-relaxed tracking-[0.06em] text-[#5A6B75]">
           3526 0842 7719 0001 8955 0010 0000 4127 1904 8853 2610
@@ -324,13 +345,16 @@ function InvoiceBody() {
       </div>
 
       <div className="flex flex-col">
-        {INVOICE_ROWS.map(([label, width], r) => (
-          <div key={label} className="flex items-center gap-3 border-b border-[#F0F3F5] py-[6px]">
+        {INVOICE_ROWS.map(([labelKey, width], r) => (
+          <div
+            key={labelKey}
+            className="flex items-center gap-3 border-b border-[#F0F3F5] py-[6px]"
+          >
             <span
               className="auth-write flex-1 font-mono text-[7.5px] text-[#8B979E]"
               style={{ animationDelay: `${900 + r * 90}ms` }}
             >
-              {label}
+              {t(`antechamberDocument.${labelKey}`)}
             </span>
             <span className="flex w-14 justify-end">
               <span
@@ -349,19 +373,21 @@ function InvoiceBody() {
         style={{ animationDelay: '2040ms' }}
       >
         <span className="font-mono text-[7px] uppercase tracking-[0.14em] text-[#A4AEB4]">
-          Informações complementares
+          {t('antechamberDocument.informacoesComplementares')}
         </span>
         <span className="auth-line block h-[3px] w-[86%] rounded-[1px] bg-[#E4E9EC]" />
         <span className="auth-line block h-[3px] w-[64%] rounded-[1px] bg-[#E4E9EC]" />
       </div>
 
       <div className="auth-write flex flex-col gap-[5px] pt-2" style={{ animationDelay: '2140ms' }}>
-        {INVOICE_TAXES.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between">
+        {INVOICE_TAXES.map(([labelKey, valueKey]) => (
+          <div key={labelKey} className="flex items-center justify-between">
             <span className="font-mono text-[7px] uppercase tracking-[0.12em] text-[#A4AEB4]">
-              {label}
+              {t(`antechamberDocument.${labelKey}`)}
             </span>
-            <span className="font-mono text-[7.5px] text-[#8B979E]">{value}</span>
+            <span className="font-mono text-[7.5px] text-[#8B979E]">
+              {t(`antechamberDocument.${valueKey}`)}
+            </span>
           </div>
         ))}
       </div>
@@ -371,7 +397,7 @@ function InvoiceBody() {
         style={{ animationDelay: '2280ms' }}
       >
         <span className="font-mono text-[7.5px] uppercase tracking-[0.12em] text-[#8B979E]">
-          Valor total da nota
+          {t('antechamberDocument.valorTotalDaNota')}
         </span>
         <span className="font-mono text-[10px] text-[#14181B]">48.720,35</span>
       </div>
@@ -509,32 +535,33 @@ function ScannedBody() {
    o *tipo* de documento, não o documento. --------------------------------- */
 
 const LICENSE_FRONT: Array<[string, number]> = [
-  ['Nome', 88],
-  ['Doc. identidade · órgão emissor · UF', 70],
-  ['CPF', 52],
-  ['Data de nascimento', 44],
+  ['license.name', 88],
+  ['license.idDoc', 70],
+  ['license.taxId', 52],
+  ['license.birthDate', 44],
 ];
 
 const LICENSE_BACK: Array<[string, number]> = [
-  ['Filiação', 86],
-  ['Local de nascimento', 64],
-  ['Observações', 74],
+  ['license.parents', 86],
+  ['license.birthPlace', 64],
+  ['license.notes', 74],
 ];
 
 /** A moldura de uma cópia: borda fina, papel um tom abaixo da folha. */
-const LICENSE_CARD =
-  'flex flex-1 flex-col gap-2.5 border border-[#DFE4E7] bg-[#F7F9FA] p-3.5';
+const LICENSE_CARD = 'flex flex-1 flex-col gap-2.5 border border-[#DFE4E7] bg-[#F7F9FA] p-3.5';
 
 function LicenseFields({ fields, from }: { fields: Array<[string, number]>; from: number }) {
+  const { t } = useTranslation('auth');
+
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-[9px]">
-      {fields.map(([label, width], i) => (
-        <div key={label} className="flex flex-col gap-[3px]">
+      {fields.map(([labelKey, width], i) => (
+        <div key={labelKey} className="flex flex-col gap-[3px]">
           <span
             className="auth-write block font-mono text-[6px] uppercase tracking-[0.14em] text-[#A4AEB4]"
             style={{ animationDelay: `${from + i * 80}ms` }}
           >
-            {label}
+            {t(`antechamberDocument.${labelKey}`)}
           </span>
           <span
             className="auth-line block h-[4px] rounded-[1px] bg-[#C2CBD1]"
@@ -547,6 +574,8 @@ function LicenseFields({ fields, from }: { fields: Array<[string, number]>; from
 }
 
 function LicenseBody() {
+  const { t } = useTranslation('auth');
+
   return (
     <div className="mt-4 flex flex-1 flex-col" aria-hidden>
       <div className="auth-deskew flex flex-1 flex-col gap-2 pb-4">
@@ -554,7 +583,7 @@ function LicenseBody() {
             qualquer pessoa faz ao digitalizar um documento de bolso, e é o que
             preenche uma A4 sem inventar conteúdo que a carteira não tem. */}
         <span className="font-mono text-[6px] uppercase tracking-[0.16em] text-[#B3BCC2]">
-          Frente
+          {t('antechamberDocument.frente')}
         </span>
         <div className={LICENSE_CARD}>
           <div className="flex gap-3">
@@ -569,19 +598,19 @@ function LicenseBody() {
               é neles que os fios da direita se prendem. */}
           <div className="mt-auto flex items-start justify-between gap-3 border-t border-[#E4E9EC] pt-2.5">
             {[
-              ['Categoria', 'AB'],
-              ['Nº registro', '0421 8873 990'],
-              ['1ª habilitação', '11 fev 2009'],
-            ].map(([label, value], i) => (
-              <div key={label} className="flex flex-col gap-[3px]">
+              ['license.category', 'license.categoryValue'],
+              ['license.registration', 'license.registrationValue'],
+              ['license.firstIssued', 'license.firstIssuedValue'],
+            ].map(([labelKey, valueKey], i) => (
+              <div key={labelKey} className="flex flex-col gap-[3px]">
                 <span className="font-mono text-[6px] uppercase tracking-[0.14em] text-[#A4AEB4]">
-                  {label}
+                  {t(`antechamberDocument.${labelKey}`)}
                 </span>
                 <span
                   className="auth-write block font-mono text-[7.5px] text-[#5A6B75]"
                   style={{ animationDelay: `${1180 + i * 90}ms` }}
                 >
-                  {value}
+                  {t(`antechamberDocument.${valueKey}`)}
                 </span>
               </div>
             ))}
@@ -589,7 +618,7 @@ function LicenseBody() {
         </div>
 
         <span className="mt-1 font-mono text-[6px] uppercase tracking-[0.16em] text-[#B3BCC2]">
-          Verso
+          {t('antechamberDocument.verso')}
         </span>
         <div className={LICENSE_CARD}>
           <LicenseFields fields={LICENSE_BACK} from={1520} />
@@ -597,7 +626,7 @@ function LicenseBody() {
           <div className="mt-auto flex items-end justify-between gap-3 border-t border-[#E4E9EC] pt-2.5">
             <div className="flex flex-col gap-[3px]">
               <span className="font-mono text-[6px] uppercase tracking-[0.14em] text-[#A4AEB4]">
-                Validade
+                {t('antechamberDocument.validade')}
               </span>
               <span
                 className="auth-write block font-mono text-[9px] text-[#14181B]"
@@ -635,20 +664,22 @@ const CONSUMPTION: number[] = [52, 61, 47, 39, 44, 58, 71, 66, 49, 43, 55, 63];
 
 /** O que a conta precisa demonstrar por lei, e o que preenche o pé da folha. */
 const BILL_TARIFF: Array<[string, string]> = [
-  ['Energia elétrica', '104,18'],
-  ['Distribuição', '41,92'],
-  ['Encargos setoriais', '12,60'],
-  ['ICMS · PIS · COFINS', '28,74'],
+  ['bill.energy', 'bill.energyValue'],
+  ['bill.distribution', 'bill.distributionValue'],
+  ['bill.charges', 'bill.chargesValue'],
+  ['bill.taxes', 'bill.taxesValue'],
 ];
 
 const BILL_ROWS: Array<[string, string]> = [
-  ['Consumo do mês', '214 kWh'],
-  ['Bandeira tarifária', 'Verde'],
-  ['Leitura anterior', '02 ago 2026'],
-  ['Próxima leitura', '02 out 2026'],
+  ['bill.monthUsage', 'bill.monthUsageValue'],
+  ['bill.flag', 'bill.flagValue'],
+  ['bill.previousReading', 'bill.previousReadingValue'],
+  ['bill.nextReading', 'bill.nextReadingValue'],
 ];
 
 function UtilityBillBody() {
+  const { t } = useTranslation('auth');
+
   return (
     <div className="mt-5 flex flex-1 flex-col gap-4" aria-hidden>
       {/* Titular e endereço no alto: numa conta de luz é o bloco que faz dela um
@@ -658,13 +689,13 @@ function UtilityBillBody() {
         style={{ animationDelay: '620ms' }}
       >
         <span className="font-mono text-[7px] uppercase tracking-[0.14em] text-[#A4AEB4]">
-          Titular · unidade consumidora
+          {t('antechamberDocument.titularUnidadeConsumidora')}
         </span>
         <span className="font-mono text-[8px] leading-relaxed text-[#5A6B75]">
-          Helena Prado Vasconcelos
+          {t('antechamberDocument.helenaPradoVasconcelos')}
         </span>
         <span className="font-mono text-[7.5px] leading-relaxed text-[#8B979E]">
-          R. das Laranjeiras, 418 · ap. 72 · Santa Cecília · São Paulo · SP
+          {t('antechamberDocument.rDasLaranjeiras418')}
         </span>
       </div>
 
@@ -673,7 +704,7 @@ function UtilityBillBody() {
           className="auth-write font-mono text-[6.5px] uppercase tracking-[0.14em] text-[#A4AEB4]"
           style={{ animationDelay: '820ms' }}
         >
-          Consumo em kWh · 12 meses
+          {t('antechamberDocument.consumoEmKwh12')}
         </span>
         <div className="flex h-[68px] items-end gap-[5px] border-b border-[#EDF0F2] pb-1">
           {CONSUMPTION.map((height, i) => (
@@ -694,19 +725,22 @@ function UtilityBillBody() {
       </div>
 
       <div className="flex flex-col">
-        {BILL_ROWS.map(([label, value], r) => (
-          <div key={label} className="flex items-center justify-between border-b border-[#F0F3F5] py-[6px]">
+        {BILL_ROWS.map(([labelKey, valueKey], r) => (
+          <div
+            key={labelKey}
+            className="flex items-center justify-between border-b border-[#F0F3F5] py-[6px]"
+          >
             <span
               className="auth-write font-mono text-[7.5px] text-[#8B979E]"
               style={{ animationDelay: `${1340 + r * 90}ms` }}
             >
-              {label}
+              {t(`antechamberDocument.${labelKey}`)}
             </span>
             <span
               className="auth-write font-mono text-[7.5px] text-[#5A6B75]"
               style={{ animationDelay: `${1370 + r * 90}ms` }}
             >
-              {value}
+              {t(`antechamberDocument.${valueKey}`)}
             </span>
           </div>
         ))}
@@ -717,21 +751,21 @@ function UtilityBillBody() {
           className="auth-write font-mono text-[6.5px] uppercase tracking-[0.14em] text-[#A4AEB4]"
           style={{ animationDelay: '1700ms' }}
         >
-          Composição da tarifa
+          {t('antechamberDocument.composicaoDaTarifa')}
         </span>
-        {BILL_TARIFF.map(([label, value], i) => (
-          <div key={label} className="flex items-center justify-between">
+        {BILL_TARIFF.map(([labelKey, valueKey], i) => (
+          <div key={labelKey} className="flex items-center justify-between">
             <span
               className="auth-write font-mono text-[7px] text-[#A4AEB4]"
               style={{ animationDelay: `${1740 + i * 70}ms` }}
             >
-              {label}
+              {t(`antechamberDocument.${labelKey}`)}
             </span>
             <span
               className="auth-write font-mono text-[7px] text-[#8B979E]"
               style={{ animationDelay: `${1760 + i * 70}ms` }}
             >
-              {value}
+              {t(`antechamberDocument.${valueKey}`)}
             </span>
           </div>
         ))}
@@ -742,12 +776,15 @@ function UtilityBillBody() {
         style={{ animationDelay: '1980ms' }}
       >
         <span className="font-mono text-[7.5px] uppercase tracking-[0.12em] text-[#8B979E]">
-          Total a pagar · venc. 18 set
+          {t('antechamberDocument.totalAPagarVenc')}
         </span>
         <span className="font-mono text-[10px] text-[#14181B]">187,44</span>
       </div>
 
-      <div className="auth-write flex items-end gap-[2px] pb-5" style={{ animationDelay: '2060ms' }}>
+      <div
+        className="auth-write flex items-end gap-[2px] pb-5"
+        style={{ animationDelay: '2060ms' }}
+      >
         {BARCODE.map((weight, i) => (
           <span
             key={i}
@@ -763,104 +800,105 @@ function UtilityBillBody() {
 const DOCUMENTS: DocumentSpec[] = [
   {
     id: 'contrato',
-    eyebrow: 'Contrato de prestação de serviços',
-    title: 'Nortis Engenharia',
-    stamp: 'Assinado',
+    eyebrowKey: 'doc.contrato.eyebrow',
+    titleKey: 'doc.contrato.title',
+    stampKey: 'doc.contrato.stamp',
     hash: 'sha 9f2c·41ab',
     body: <ContractBody />,
     annotations: [
-      { top: '7%', label: 'Classificação', value: 'Contratos', delay: 1280 },
-      { top: '22%', label: 'Partes', value: 'Nortis Engenharia · Vetor Log', delay: 1500 },
-      { top: '42%', label: 'Vigência', value: '24 meses · 12 ago 2028', delay: 1960 },
-      { top: '80%', label: 'Assinatura', value: '12 ago 2026', delay: 2380 },
+      { top: '7%', labelKey: 'anno.classificacao', valueKey: 'doc.contrato.a1', delay: 1280 },
+      { top: '22%', labelKey: 'anno.partes', valueKey: 'doc.contrato.a2', delay: 1500 },
+      { top: '42%', labelKey: 'anno.vigencia', valueKey: 'doc.contrato.a3', delay: 1960 },
+      { top: '80%', labelKey: 'anno.assinatura', valueKey: 'doc.contrato.a4', delay: 2380 },
     ],
   },
   {
     id: 'habilitacao',
-    eyebrow: 'Documento pessoal · digitalizado',
-    title: 'Carteira de habilitação',
-    stamp: 'Verificado',
+    eyebrowKey: 'doc.habilitacao.eyebrow',
+    titleKey: 'doc.habilitacao.title',
+    stampKey: 'doc.habilitacao.stamp',
     hash: 'sha 8c31·5d70',
     body: <LicenseBody />,
     annotations: [
-      { top: '7%', label: 'Classificação', value: 'Documentos pessoais', delay: 1280 },
-      { top: '20%', label: 'Titular', value: 'Helena P. Vasconcelos', delay: 1560 },
-      { top: '46%', label: 'Registro', value: '0421 8873 990 · cat. AB', delay: 1960 },
-      { top: '85%', label: 'Validade', value: '04 mar 2031', delay: 2380 },
+      { top: '7%', labelKey: 'anno.classificacao', valueKey: 'doc.habilitacao.a1', delay: 1280 },
+      { top: '20%', labelKey: 'anno.titular', valueKey: 'doc.habilitacao.a2', delay: 1560 },
+      { top: '46%', labelKey: 'anno.registro', valueKey: 'doc.habilitacao.a3', delay: 1960 },
+      { top: '85%', labelKey: 'anno.validade', valueKey: 'doc.habilitacao.a4', delay: 2380 },
     ],
   },
   {
     id: 'desenho',
-    eyebrow: 'Projeto arquitetônico · planta baixa',
-    title: 'Residência Vila Marta',
-    stamp: 'Aprovado',
+    eyebrowKey: 'doc.desenho.eyebrow',
+    titleKey: 'doc.desenho.title',
+    stampKey: 'doc.desenho.stamp',
     hash: 'sha 4d17·b8e2',
     body: <DrawingBody />,
     annotations: [
-      { top: '7%', label: 'Classificação', value: 'Projetos', delay: 1280 },
-      { top: '26%', label: 'Escala', value: '1:50 · A4', delay: 1500 },
-      { top: '52%', label: 'Área', value: '148,20 m²', delay: 1960 },
-      { top: '78%', label: 'Revisão', value: 'R03 · 04 ago 2026', delay: 2380 },
+      { top: '7%', labelKey: 'anno.classificacao', valueKey: 'doc.desenho.a1', delay: 1280 },
+      { top: '26%', labelKey: 'anno.escala', valueKey: 'doc.desenho.a2', delay: 1500 },
+      { top: '52%', labelKey: 'anno.area', valueKey: 'doc.desenho.a3', delay: 1960 },
+      { top: '78%', labelKey: 'anno.revisao', valueKey: 'doc.desenho.a4', delay: 2380 },
     ],
   },
   {
     id: 'tabela',
-    eyebrow: 'Planilha de medição · agosto',
-    title: 'Vetor Log — Frota',
-    stamp: 'Conferido',
+    eyebrowKey: 'doc.tabela.eyebrow',
+    titleKey: 'doc.tabela.title',
+    stampKey: 'doc.tabela.stamp',
     hash: 'sha 71ac·9f30',
     body: <TableBody />,
     annotations: [
-      { top: '7%', label: 'Classificação', value: 'Financeiro', delay: 1280 },
-      { top: '24%', label: 'Competência', value: 'ago 2026', delay: 1500 },
-      { top: '50%', label: 'Linhas', value: '148 itens', delay: 1960 },
-      { top: '82%', label: 'Total', value: 'R$ 1.284.900,00', delay: 2380 },
+      { top: '7%', labelKey: 'anno.classificacao', valueKey: 'doc.tabela.a1', delay: 1280 },
+      { top: '24%', labelKey: 'anno.competencia', valueKey: 'doc.tabela.a2', delay: 1500 },
+      { top: '50%', labelKey: 'anno.linhas', valueKey: 'doc.tabela.a3', delay: 1960 },
+      { top: '82%', labelKey: 'anno.total', valueKey: 'doc.tabela.a4', delay: 2380 },
     ],
   },
   {
     id: 'comprovante',
-    eyebrow: 'Conta de energia · comprovante de endereço',
-    title: 'Helena Prado Vasconcelos',
-    stamp: 'Conferido',
+    eyebrowKey: 'doc.comprovante.eyebrow',
+    titleKey: 'doc.comprovante.title',
+    stampKey: 'doc.comprovante.stamp',
     hash: 'sha b5e9·0c24',
     body: <UtilityBillBody />,
     annotations: [
-      { top: '7%', label: 'Classificação', value: 'Comprovante de endereço', delay: 1280 },
-      { top: '19%', label: 'Endereço', value: 'Santa Cecília · São Paulo, SP', delay: 1560 },
-      { top: '39%', label: 'Referência', value: 'set 2026 · 214 kWh', delay: 1960 },
-      { top: '82%', label: 'Vencimento', value: '18 set 2026 · R$ 187,44', delay: 2380 },
+      { top: '7%', labelKey: 'anno.classificacao', valueKey: 'doc.comprovante.a1', delay: 1280 },
+      { top: '19%', labelKey: 'anno.endereco', valueKey: 'doc.comprovante.a2', delay: 1560 },
+      { top: '39%', labelKey: 'anno.referencia', valueKey: 'doc.comprovante.a3', delay: 1960 },
+      { top: '82%', labelKey: 'anno.vencimento', valueKey: 'doc.comprovante.a4', delay: 2380 },
     ],
   },
   {
     id: 'nota',
-    eyebrow: 'Nota fiscal eletrônica · série 001',
-    title: 'Vetor Log Transportes',
-    stamp: 'Autorizada',
+    eyebrowKey: 'doc.nota.eyebrow',
+    titleKey: 'doc.nota.title',
+    stampKey: 'doc.nota.stamp',
     hash: 'sha 2e58·c30d',
     body: <InvoiceBody />,
     annotations: [
-      { top: '7%', label: 'Classificação', value: 'Fiscal', delay: 1280 },
-      { top: '20%', label: 'Chave', value: '3526 0842 … 8853 2610', delay: 1500 },
-      { top: '48%', label: 'Emissão', value: '28 ago 2026 · nº 41.271', delay: 1960 },
-      { top: '82%', label: 'Valor', value: 'R$ 48.720,35', delay: 2380 },
+      { top: '7%', labelKey: 'anno.classificacao', valueKey: 'doc.nota.a1', delay: 1280 },
+      { top: '20%', labelKey: 'anno.chave', valueKey: 'doc.nota.a2', delay: 1500 },
+      { top: '48%', labelKey: 'anno.emissao', valueKey: 'doc.nota.a3', delay: 1960 },
+      { top: '82%', labelKey: 'anno.valor', valueKey: 'doc.nota.a4', delay: 2380 },
     ],
   },
   {
     id: 'digitalizado',
-    eyebrow: 'Documento digitalizado · 300 dpi',
-    title: 'Ata de reunião — Conselho',
-    stamp: 'Reconhecido',
+    eyebrowKey: 'doc.digitalizado.eyebrow',
+    titleKey: 'doc.digitalizado.title',
+    stampKey: 'doc.digitalizado.stamp',
     hash: 'sha 6b04·17fa',
     body: <ScannedBody />,
     annotations: [
-      { top: '7%', label: 'Classificação', value: 'Societário', delay: 1280 },
-      { top: '30%', label: 'Leitura', value: 'OCR · 98,4% de confiança', delay: 1960 },
-      { top: '78%', label: 'Reconhecimento', value: 'Rubrica · 19 ago 2026', delay: 2380 },
+      { top: '7%', labelKey: 'anno.classificacao', valueKey: 'doc.digitalizado.a1', delay: 1280 },
+      { top: '30%', labelKey: 'anno.leitura', valueKey: 'doc.digitalizado.a2', delay: 1960 },
+      { top: '78%', labelKey: 'anno.reconhecimento', valueKey: 'doc.digitalizado.a3', delay: 2380 },
     ],
   },
 ];
 
 export function AntechamberDocument() {
+  const { t } = useTranslation('auth');
   const location = useLocation();
   // A leitura se repete a cada navegação — trocar de tela é ato deliberado, e
   // um pulso por gesto não é o movimento ocioso que a regra "nada pisca" veta.
@@ -914,10 +952,10 @@ export function AntechamberDocument() {
               <span className="absolute inset-y-0 left-[22px] w-px bg-[#EBEFF1]" aria-hidden />
 
               <p className="auth-write font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#8B979E] [animation-delay:420ms]">
-                {doc.eyebrow}
+                {t(`antechamberDocument.${doc.eyebrowKey}`)}
               </p>
               <p className="auth-write mt-1.5 font-serif text-[17px] font-medium leading-tight text-[#14181B] [animation-delay:540ms]">
-                {doc.title}
+                {t(`antechamberDocument.${doc.titleKey}`)}
               </p>
 
               {doc.body}
@@ -929,7 +967,7 @@ export function AntechamberDocument() {
                 {/* latão: contorno, nunca preenchimento */}
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#7C6220] px-2.5 py-[3px] font-mono text-[8.5px] uppercase tracking-[0.12em] text-[#7C6220]">
                   <DoqynMark size={9} />
-                  {doc.stamp}
+                  {t(`antechamberDocument.${doc.stampKey}`)}
                 </span>
               </div>
 
@@ -949,16 +987,18 @@ export function AntechamberDocument() {
           <div className="relative hidden w-[184px] shrink-0 xl:block">
             {doc.annotations.map((anno) => (
               <div
-                key={anno.label}
+                key={anno.valueKey}
                 className="auth-anno absolute flex items-center gap-3"
                 style={{ top: anno.top, animationDelay: `${anno.delay}ms` }}
               >
                 <span className="h-px w-10 bg-doqyn-accent-active/55" />
                 <span className="flex flex-col whitespace-nowrap">
                   <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-doqyn-accent-active">
-                    {anno.label}
+                    {t(`antechamberDocument.${anno.labelKey}`)}
                   </span>
-                  <span className="text-micro text-doqyn-muted">{anno.value}</span>
+                  <span className="text-micro text-doqyn-muted">
+                    {t(`antechamberDocument.${anno.valueKey}`)}
+                  </span>
                 </span>
               </div>
             ))}

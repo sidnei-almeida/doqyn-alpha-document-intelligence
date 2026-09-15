@@ -11,6 +11,8 @@ RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install; fi
 COPY api ./api
 COPY server ./server
 COPY shared ./shared
+# Catálogos de tradução que o servidor importa (build-server copia para dist/).
+COPY src/i18n/catalog ./src/i18n/catalog
 COPY scripts/build-server.mjs ./scripts/build-server.mjs
 COPY scripts/ensure-mongodb-indexes.ts ./scripts/ensure-mongodb-indexes.ts
 COPY scripts/lib ./scripts/lib

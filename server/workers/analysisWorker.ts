@@ -54,10 +54,7 @@ async function loadJobBuffer(payload: AnalysisQueueJobPayload): Promise<Buffer> 
   });
 }
 
-async function runAnalysisForPayload(
-  payload: AnalysisQueueJobPayload,
-  buffer: Buffer,
-) {
+async function runAnalysisForPayload(payload: AnalysisQueueJobPayload, buffer: Buffer) {
   const requestContext = {
     requestId: payload.requestId,
     batchId: payload.batchId,
@@ -91,6 +88,7 @@ async function runAnalysisForPayload(
     ownerUserId: payload.ownerUserId,
     jobId: payload.jobId,
     requestContext,
+    outputLocale: payload.outputLocale,
   });
 }
 
@@ -125,7 +123,7 @@ async function processAnalysisJob(job: Job<AnalysisQueueJobPayload>): Promise<vo
   const payload = job.data;
   const jobKind = payload.jobKind ?? 'initial';
   const startedAt = Date.now();
-  const slotAcquired = await tryAcquireTenantAnalysisSlot(payload.tenantId);
+  const slotAcquired = await tryAcquireTenantAnalysisSlot(payload.tenantId, payload.jobId);
 
   if (!slotAcquired) {
     await job.moveToDelayed(Date.now() + TENANT_SLOT_RETRY_DELAY_MS, job.token);
@@ -242,7 +240,7 @@ async function processAnalysisJob(job: Job<AnalysisQueueJobPayload>): Promise<vo
 
     throw error;
   } finally {
-    await releaseTenantAnalysisSlot(payload.tenantId);
+    await releaseTenantAnalysisSlot(payload.tenantId, payload.jobId);
   }
 }
 
@@ -268,7 +266,9 @@ export function startInProcessAnalysisWorker(): void {
 export async function runAnalysisWorkerLoop(): Promise<void> {
   const worker = startAnalysisWorker(processAnalysisJob);
   if (!worker) {
-    throw new Error('Fila de análise indisponível — configure REDIS_URL e ANALYSIS_SYNC_FALLBACK=false');
+    throw new Error(
+      'Fila de análise indisponível — configure REDIS_URL e ANALYSIS_SYNC_FALLBACK=false',
+    );
   }
 
   worker.on('failed', (job, error) => {

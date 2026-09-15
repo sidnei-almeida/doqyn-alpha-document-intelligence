@@ -14,6 +14,8 @@ import {
   type MetadataFieldPatch,
   type MetadataSheetRow,
 } from '../api/expiryApi';
+import { i18n } from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Chave canônica de vencimento usada quando a categoria não declara nenhum campo de validade.
@@ -71,9 +73,16 @@ function sourceLabel(row: MetadataSheetRow): {
   label: string;
   variant: 'success' | 'info' | 'warning' | 'neutral';
 } {
-  if (!row.filled) return { label: 'Faltando', variant: row.required ? 'warning' : 'neutral' };
-  if (row.source === 'manual') return { label: 'Manual', variant: 'success' };
-  return { label: 'Extraído', variant: 'info' };
+  if (!row.filled) {
+    return {
+      label: i18n.t('expiry:documentExpiryEditor.source.missing'),
+      variant: row.required ? 'warning' : 'neutral',
+    };
+  }
+  if (row.source === 'manual') {
+    return { label: i18n.t('expiry:documentExpiryEditor.source.manual'), variant: 'success' };
+  }
+  return { label: i18n.t('expiry:documentExpiryEditor.source.extracted'), variant: 'info' };
 }
 
 /**
@@ -87,15 +96,23 @@ function expiryNotice(
     if (!sheet.expiryAlerts?.enabled) return null;
     return {
       variant: 'warning',
-      text: 'Sem data de vencimento gravada. Enquanto o campo estiver vazio, nenhum alerta desta categoria dispara para este documento.',
+      text: i18n.t('expiry:documentExpiryEditor.notice.noDate'),
     };
   }
 
   const days = sheet.daysRemaining;
-  if (days < 0) return { variant: 'danger', text: `Vencido há ${Math.abs(days)} dia(s).` };
-  if (days === 0) return { variant: 'danger', text: 'Vence hoje.' };
-  if (days <= 30) return { variant: 'warning', text: `Vence em ${days} dia(s).` };
-  return { variant: 'info', text: `Vence em ${days} dia(s).` };
+  if (days < 0) {
+    return {
+      variant: 'danger',
+      text: i18n.t('expiry:documentExpiryEditor.notice.expiredDays', { count: Math.abs(days) }),
+    };
+  }
+  if (days === 0) {
+    return { variant: 'danger', text: i18n.t('expiry:documentExpiryEditor.notice.today') };
+  }
+  const text = i18n.t('expiry:documentExpiryEditor.notice.inDays', { count: days });
+  if (days <= 30) return { variant: 'warning', text };
+  return { variant: 'info', text };
 }
 
 /* Atenção e erro pedem decisão, então mantêm preenchimento; "vence em 2480
@@ -119,6 +136,8 @@ export function DocumentExpiryEditor({
   canEdit,
   onSaved,
 }: DocumentExpiryEditorProps) {
+  const { t } = useTranslation('expiry');
+
   const queryClient = useQueryClient();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [extraFields, setExtraFields] = useState<
@@ -143,7 +162,7 @@ export function DocumentExpiryEditor({
 
     const validityRow: MetadataSheetRow = {
       key: VALIDITY_KEY,
-      label: 'Data de vencimento',
+      label: t('documentExpiryEditor.validityLabel'),
       type: 'date',
       required: false,
       value: sheet.validityDate ?? currentValidityDate ?? null,
@@ -152,7 +171,7 @@ export function DocumentExpiryEditor({
       isValidity: true,
     };
     return [validityRow, ...sheet.rows];
-  }, [sheet, currentValidityDate]);
+  }, [sheet, currentValidityDate, t]);
 
   const initialValues = useMemo(() => {
     const map: Record<string, string> = {};
@@ -191,14 +210,14 @@ export function DocumentExpiryEditor({
         });
       }
 
-      if (fields.length === 0) throw new Error('Nenhuma alteração para salvar.');
+      if (fields.length === 0) throw new Error(t('documentExpiryEditor.noChanges'));
       return updateDocumentMetadata(documentId, fields);
     },
     onSuccess: (result) => {
       toast.success(
         result.validityDate
-          ? 'Metadados salvos. Os alertas da categoria passam a valer para este documento.'
-          : 'Metadados salvos.',
+          ? t('documentExpiryEditor.savedWithAlerts')
+          : t('documentExpiryEditor.saved'),
       );
       setDrafts({});
       setExtraFields([]);
@@ -215,19 +234,23 @@ export function DocumentExpiryEditor({
       toast.error(
         mutationError instanceof Error
           ? mutationError.message
-          : 'Não foi possível salvar os metadados.',
+          : t('documentExpiryEditor.saveFailed'),
       );
     },
   });
 
   if (isLoading) {
-    return <p className="text-caption text-doqyn-muted">Carregando ficha de metadados…</p>;
+    return (
+      <p className="text-caption text-doqyn-muted">
+        {t('documentExpiryEditor.carregandoFichaDeMetadados')}
+      </p>
+    );
   }
 
   if (error || !sheet) {
     return (
       <p className="text-caption text-doqyn-muted">
-        Não foi possível carregar os metadados deste documento.
+        {t('documentExpiryEditor.naoFoiPossivelCarregar')}
       </p>
     );
   }
@@ -251,8 +274,12 @@ export function DocumentExpiryEditor({
 
       {missingRequired > 0 && (
         <p className="text-caption text-doqyn-muted">
-          {missingRequired} campo(s) obrigatório(s) da categoria
-          {sheet.categoryName ? ` "${sheet.categoryName}"` : ''} sem preenchimento.
+          {sheet.categoryName
+            ? t('documentExpiryEditor.missingRequiredInCategory', {
+                count: missingRequired,
+                category: sheet.categoryName,
+              })
+            : t('documentExpiryEditor.missingRequired', { count: missingRequired })}
         </p>
       )}
 
@@ -289,7 +316,7 @@ export function DocumentExpiryEditor({
                     variant="rule"
                     rows={3}
                     aria-label={row.label}
-                    placeholder={row.description ?? 'Não informado'}
+                    placeholder={row.description ?? t('documentExpiryEditor.notProvided')}
                     value={value}
                     onChange={(event) =>
                       setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
@@ -309,7 +336,7 @@ export function DocumentExpiryEditor({
                     variant="rule"
                     aria-label={row.label}
                     type={row.type === 'number' ? 'number' : 'text'}
-                    placeholder={row.description ?? 'Não informado'}
+                    placeholder={row.description ?? t('documentExpiryEditor.notProvided')}
                     value={value}
                     onChange={(event) =>
                       setDrafts((prev) => ({ ...prev, [row.key]: event.target.value }))
@@ -330,7 +357,7 @@ export function DocumentExpiryEditor({
 
       {!editable && (
         <p className="text-caption text-doqyn-muted">
-          Você não tem permissão para editar os metadados deste documento.
+          {t('documentExpiryEditor.voceNaoTemPermissao')}
         </p>
       )}
 
@@ -345,21 +372,21 @@ export function DocumentExpiryEditor({
                 >
                   <div className="mb-1.5 flex items-baseline justify-between gap-3">
                     <span className="text-label font-medium text-doqyn-text">
-                      Campo fora da regra
+                      {t('documentExpiryEditor.campoForaDaRegra')}
                     </span>
                     <button
                       type="button"
                       onClick={() => setExtraFields((prev) => prev.filter((_, i) => i !== index))}
                       className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-danger hover:underline"
                     >
-                      Remover
+                      {t('documentExpiryEditor.remover')}
                     </button>
                   </div>
                   <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3">
                     <Input
                       variant="rule"
-                      aria-label="Chave do campo"
-                      placeholder="chave (ex.: numero_apolice)"
+                      aria-label={t('documentExpiryEditor.chaveDoCampo')}
+                      placeholder={t('documentExpiryEditor.chaveExNumeroApolice')}
                       value={field.key}
                       onChange={(event) =>
                         setExtraFields((prev) =>
@@ -371,8 +398,8 @@ export function DocumentExpiryEditor({
                     />
                     <Input
                       variant="rule"
-                      aria-label="Rótulo do campo"
-                      placeholder="rótulo exibido"
+                      aria-label={t('documentExpiryEditor.rotuloDoCampo')}
+                      placeholder={t('documentExpiryEditor.rotuloExibido')}
                       value={field.label}
                       onChange={(event) =>
                         setExtraFields((prev) =>
@@ -384,8 +411,8 @@ export function DocumentExpiryEditor({
                     />
                     <Input
                       variant="rule"
-                      aria-label="Valor do campo"
-                      placeholder="valor"
+                      aria-label={t('documentExpiryEditor.valorDoCampo')}
+                      placeholder={t('documentExpiryEditor.placeholderValor')}
                       value={field.value}
                       onChange={(event) =>
                         setExtraFields((prev) =>
@@ -409,7 +436,7 @@ export function DocumentExpiryEditor({
               onClick={() => setExtraFields((prev) => [...prev, { key: '', label: '', value: '' }])}
               className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
             >
-              Adicionar campo fora da regra
+              {t('documentExpiryEditor.adicionarCampoForaDa')}
             </button>
 
             <Button
@@ -418,7 +445,9 @@ export function DocumentExpiryEditor({
               onClick={() => save.mutate()}
               disabled={!isDirty || save.isPending}
             >
-              {save.isPending ? 'Salvando…' : 'Salvar metadados'}
+              {save.isPending
+                ? t('documentExpiryEditor.saving')
+                : t('documentExpiryEditor.saveMetadata')}
             </Button>
           </div>
         </>

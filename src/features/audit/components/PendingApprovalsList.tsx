@@ -5,8 +5,9 @@ import { TableRowActionsMenu } from '@/components/ui/TableRowActionsMenu';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { formatDateTime } from '@/lib/utils';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
-import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
+import { PENDING_TYPE_LABEL_KEYS } from '../api/pendingApprovalsApi';
 import { AuditEmptyState } from './AuditEmptyState';
+import { useTranslation } from 'react-i18next';
 
 type PendingApprovalsListProps = {
   items: PendingApprovalItem[];
@@ -25,6 +26,8 @@ export function PendingApprovalsList({
   onApprove,
   onReject,
 }: PendingApprovalsListProps) {
+  const { t } = useTranslation('audit');
+
   const navigate = useNavigate();
 
   if (loading) {
@@ -46,8 +49,8 @@ export function PendingApprovalsList({
     return (
       <AuditEmptyState
         className="border-t border-doqyn-border"
-        title="Não há pendências no momento"
-        description="Envios, downloads e compartilhamentos que dependem de aprovação aparecerão aqui."
+        title={t('pendingApprovalsList.naoHaPendenciasNo')}
+        description={t('pendingApprovalsList.enviosDownloadsECompartilhamentos')}
       />
     );
   }
@@ -57,12 +60,12 @@ export function PendingApprovalsList({
       data={items}
       keyExtractor={(item) => item.id}
       onRowClick={onReview}
-      sparseMessage="Só isto na fila"
-      sparseDescription="Novas solicitações aparecem aqui assim que chegarem."
+      sparseMessage={t('pendingApprovalsList.sparseMessage')}
+      sparseDescription={t('pendingApprovalsList.sparseDescription')}
       columns={[
         {
           key: 'name',
-          header: 'Solicitante',
+          header: t('pendingApprovalsList.columns.requester'),
           render: (item) => (
             <div className="min-w-0">
               <p className="truncate font-medium text-doqyn-text">{item.name}</p>
@@ -72,7 +75,7 @@ export function PendingApprovalsList({
         },
         {
           key: 'tenant',
-          header: 'Organização',
+          header: t('pendingApprovalsList.columns.organization'),
           render: (item) => (
             <div className="min-w-0 max-w-[220px]">
               <TruncatedText as="p" className="text-doqyn-text">
@@ -88,14 +91,14 @@ export function PendingApprovalsList({
         },
         {
           key: 'type',
-          header: 'Tipo',
+          header: t('pendingApprovalsList.columns.type'),
           render: (item) => (
-            <span className="text-doqyn-muted">{PENDING_TYPE_LABELS[item.type]}</span>
+            <span className="text-doqyn-muted">{t(PENDING_TYPE_LABEL_KEYS[item.type])}</span>
           ),
         },
         {
           key: 'requestedAt',
-          header: 'Data',
+          header: t('pendingApprovalsList.columns.date'),
           className: 'w-[168px]',
           render: (item) => (
             <span className="whitespace-nowrap font-mono text-micro tabular-nums text-doqyn-subtle">
@@ -105,11 +108,11 @@ export function PendingApprovalsList({
         },
         {
           key: 'status',
-          header: 'Status',
+          header: t('pendingApprovalsList.columns.status'),
           className: 'w-[116px]',
           render: () => (
             <Badge variant="pending" dot>
-              Pendente
+              {t('pendingApprovalsList.pendente')}
             </Badge>
           ),
         },
@@ -124,16 +127,20 @@ export function PendingApprovalsList({
           render: (item) => (
             <TableRowActionsMenu
               actions={[
-                { label: 'Revisar', onClick: () => onReview(item) },
-                { label: 'Aprovar', onClick: () => onApprove(item), hidden: !isAdmin },
+                { label: t('pendingApprovalsList.actions.review'), onClick: () => onReview(item) },
                 {
-                  label: 'Rejeitar',
+                  label: t('pendingApprovalsList.actions.approve'),
+                  onClick: () => onApprove(item),
+                  hidden: !isAdmin,
+                },
+                {
+                  label: t('pendingApprovalsList.actions.reject'),
                   onClick: () => onReject(item),
                   tone: 'danger',
                   hidden: !isAdmin,
                 },
                 {
-                  label: 'Abrir em Usuários',
+                  label: t('pendingApprovalsList.actions.openUsers'),
                   onClick: () => navigate('/users'),
                   hidden: item.type === 'document_upload',
                 },

@@ -625,20 +625,17 @@
   --folder-accent-default: #fbc02d;
 }
 
-/* ── Claro e escuro: uma folha só, recortada a fio ────────────────────────
-   O `standard` separa as camadas por tom — grafite fora, papel dentro. Esses
-   dois não: a casca e o painel são a mesma superfície, e quem divide é um fio
-   de acento. É o efeito do desenho antigo, de painéis contíguos separados por
-   fio de cabelo, agora com o canto de 4px em vez do canto reto.
+/* ── Claro e escuro: variações do `standard`, não outros desenhos ─────────
+   Os três temas têm a mesma anatomia: casca por fora, painel recortado dentro,
+   e o que separa as camadas é o tom — nunca um fio colorido. Antes, claro e
+   escuro achatavam casca e painel na mesma cor e delimitavam com um fio de
+   acento a 30%; em tela inteira aquilo lia como brilho em volta do conteúdo, e
+   o verdigris perdia o único sentido que tem, o de "isto é interativo".
 
-   O acento aqui não sinaliza estado, delimita — por isso entra fraco, a menos
-   de um terço. Cheio, viraria contorno de campo em foco e brigaria com o único
-   lugar onde o teal ainda quer dizer "agora". */
-[data-appearance='light'],
-[data-appearance='dark'] {
-  --bg-chrome: var(--bg-canvas);
-  --shell-edge: color-mix(in srgb, var(--accent-active) 30%, transparent);
-}
+   Aqui não se declara cor: a casca usa o `--bg-chrome` que cada paleta já tem —
+   pedra clara `#eef1f3` no papel, grafite `#0b0e10` no escuro, um degrau abaixo
+   do painel nos dois. O recorte (anel interno e sombra da quina) mora em
+   `globals.css`, junto do `standard`, para os três lerem lado a lado. */
 
 :root:not([data-theme]) {
   color-scheme: dark;

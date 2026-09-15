@@ -9,11 +9,15 @@ import type { TenantStorageContext } from './tenantStorage.js';
  * único tenant, mas num pool compartilhado esse ramo faria todo tenant enxergar todo documento sem
  * dono. Documento sem `tenantId` agora simplesmente não é visível por ninguém, que é o
  * comportamento seguro.
+ *
+ * Só `tenantId`, sem o alias `companyId` em `$or`. O `$or` era uma chave de topo, e toda consulta
+ * que depois gravava o próprio `$or` (busca, tipo de arquivo) apagava o escopo sem erro nenhum:
+ * a lista voltava documentos de todos os tenants. Toda gravação põe os dois campos com o mesmo
+ * valor (`applyDocumentOwnershipOnInsert`); registro legado só com `companyId` se corrige com
+ * `scripts/backfill-tenant-id-from-company-id.ts`.
  */
 function buildBusinessOwnershipFilter(tenantId: string): Record<string, unknown> {
-  return {
-    $or: [{ tenantId }, { companyId: tenantId }],
-  };
+  return { tenantId };
 }
 
 export function buildDocumentOwnershipFilter(

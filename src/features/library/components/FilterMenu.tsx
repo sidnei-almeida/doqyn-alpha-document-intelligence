@@ -1,5 +1,6 @@
 import { ToolbarSelect } from '@/components/ui/ToolbarSelect';
-import { STATUS_FILTER_OPTIONS } from '../utils/libraryFilterOptions';
+import { STATUS_FILTER_OPTIONS, resolveFilterOptions } from '../utils/libraryFilterOptions';
+import { useTranslation } from 'react-i18next';
 
 type FilterMenuProps = {
   status: string;
@@ -8,13 +9,15 @@ type FilterMenuProps = {
 
 /** Filtro discreto de status — mapeado para campos reais do backend. */
 export function FilterMenu({ status, onStatusChange }: FilterMenuProps) {
+  const { t } = useTranslation('library');
+
   return (
     <ToolbarSelect
       icon="filter_list"
-      label="Filtrar por status"
+      label={t('filterMenu.filtrarPorStatus')}
       value={status}
       defaultValue=""
-      options={STATUS_FILTER_OPTIONS}
+      options={resolveFilterOptions(STATUS_FILTER_OPTIONS, t)}
       onChange={onStatusChange}
     />
   );

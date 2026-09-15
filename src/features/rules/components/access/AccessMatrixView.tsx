@@ -6,6 +6,7 @@ import { getCategoryGroupPermissions, hasAnyPermission } from './accessModel';
 import { CategoryGlyph } from './CategoryGlyph';
 import { PermissionVerbs } from './PermissionVerbs';
 import { PermissionPopover } from './PermissionPopover';
+import { useTranslation } from 'react-i18next';
 
 type MatrixCellProps = {
   category: DocumentCategory;
@@ -16,6 +17,7 @@ type MatrixCellProps = {
 };
 
 function MatrixCell({ category, group, memberCount, disabled, onChange }: MatrixCellProps) {
+  const { t } = useTranslation('rules');
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const permissions = getCategoryGroupPermissions(category, group.id);
@@ -28,7 +30,7 @@ function MatrixCell({ category, group, memberCount, disabled, onChange }: Matrix
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        aria-label={`Permissões de ${group.name} em ${category.name}`}
+        aria-label={t('permission.ariaLabel', { group: group.name, category: category.name })}
         className="matrix-cell"
         data-connected={connected}
       >
@@ -73,6 +75,8 @@ export function AccessMatrixView({
   isAdmin,
   onPermissionChange,
 }: AccessMatrixViewProps) {
+  const { t } = useTranslation('rules');
+
   const [hover, setHover] = useState<{ row: string; col: string } | null>(null);
 
   return (
@@ -82,7 +86,9 @@ export function AccessMatrixView({
           <thead>
             <tr>
               <th className="access-matrix__corner">
-                <span className="register-label text-doqyn-subtle">Categoria</span>
+                <span className="register-label text-doqyn-subtle">
+                  {t('accessMatrixView.categoria')}
+                </span>
               </th>
               {groups.map((group) => (
                 <th
@@ -128,8 +134,11 @@ export function AccessMatrixView({
       </div>
 
       <p className="access-matrix__legend">
-        <span className="register-label text-doqyn-subtle">Ordem dos pontos</span> ver · baixar ·
-        enviar{isAdmin ? '. Clique numa célula para editar' : ''}
+        <span className="register-label text-doqyn-subtle">
+          {t('accessMatrixView.ordemDosPontos')}
+        </span>{' '}
+        {t('accessMatrixView.verBaixarEnviar')}
+        {isAdmin ? `. ${t('accessMatrixView.clickToEdit')}` : ''}
       </p>
     </div>
   );

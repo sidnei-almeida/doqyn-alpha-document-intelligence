@@ -1,8 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { userIsCompanyAdmin } from '../auth/memberAuth.js';
 import { getTenantIdFromUser } from '../auth/tenantContext.js';
 import { requireAuth } from '../auth/requireAuth.js';
 import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
+import { userGovernsTenantConfiguration } from '../tenancy/documentAccess.js';
 import { extractRequestContext } from './requestContext.js';
 import { logger } from './logger.js';
 import { isServiceError } from './serviceErrors.js';
@@ -21,11 +23,45 @@ export type AdminApiResult = {
   body: unknown;
 };
 
+/**
+ * - `tenant_configuration` (padrão): leitura para qualquer membro, escrita só para quem governa o
+ *   tenant (`userGovernsTenantConfiguration`).
+ * - `user_management`: tudo, inclusive leitura, só para `company_admin`.
+ */
+export type AdminApiAccess = 'tenant_configuration' | 'user_management';
+
+const READ_METHODS = new Set(['GET', 'HEAD']);
+
+const FORBIDDEN_RESULT: AdminApiResult = {
+  status: 403,
+  body: { message: 'Sem permissão para esta operação.', code: 'FORBIDDEN' },
+};
+
+/**
+ * `null` quando a sessão pode usar a rota; senão, a recusa pronta para responder.
+ *
+ * Este wrapper se chamava "admin" e só exigia login. Qualquer membro alterava grupo de documentos,
+ * regra de acesso e a própria participação em grupo — que é o que decide quem vê cada documento.
+ * Escrita agora é negada por padrão.
+ */
+export function resolveAdminApiDenial(
+  method: string | undefined,
+  user: AuthUser,
+  access: AdminApiAccess = 'tenant_configuration',
+): AdminApiResult | null {
+  if (access === 'user_management') {
+    return userIsCompanyAdmin(user) ? null : FORBIDDEN_RESULT;
+  }
+  if (READ_METHODS.has((method ?? 'GET').toUpperCase())) return null;
+  return userGovernsTenantConfiguration(user) ? null : FORBIDDEN_RESULT;
+}
+
 export async function withAdminMongoApi(
   req: VercelRequest,
   res: VercelResponse,
   options: {
     endpoint: string;
+    access?: AdminApiAccess;
     handler: (ctx: AdminApiContext) => Promise<AdminApiResult | unknown>;
   },
 ): Promise<void> {
@@ -55,6 +91,18 @@ export async function withAdminMongoApi(
 
   const user = await requireAuth(req, res);
   if (!user) return;
+
+  const denial = resolveAdminApiDenial(req.method, user, options.access);
+  if (denial) {
+    logger.warn(`${options.endpoint} forbidden`, {
+      requestId: ctx.requestId,
+      method: req.method,
+      access: options.access ?? 'tenant_configuration',
+      durationMs: Date.now() - startedAt,
+    });
+    res.status(denial.status ?? 403).json(denial.body);
+    return;
+  }
 
   try {
     const tenantId = getTenantIdFromUser(user);

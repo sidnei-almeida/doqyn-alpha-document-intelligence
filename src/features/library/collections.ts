@@ -9,14 +9,25 @@ export type LibraryCollectionId =
   | 'lixeira'
   | 'desativados';
 
+/**
+ * A coleção é dado de roteamento, não texto de tela.
+ *
+ * O `slug` é o segmento da URL, em inglês como o resto das rotas; o `id` continua o identificador
+ * interno de sempre. O slug antigo em português redireciona (`src/app/legacyRoutes.ts`).
+ *
+ * Mesma separação de `src/lib/constants.ts`: o que fica aqui é o identificador, o slug da URL e
+ * a decisão de mostrar pastas. As quatro frases — rótulo, descrição e o par de estado vazio —
+ * moram em `library.json` sob `collections.<id>`, e quem renderiza resolve com `t`. Resolver
+ * aqui congelaria o idioma no momento do import, porque este objeto é constante de módulo.
+ */
 export type LibraryCollection = {
   id: LibraryCollectionId;
   slug: string;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   /** Filtro aplicado sobre listDocuments — nunca inventa dados, só recorta. */
-  emptyTitle: string;
-  emptyDescription: string;
+  emptyTitleKey: string;
+  emptyDescriptionKey: string;
   showFolders: boolean;
 };
 
@@ -24,67 +35,64 @@ export const LIBRARY_COLLECTIONS: Record<LibraryCollectionId, LibraryCollection>
   root: {
     id: 'root',
     slug: '',
-    label: 'Biblioteca',
-    description: 'Todos os documentos e espaços deste ambiente.',
-    emptyTitle: 'Esta biblioteca ainda está vazia',
-    emptyDescription:
-      'Envie seu primeiro documento para o DOQYN analisar, classificar e preparar para revisão.',
+    labelKey: 'library:collections.root.label',
+    descriptionKey: 'library:collections.root.description',
+    emptyTitleKey: 'library:collections.root.emptyTitle',
+    emptyDescriptionKey: 'library:collections.root.emptyDescription',
     showFolders: true,
   },
   compartilhados: {
     id: 'compartilhados',
-    slug: 'compartilhados',
-    label: 'Compartilhados comigo',
-    description: 'Documentos enviados por outras pessoas aos quais você tem acesso.',
-    emptyTitle: 'Nada compartilhado com você ainda',
-    emptyDescription: 'Quando alguém compartilhar um documento com você, ele aparecerá aqui.',
+    slug: 'shared',
+    labelKey: 'library:collections.compartilhados.label',
+    descriptionKey: 'library:collections.compartilhados.description',
+    emptyTitleKey: 'library:collections.compartilhados.emptyTitle',
+    emptyDescriptionKey: 'library:collections.compartilhados.emptyDescription',
     showFolders: false,
   },
   'para-assinar': {
     id: 'para-assinar',
-    slug: 'assinaturas',
-    label: 'Para assinar',
-    description: 'Documentos que aguardam sua assinatura eletrônica.',
-    emptyTitle: 'Nenhum documento pendente de assinatura.',
-    emptyDescription: 'Quando alguém solicitar sua assinatura, a solicitação aparecerá aqui.',
+    slug: 'signatures',
+    labelKey: 'library:collections.paraAssinar.label',
+    descriptionKey: 'library:collections.paraAssinar.description',
+    emptyTitleKey: 'library:collections.paraAssinar.emptyTitle',
+    emptyDescriptionKey: 'library:collections.paraAssinar.emptyDescription',
     showFolders: false,
   },
   recentes: {
     id: 'recentes',
-    slug: 'recentes',
-    label: 'Recentes',
-    description: 'Os documentos atualizados mais recentemente neste ambiente.',
-    emptyTitle: 'Nenhuma atividade recente',
-    emptyDescription: 'Os documentos atualizados nos últimos dias aparecem aqui.',
+    slug: 'recent',
+    labelKey: 'library:collections.recentes.label',
+    descriptionKey: 'library:collections.recentes.description',
+    emptyTitleKey: 'library:collections.recentes.emptyTitle',
+    emptyDescriptionKey: 'library:collections.recentes.emptyDescription',
     showFolders: false,
   },
   favoritos: {
     id: 'favoritos',
-    slug: 'favoritos',
-    label: 'Favoritos',
-    description: 'Seus documentos marcados com estrela, para acesso rápido.',
-    emptyTitle: 'Nenhum documento favorito',
-    emptyDescription: 'Marque documentos com estrela para encontrá-los rapidamente.',
+    slug: 'favorites',
+    labelKey: 'library:collections.favoritos.label',
+    descriptionKey: 'library:collections.favoritos.description',
+    emptyTitleKey: 'library:collections.favoritos.emptyTitle',
+    emptyDescriptionKey: 'library:collections.favoritos.emptyDescription',
     showFolders: false,
   },
   lixeira: {
     id: 'lixeira',
-    slug: 'lixeira',
-    label: 'Lixeira',
-    description: 'Restaure antes do prazo; depois vão para Desativados.',
-    emptyTitle: 'A lixeira está vazia',
-    emptyDescription: 'Documentos excluídos aparecem aqui durante o período de retenção.',
+    slug: 'trash',
+    labelKey: 'library:collections.lixeira.label',
+    descriptionKey: 'library:collections.lixeira.description',
+    emptyTitleKey: 'library:collections.lixeira.emptyTitle',
+    emptyDescriptionKey: 'library:collections.lixeira.emptyDescription',
     showFolders: false,
   },
   desativados: {
     id: 'desativados',
-    slug: 'desativados',
-    label: 'Desativados',
-    description:
-      'Documentos desativados após o prazo na lixeira. Somente administradores podem recuperar.',
-    emptyTitle: 'Nenhum documento desativado',
-    emptyDescription:
-      'Quando o prazo da lixeira termina, os documentos passam para cá sem exclusão física.',
+    slug: 'deactivated',
+    labelKey: 'library:collections.desativados.label',
+    descriptionKey: 'library:collections.desativados.description',
+    emptyTitleKey: 'library:collections.desativados.emptyTitle',
+    emptyDescriptionKey: 'library:collections.desativados.emptyDescription',
     showFolders: false,
   },
 };

@@ -1,0 +1,436 @@
+{
+  "activeFilterChips": {
+    "busca": "Search: {{query}}",
+    "emPasta": "In: {{folderName}}",
+    "filtrosAtivos": "Active filters",
+    "limparFiltros": "Clear filters",
+    "removerFiltro": "Remove the {{label}} filter",
+    "todaABiblioteca": "The whole library"
+  },
+  "bulkSelectionToolbar": {
+    "baixar": "Download",
+    "excluir": "Delete",
+    "limparSelecao": "Clear selection",
+    "mover": "Move",
+    "recuperar": "Recover",
+    "restaurar": "Restore",
+    "visualizar": "View",
+    "tooltip": {
+      "foldersCantDelete": "Folders and categories can't be deleted. Select documents only.",
+      "noDeletePermission": "You don't have permission to delete the selected documents.",
+      "onlyDocumentsMove": "Select documents only to move.",
+      "trashCantMove": "Documents in the trash can't be moved.",
+      "deactivatedCantMove": "Deactivated documents can't be moved.",
+      "noMovePermission": "You don't have permission to move the selected documents."
+    },
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected"
+  },
+  "collections": {
+    "root": {
+      "label": "Library",
+      "description": "Every document and space in this workspace.",
+      "emptyTitle": "This library is still empty",
+      "emptyDescription": "Upload your first document for DOQYN to analyze, classify and prepare for review."
+    },
+    "compartilhados": {
+      "label": "Shared with me",
+      "description": "Documents uploaded by other people that you have access to.",
+      "emptyTitle": "Nothing shared with you yet",
+      "emptyDescription": "When someone shares a document with you, it will show up here."
+    },
+    "paraAssinar": {
+      "label": "To sign",
+      "description": "Documents waiting for your electronic signature.",
+      "emptyTitle": "No document is waiting to be signed.",
+      "emptyDescription": "When someone requests your signature, the request will show up here."
+    },
+    "recentes": {
+      "label": "Recent",
+      "description": "The most recently updated documents in this workspace.",
+      "emptyTitle": "No recent activity",
+      "emptyDescription": "Documents updated in the last few days show up here."
+    },
+    "favoritos": {
+      "label": "Favorites",
+      "description": "Your starred documents, for quick access.",
+      "emptyTitle": "No favorite documents",
+      "emptyDescription": "Star documents to find them quickly."
+    },
+    "lixeira": {
+      "label": "Trash",
+      "description": "Restore before the deadline; after that they move to Deactivated.",
+      "emptyTitle": "The trash is empty",
+      "emptyDescription": "Deleted documents show up here during the retention period."
+    },
+    "desativados": {
+      "label": "Deactivated",
+      "description": "Documents deactivated after their time in the trash. Only administrators can recover them.",
+      "emptyTitle": "No deactivated documents",
+      "emptyDescription": "When the trash retention period ends, documents move here without being physically deleted."
+    }
+  },
+  "contextInfoButton": {
+    "informacoes": "Information",
+    "informacoes2": "Information",
+    "informacoes3": "Information"
+  },
+  "documentFavoriteBadge": {
+    "favorito": "Favorite",
+    "favorito2": "Favorite"
+  },
+  "documentMetadataDrawer": {
+    "fecharMetadados": "Close metadata",
+    "metadados": "Metadata",
+    "metadadosDoDocumento": "Document metadata"
+  },
+  "documentNameField": {
+    "asVersoesAnterioresContinuam": "Earlier versions keep the name they had.",
+    "nomeDoDocumento": "Document name",
+    "nomeDoDocumento2": "Document name",
+    "updated": "Name updated.",
+    "saving": "Saving…",
+    "rename": "Rename"
+  },
+  "documentVersionHistoryPanel": {
+    "atual": "· current",
+    "carregandoHistoricoDeVersoes": "Loading version history...",
+    "current": "current",
+    "naoFoiPossivelCarregar": "Could not load the history.",
+    "tentarNovamente": "Try again",
+    "visualizarEstaVersao": "View this version",
+    "versionCount_one": "{{count}} version",
+    "versionCount_other": "{{count}} versions"
+  },
+  "emptyFolderState": {
+    "ajusteABuscaOu": "Adjust the search or the filters to widen the results.",
+    "limparFiltros": "Clear filters",
+    "nenhumDocumentoParaOs": "No document matches the current filters",
+    "voceTambemPodeArrastar": "You can also drag files into this window.",
+    "title": "This folder is still empty",
+    "description": "Upload a document for DOQYN to analyze and classify.",
+    "upload": "Upload document"
+  },
+  "explorerContextMenu": {
+    "abrir": "Open",
+    "atualizar": "Update",
+    "atualizarDocumento": "Update document",
+    "baixar": "Download",
+    "baixarPdfAssinado": "Download signed PDF",
+    "compartilhar": "Share",
+    "enviarDocumento": "Upload document",
+    "enviarDocumentoNestaPasta": "Upload a document to this folder",
+    "excluirCategoria": "Delete category",
+    "menuDeContexto": "Context menu",
+    "metadados": "Metadata",
+    "mover": "Move",
+    "moverParaLixeira": "Move to trash",
+    "novaCategoria": "New category",
+    "recuperar": "Recover",
+    "renomearCategoria": "Rename category",
+    "restaurar": "Restore",
+    "solicitarAssinatura": "Request signature",
+    "verAssinaturas": "View signatures",
+    "verDetalhes": "View details",
+    "verInformacoes": "View information",
+    "verRegras": "View rules",
+    "verRegrasDestaCategoria": "View this category's rules",
+    "verTracking": "View tracking",
+    "visualizar": "View",
+    "infoCurrentFolder": "View current folder info",
+    "downloadNeedsApproval": "Downloading this document requires administrator approval.",
+    "shareReceived": "You can't share a document that was shared with you.",
+    "shareNeedsApproval": "Sharing this document requires administrator approval.",
+    "noSharePermission": "You don't have permission to share this document.",
+    "noMovePermission": "You don't have permission to move this document.",
+    "inTrashCantMove": "This document is in the Trash and can't be moved.",
+    "deactivatedCantMove": "This document is deactivated and can't be moved.",
+    "archivedNoMetadata": "Archived documents have no editable record.",
+    "editMetadataHint": "Review and fix this document's fields"
+  },
+  "explorerFileQuickActions": {
+    "baixar": "Download",
+    "baixar2": "Download",
+    "detalhes": "Details",
+    "detalhes2": "Details",
+    "maisOpcoes": "More options",
+    "maisOpcoes2": "More options",
+    "visualizar": "View",
+    "visualizar2": "View"
+  },
+  "explorerFilterChips": {
+    "filtrar": "Filter",
+    "filtrarPorPeriodo": "Filter by period",
+    "filtrarPorProprietario": "Filter by owner",
+    "filtrarPorStatus": "Filter by status",
+    "filtrarPorTipo": "Filter by type",
+    "filtrosDaBiblioteca": "Library filters",
+    "ordenar": "Sort",
+    "ordenarPor": "Sort by"
+  },
+  "explorerFolderCard": {
+    "informacoes": "Information",
+    "open": "Open folder {{name}}",
+    "info": "{{name}} info"
+  },
+  "explorerFolderFiles": {
+    "acoes": "Actions",
+    "arquivosDaPasta": "Files in the folder",
+    "carregandoDocumentos": "Loading documents",
+    "modificado": "Modified",
+    "nome": "Name",
+    "status": "Status"
+  },
+  "explorerFolderGrid": {
+    "crieCategoriasEm": "Create categories under",
+    "nenhumaPastaInteligenteConfigurada": "No smart folder set up",
+    "paraOrganizarDocumentosPor": "to organize documents by the AI classification.",
+    "pastasInteligentes": "Smart folders",
+    "pastasInteligentes2": "Smart folders",
+    "regras": "Rules"
+  },
+  "explorerRecentList": {
+    "recentes": "Recent",
+    "verTodos": "See all"
+  },
+  "explorerRootEmpty": {
+    "aBibliotecaComecaNo": "The library starts with the first document",
+    "asPastasInteligentesSaem": "Smart folders come from your categories. Adjust them under",
+    "enviePelaBarraLateral": "Upload from the sidebar, or drag files into this window. Each one is read, classified and filed in the folder its classification points to.",
+    "regras": "Rules"
+  },
+  "explorerRootHome": {
+    "semCategoria": "Uncategorized",
+    "noFolderMeta": "No folder · {{date}}"
+  },
+  "fileTable": {
+    "acoes": "Actions",
+    "arquivosDaBiblioteca": "Library files",
+    "atualizado": "Updated",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "nome": "Name",
+    "proprietario": "Owner",
+    "status": "Status",
+    "tags": "Tags",
+    "title": "Files"
+  },
+  "filterFallback": {
+    "status": "Status",
+    "type": "Type",
+    "period": "Period",
+    "owner": "Owner"
+  },
+  "filterMenu": {
+    "filtrarPorStatus": "Filter by status"
+  },
+  "filterOption": {
+    "status": {
+      "all": "All statuses",
+      "active": "Active",
+      "processed": "Processed",
+      "analyzing": "Analyzing",
+      "pending_review": "Needs review",
+      "archived": "Archived"
+    },
+    "type": {
+      "all": "All types",
+      "pdf": "PDF",
+      "image": "Image",
+      "other": "Other"
+    },
+    "period": {
+      "all": "Any date",
+      "today": "Today",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "month": "This month"
+    },
+    "owner": {
+      "all": "Everyone",
+      "me": "Me",
+      "others": "Other users"
+    },
+    "sort": {
+      "updatedAtDesc": "Newest first",
+      "updatedAtAsc": "Oldest first",
+      "nameAsc": "Name A–Z",
+      "nameDesc": "Name Z–A",
+      "category": "Category",
+      "status": "Status",
+      "owner": "Owner",
+      "fallback": "Sorting"
+    }
+  },
+  "itemAction": {
+    "abrir": "Open",
+    "visualizar": "View",
+    "moverParaPasta": "Move to folder",
+    "compartilhar": "Share",
+    "solicitarAssinatura": "Request signature",
+    "baixar": "Download",
+    "historicoDeVersoes": "Version history",
+    "moverParaLixeira": "Move to trash"
+  },
+  "libraryBreadcrumbs": {
+    "biblioteca": "Library",
+    "localizacaoNaBiblioteca": "Location in the Library"
+  },
+  "libraryContentDropZone": {
+    "osArquivosEntramNa": "The files enter the upload queue with analysis and review.",
+    "solteParaEnviar": "Drop to upload"
+  },
+  "libraryInfoPopover": {
+    "arquivos": "Files",
+    "governanca": "Governance",
+    "pastaDeGovernanca": "Governance folder",
+    "pastas": "Folders",
+    "tipo": "Type",
+    "verRegrasDestaCategoria": "View this category's rules",
+    "smartCategory": "Smart category",
+    "library": "Library"
+  },
+  "libraryPage": {
+    "carregandoBiblioteca": "Loading library",
+    "envieUmDocumentoPara": "Upload a document for DOQYN to analyze and classify in this category.",
+    "estaPastaAindaEsta": "This folder is still empty",
+    "naoFoiPossivelCarregar": "Could not load the documents right now.",
+    "nomeDaCategoria": "Category name",
+    "oNomeNovoVale": "The new name applies to the folder and to every document already inside it.",
+    "renomear": "Rename",
+    "renomearCategoria": "Rename category",
+    "searchResults": "Search results",
+    "folderFallback": "Folder",
+    "folderFallbackLower": "folder",
+    "title": "Library",
+    "searchDescription_one": "{{count}} document found for “{{query}}”",
+    "searchDescription_other": "{{count}} documents found for “{{query}}”",
+    "folderDescription": "Documents the AI classified into this category.",
+    "rootDescription": "Documents and categories in this workspace",
+    "renamedTitle": "Category renamed",
+    "renamedMessage": "It's now called {{name}}.",
+    "renameFailed": "Couldn't rename the category.",
+    "deletedTitle": "Category deleted",
+    "deletedMoved_one": "{{count}} document moved to Uncategorized.",
+    "deletedMoved_other": "{{count}} documents moved to Uncategorized.",
+    "deletedEmpty": "The category was empty.",
+    "deleteFailed": "Couldn't delete the category.",
+    "downloadFailed": "Couldn't download the document.",
+    "signedPdfUnavailable": "Signed PDF isn't available for this document.",
+    "signedPdfFailed": "Couldn't download the signed PDF.",
+    "noDocumentsFound": "No documents found",
+    "adjustFilters": "Try adjusting the filters or searching for another term.",
+    "filesIn": "Files in {{folder}}"
+  },
+  "moveDocumentModal": {
+    "atual": "Current",
+    "buscarCategoria": "Search category…",
+    "buscarCategoria2": "Search category",
+    "cancelar": "Cancel",
+    "categoriaAtual": "Current category",
+    "nenhumaCategoriaDisponivel": "No category available.",
+    "nenhumaCategoriaEncontrada": "No category found.",
+    "oDocumentoJaEsta": "The document is already in this category.",
+    "title_one": "Move document",
+    "title_other": "Move {{count}} documents",
+    "subtitleMany": "The selected documents will be reclassified into the chosen category.",
+    "subtitleOne": "Choose a new category for this document. The file and its history are kept.",
+    "moveTo": "Move to {{category}}",
+    "move": "Move"
+  },
+  "newButtonMenu": {
+    "criarNovo": "Create new",
+    "enviarDocumento": "Upload document",
+    "novaCategoria": "New category",
+    "novo": "New",
+    "solicitarDocumento": "Request document",
+    "uploadDeArquivo": "Upload a file",
+    "uploadDePasta": "Upload a folder"
+  },
+  "optionalDetailsDrawer": {
+    "abrirValidador": "Open validator",
+    "arquivos": "Files",
+    "assinatura": "Signature",
+    "atualizarDocumento": "Update document",
+    "baixar": "Download",
+    "baixarPdfAssinado": "Download signed PDF",
+    "carregandoFicha": "Loading details…",
+    "categoriaInteligente": "Smart category",
+    "editarMetadados": "Edit metadata",
+    "historicoDeVersoes": "Version history",
+    "tipo": "Type",
+    "tracking": "Tracking",
+    "transferirPropriedade": "Transfer ownership",
+    "verAssinaturas": "View signatures",
+    "verRegrasDestaCategoria": "View this category's rules",
+    "versao": "Version",
+    "visualizar": "View",
+    "fileDetails": "File details",
+    "folderDetails": "Folder details",
+    "closeDetails": "Close details panel"
+  },
+  "ownerFilterMenu": {
+    "filtrarPorProprietario": "Filter by owner"
+  },
+  "periodFilterMenu": {
+    "filtrarPorDataDe": "Filter by date modified"
+  },
+  "recentEmptyState": {
+    "enviarDocumento": "Upload document",
+    "envieUmDocumentoPara": "Upload a document to get started.",
+    "nenhumArquivoRecente": "No recent files"
+  },
+  "searchScopeHint": {
+    "buscandoEm": "Searching in",
+    "buscandoEmTodaA": "Searching the whole library",
+    "buscarEmTodaA": "Search the whole Library"
+  },
+  "sortMenu": {
+    "ordenarPor": "Sort by"
+  },
+  "toast": {
+    "falhaRecuperarDocumento": "Could not recover the document.",
+    "falhaAtualizarFavoritos": "Could not update your favorites. Try again.",
+    "jaNestaCategoria": "The documents are already in this category.",
+    "falhaMoverLixeira": "Could not move to the trash.",
+    "falhaRestaurarDocumento": "Could not restore the document.",
+    "configuracoesLixeiraSalvas": "Trash settings updated.",
+    "falhaSalvarConfiguracoes": "Could not save the settings.",
+    "recovered_one": "Document recovered.",
+    "recovered_other": "{{count}} documents recovered.",
+    "moved_one": "Document moved to {{category}}.",
+    "moved_other": "{{count}} documents moved to {{category}}.",
+    "falhaMover": "Couldn't move the document.",
+    "trashed_one": "Document moved to the trash.",
+    "trashed_other": "{{count}} documents moved to the trash.",
+    "restored_one": "Document restored.",
+    "restored_other": "{{count}} documents restored."
+  },
+  "typeFilterMenu": {
+    "filtrarPorTipo": "Filter by type"
+  },
+  "favorites": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites"
+  },
+  "item": {
+    "menu": "{{name}} menu",
+    "actions": "{{name}} actions"
+  },
+  "viewMode": {
+    "grid": "Grid view",
+    "list": "List view",
+    "shortGrid": "grid",
+    "shortList": "list"
+  },
+  "viewModeToggle": {
+    "label": "{{current}}. Switch to {{next}}.",
+    "tooltip": "{{current}}. Click for {{next}}"
+  },
+  "explorerToolbarActions": {
+    "refresh": "Refresh library"
+  },
+  "documentSignatureBadge": {
+    "view": "View signatures"
+  }
+}

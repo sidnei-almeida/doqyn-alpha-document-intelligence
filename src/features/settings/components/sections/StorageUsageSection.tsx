@@ -6,6 +6,7 @@ import {
   storageRatio,
 } from '@/lib/storageFormat';
 import { SettingsSectionBody } from '../SettingsSectionBody';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Quanto do espaço já foi ocupado.
@@ -25,12 +26,16 @@ import { SettingsSectionBody } from '../SettingsSectionBody';
  * pergunta da Biblioteca.
  */
 export function StorageUsageSection() {
+  const { t } = useTranslation('settings');
+
   const { data, isPending, isError } = useTenantUsage();
 
   if (isPending) {
     return (
       <SettingsSectionBody>
-        <p className="type-caption text-doqyn-muted">Carregando uso do armazenamento…</p>
+        <p className="type-caption text-doqyn-muted">
+          {t('storageUsageSection.carregandoUsoDoArmazenamento')}
+        </p>
       </SettingsSectionBody>
     );
   }
@@ -41,8 +46,7 @@ export function StorageUsageSection() {
     return (
       <SettingsSectionBody>
         <p className="type-caption text-doqyn-muted">
-          Não foi possível carregar o uso do armazenamento. Recarregue a página para tentar de
-          novo.
+          {t('storageUsageSection.naoFoiPossivelCarregar')}
         </p>
       </SettingsSectionBody>
     );
@@ -60,7 +64,12 @@ export function StorageUsageSection() {
     <SettingsSectionBody className="settings-storage">
       <p className="settings-storage__figure">
         <span className="settings-storage__used">{usedLabel}</span>
-        {quotaLabel ? <span className="settings-storage__quota"> de {quotaLabel}</span> : null}
+        {quotaLabel ? (
+          <span className="settings-storage__quota">
+            {' '}
+            {t('storageUsageSection.ofQuota', { quota: quotaLabel })}
+          </span>
+        ) : null}
       </p>
 
       {ratio === null ? null : (
@@ -71,7 +80,7 @@ export function StorageUsageSection() {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(ratio * 100)}
-          aria-label="Armazenamento usado"
+          aria-label={t('storageUsageSection.armazenamentoUsado')}
         >
           {/* Um fio sempre visível mesmo quando o uso é quase nada: zero de largura faz a
               régua sumir e o bloco parecer quebrado. */}
@@ -83,18 +92,24 @@ export function StorageUsageSection() {
       )}
 
       <p className="settings-storage__meta">
-        {percentLabel ? `${percentLabel} do espaço usado` : 'Sem teto de armazenamento definido.'}
+        {percentLabel
+          ? t('storageUsageSection.percentUsed', { percent: percentLabel })
+          : t('storageUsageSection.noQuota')}
       </p>
 
       {/* Originais e previews separados porque a pergunta seguinte é sempre a mesma: por que
           o total é maior do que a soma do que eu enviei. O preview é gerado pelo sistema. */}
       <dl className="settings-register-facts">
         <div>
-          <dt className="register-label text-doqyn-subtle">Arquivos originais</dt>
+          <dt className="register-label text-doqyn-subtle">
+            {t('storageUsageSection.arquivosOriginais')}
+          </dt>
           <dd className="type-body mt-0.5 text-doqyn-text">{formatStorageSize(originalBytes)}</dd>
         </div>
         <div>
-          <dt className="register-label text-doqyn-subtle">Pré-visualizações</dt>
+          <dt className="register-label text-doqyn-subtle">
+            {t('storageUsageSection.preVisualizacoes')}
+          </dt>
           <dd className="type-body mt-0.5 text-doqyn-text">{formatStorageSize(previewBytes)}</dd>
         </div>
       </dl>

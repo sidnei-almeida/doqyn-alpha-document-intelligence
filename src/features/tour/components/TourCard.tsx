@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { TourStep } from '../tourTypes';
+import { useTranslation } from 'react-i18next';
 
 type TourCardProps = {
   step: TourStep;
@@ -46,6 +47,8 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
   { step, index, total, onSkip, onPrevious, onNext, style, titleId, bodyId },
   ref,
 ) {
+  const { t } = useTranslation('tour');
+
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
@@ -71,7 +74,7 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
           type="button"
           onClick={onSkip}
           className="explorer-interactive -mr-1.5 flex h-7 w-7 items-center justify-center rounded-[4px] text-doqyn-subtle transition-colors hover:bg-doqyn-hover/60 hover:text-doqyn-text"
-          aria-label="Fechar o tour"
+          aria-label={t('tourCard.fecharOTour')}
         >
           <Icon name="close" size={ICON_SIZE.sm} />
         </button>
@@ -79,13 +82,13 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
 
       <div className="px-5 pb-5 pt-3">
         <h2 id={titleId} className="font-display text-[17px] leading-snug text-doqyn-text">
-          {step.title}
+          {t(step.titleKey)}
         </h2>
         {/* A régua curta sob o título é a mesma marca do cartão de link e do
             cabeçalho de página: separa sem desenhar caixa. */}
         <span aria-hidden className="mt-2.5 block h-px w-9 bg-doqyn-accent-active" />
         <p id={bodyId} className="mt-3.5 text-body leading-relaxed text-doqyn-muted">
-          {step.body}
+          {t(step.bodyKey)}
         </p>
       </div>
 
@@ -95,17 +98,17 @@ export const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourC
           onClick={onSkip}
           className="explorer-interactive text-caption text-doqyn-subtle transition-colors hover:text-doqyn-text"
         >
-          {isLast ? 'Fechar' : 'Pular'}
+          {isLast ? t('common:actions.close') : t('tourCard.skip')}
         </button>
 
         <div className="flex items-center gap-2">
           {!isFirst && (
             <Button variant="ghost" size="sm" onClick={onPrevious}>
-              Voltar
+              {t('tourCard.voltar')}
             </Button>
           )}
           <Button variant="primary" size="sm" onClick={onNext} autoFocus>
-            {isLast ? 'Concluir' : 'Avançar'}
+            {isLast ? t('tourCard.finish') : t('common:actions.next')}
             {!isLast && <Icon name="arrow_forward" size={ICON_SIZE.xs} />}
           </Button>
         </div>

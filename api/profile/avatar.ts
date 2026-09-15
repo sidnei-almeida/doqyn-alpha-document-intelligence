@@ -90,7 +90,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           auditCtx,
           {
             action: 'user.avatar_upload_failed',
-            description: 'Falha no upload de avatar.',
             metadata: {
               reason: error.message,
               code: error.code,

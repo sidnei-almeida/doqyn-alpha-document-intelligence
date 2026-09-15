@@ -1,4 +1,5 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -44,6 +45,21 @@ async function streamToBuffer(body: unknown): Promise<Buffer> {
   }
   return Buffer.concat(chunks);
 }
+
+/**
+ * `CopySource` do S3 é `bucket/chave` com a chave codificada em URL, segmento a segmento: a barra
+ * separa pastas e não pode virar `%2F`, mas espaço e acento no nome do arquivo precisam ser escapados.
+ */
+export function buildR2CopySource(bucket: string, key: string): string {
+  return `${bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+export type StagingPromotionPlan = {
+  bucket: string;
+  stagingKey: string;
+  destinationKey: string;
+  sizeBytes: number;
+};
 
 export type R2StorageProviderDeps = {
   runtimeClient?: S3Client;
@@ -422,6 +438,69 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
         Key: stagingKey,
       }),
     );
+  }
+
+  /**
+   * O que a confirmação precisa para gravar a versão apontando para o provisório.
+   *
+   * Um `HEAD` só: confirma que o arquivo existe e tem o tamanho analisado, e devolve as duas chaves
+   * — a do provisório, onde a versão nasce, e a definitiva, para onde a fila de promoção copia.
+   */
+  async planStagingPromotion(input: {
+    tenantId: string;
+    jobId: string;
+    documentId: string;
+    versionId: string;
+    storageFileName: string;
+    mimeType?: string;
+    originalFileName?: string;
+    storageScope?: TenantStorageScope;
+  }): Promise<StagingPromotionPlan> {
+    const head = await this.headStagingFile(input);
+
+    const extension = sanitizeFileExtension({
+      extension: input.originalFileName?.split('.').pop(),
+      mimeType: input.mimeType ?? 'application/pdf',
+    });
+    const scope = input.storageScope;
+    const stagingKey = buildAnalysisStagingKey({
+      jobId: input.jobId,
+      extension,
+      basePrefix: scope?.basePrefix,
+    });
+    const destinationKey = buildDocumentVersionObjectKey({
+      documentId: input.documentId,
+      versionId: input.versionId,
+      storageFileName: input.storageFileName,
+      keyPrefix: scope?.keyPrefix ?? this.r2.keyPrefix,
+      basePrefix: scope?.basePrefix,
+    });
+    const bucket = await this.resolveStagingBucket(scope, input.tenantId);
+
+    return { bucket, stagingKey, destinationKey, sizeBytes: head.sizeBytes };
+  }
+
+  /** Cópia dentro do próprio R2: o arquivo não passa pela VPS. */
+  async copyObjectWithinBucket(input: {
+    bucket: string;
+    sourceKey: string;
+    destinationKey: string;
+    contentType?: string;
+  }): Promise<{ etag?: string }> {
+    await this.ensureReady();
+
+    const result = await this.runtimeClient.send(
+      new CopyObjectCommand({
+        Bucket: input.bucket,
+        Key: input.destinationKey,
+        CopySource: buildR2CopySource(input.bucket, input.sourceKey),
+        ...(input.contentType
+          ? { ContentType: input.contentType, MetadataDirective: 'REPLACE' as const }
+          : {}),
+      }),
+    );
+
+    return { etag: result.CopyObjectResult?.ETag ?? undefined };
   }
 
   async headStagingFile(input: {

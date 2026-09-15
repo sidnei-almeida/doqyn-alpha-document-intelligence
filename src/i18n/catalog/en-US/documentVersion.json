@@ -1,0 +1,100 @@
+{
+  "confirmNewVersionActions": {
+    "aVersaoAnteriorPermanece": "The previous version stays in the history.",
+    "concluir": "Finish",
+    "confirmVersion": "Confirm {{version}}",
+    "fechar": "Close",
+    "tentarNovamente": "Try again",
+    "analisando": "Analyzing...",
+    "criando": "Creating {{version}}..."
+  },
+  "currentDocumentSummaryCard": {
+    "atualizado": "Updated",
+    "atualizado2": "Updated",
+    "categoria": "Category",
+    "categoria2": "Category",
+    "criado": "Created",
+    "documentoAtual": "Current document",
+    "documentoAtual2": "Current document",
+    "processamento": "Processing",
+    "processamento2": "Processing",
+    "proprietario": "Owner",
+    "proprietario2": "Owner",
+    "tamanho": "Size",
+    "tipoTamanho": "Type / size"
+  },
+  "currentMetadataPanel": {
+    "metadadosAtuais": "Current metadata"
+  },
+  "detailsField": {
+    "validade": "Expiry date",
+    "validadeNaoDeterminada": "Not determined",
+    "validadeInferidaHint": "Inferred (signature/issue date + term)",
+    "titulo": "Title",
+    "dataDeAssinatura": "Signature date"
+  },
+  "newVersionAnalyzingPanel": {
+    "analisandoNovaVersao": "Analyzing the new version",
+    "comparingWith": "Comparing with {{current}} to prepare {{next}}.",
+    "steps": {
+      "ocr": "Extracting text from the PDF",
+      "classify": "Classifying document",
+      "metadata": "Extracting metadata",
+      "compare": "Comparing with the current version"
+    }
+  },
+  "newVersionReviewStep": {
+    "categoria": "Category",
+    "nomeSugerido": "Suggested name",
+    "revisaoDaNovaVersao": "Review of the new version",
+    "reviseiOsMetadadosExtraidos": "I have reviewed the extracted metadata and confirm the new version can be created.",
+    "status": "Status",
+    "versao": "Version"
+  },
+  "newVersionUploadDropzone": {
+    "arrastePdfOuImagem": "Drag a PDF or image here, or click to select",
+    "enviarNovaVersao": "Upload new version",
+    "pdfJpgPngWebp": "PDF · JPG · PNG · WEBP · up to",
+    "prontoParaAnalise": "· ready for analysis",
+    "removerArquivoSelecionado": "Remove selected file",
+    "tipoInvalido": "Upload a PDF or image (JPG, PNG, or WebP) to create a new version."
+  },
+  "updateDocumentVersionDrawer": {
+    "atualizarDocumento": "Update document",
+    "atualizarDocumento2": "Update document",
+    "carregandoDocumentoEHistorico": "Loading the document and version history…",
+    "fecharAtualizacaoDeVersao": "Close version update",
+    "naoFoiPossivelContinuar": "Could not continue",
+    "novaVersaoCriada": "New version created",
+    "oDocumentoFoiAtualizado": "The document was updated to",
+    "erroCarregar": "Could not load the document data.",
+    "semPermissao": "You do not have permission to update this document.",
+    "erroAnalisar": "Could not analyze the uploaded file.",
+    "confirmeRevisao": "Confirm the metadata review before continuing.",
+    "versaoCriada": "New version {{version}} created.",
+    "erroCriar": "Could not create the new version.",
+    "erroDesconhecido": "Unknown error."
+  },
+  "updateDocumentVersionHeader": {
+    "atualizarDocumento": "Update document",
+    "fecharAtualizacaoDeVersao": "Close version update",
+    "novaVersaoDe": "New version of {{name}}"
+  },
+  "versionComparisonPanel": {
+    "atual": "Current",
+    "changed": "changed",
+    "compararVersoes": "Compare versions",
+    "nova": "New",
+    "linhas": {
+      "name": "Name",
+      "category": "Category",
+      "version": "Version",
+      "summary": "Summary"
+    }
+  },
+  "versionHistorySummary": {
+    "historicoDeVersoes": "Version history",
+    "proxima": "next",
+    "versoes": "Versions"
+  }
+}

@@ -10,6 +10,7 @@ import {
   shouldEmitAccessDeniedFromError,
 } from '../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
+import { buildContentDisposition } from '../../server/utils/contentDisposition.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../server/utils/sanitizeAuditMetadata.js';
 
@@ -52,7 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.preview_viewed',
-          description: 'Preview do documento visualizado.',
           documentId,
           versionId,
           target: {
@@ -72,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.buffer.length));
-    res.setHeader('Content-Disposition', `inline; filename="${file.fileName.replace(/"/g, '')}"`);
+    res.setHeader('Content-Disposition', buildContentDisposition('inline', file.fileName));
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
@@ -96,7 +96,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       await emitDocumentFailureEvent(auditCtx, req, {
         action: 'document.preview_failed',
-        description: 'Falha ao servir preview do documento.',
         documentId,
         versionId,
         error,

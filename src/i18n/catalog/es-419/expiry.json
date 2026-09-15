@@ -1,0 +1,46 @@
+{
+  "documentExpiryEditor": {
+    "adicionarCampoForaDa": "Agregar un campo fuera de la regla",
+    "campoForaDaRegra": "Campo fuera de la regla",
+    "carregandoFichaDeMetadados": "Cargando la ficha de metadatos…",
+    "chaveDoCampo": "Clave del campo",
+    "chaveExNumeroApolice": "clave (ej.: numero_poliza)",
+    "missingRequiredInCategory_one": "{{count}} campo obligatorio de «{{category}}» sin completar.",
+    "missingRequiredInCategory_many": "{{count}} campos obligatorios de «{{category}}» sin completar.",
+    "missingRequiredInCategory_other": "{{count}} campos obligatorios de «{{category}}» sin completar.",
+    "missingRequired_one": "{{count}} campo obligatorio sin completar.",
+    "missingRequired_many": "{{count}} campos obligatorios sin completar.",
+    "missingRequired_other": "{{count}} campos obligatorios sin completar.",
+    "naoFoiPossivelCarregar": "No se pudieron cargar los metadatos de este documento.",
+    "remover": "Quitar",
+    "rotuloDoCampo": "Etiqueta del campo",
+    "rotuloExibido": "etiqueta mostrada",
+    "valorDoCampo": "Valor del campo",
+    "voceNaoTemPermissao": "No tienes permiso para editar los metadatos de este documento.",
+    "renameFailed": "No fue posible cambiar el nombre del documento.",
+    "source": {
+      "missing": "Falta",
+      "manual": "Manual",
+      "extracted": "Extraído"
+    },
+    "notice": {
+      "noDate": "No hay fecha de vencimiento guardada. Mientras el campo esté vacío, ninguna alerta de esta categoría se activa para este documento.",
+      "expiredDays_one": "Venció hace {{count}} día.",
+      "expiredDays_many": "Venció hace {{count}} días.",
+      "expiredDays_other": "Venció hace {{count}} días.",
+      "today": "Vence hoy.",
+      "inDays_one": "Vence en {{count}} día.",
+      "inDays_many": "Vence en {{count}} días.",
+      "inDays_other": "Vence en {{count}} días."
+    },
+    "validityLabel": "Fecha de vencimiento",
+    "noChanges": "No hay cambios para guardar.",
+    "savedWithAlerts": "Metadatos guardados. Las alertas de la categoría pasan a aplicarse a este documento.",
+    "saved": "Metadatos guardados.",
+    "saveFailed": "No fue posible guardar los metadatos.",
+    "notProvided": "No informado",
+    "saving": "Guardando…",
+    "saveMetadata": "Guardar metadatos",
+    "placeholderValor": "valor"
+  }
+}

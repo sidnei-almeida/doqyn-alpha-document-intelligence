@@ -11,6 +11,11 @@ import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { WHATSAPP_PLACEHOLDER } from '@/lib/identifiers';
 import { cn } from '@/lib/utils';
+import { Select } from '@/components/ui/Select';
+import { i18n } from '@/i18n';
+import { formatDate } from '@/i18n/formats';
+import { LOCALES } from '@/i18n/locales';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Peças comuns dos dois fluxos que mandam um documento para fora — compartilhar e
@@ -117,13 +122,9 @@ export function resolveRecipient(
  * outro. Descrever o que se sabe é melhor que supor uma empresa.
  */
 export function describeRecipient(recipient: ResolvedRecipient): string {
-  const origin =
-    recipient.audience === 'internal'
-      ? 'daqui'
-      : recipient.audience === 'doqyn'
-        ? 'outra conta DOQYN'
-        : 'convidado externo';
-  return `${recipient.label} (${origin})`;
+  return i18n.t(`documents:recipientFlow.describe.${recipient.audience}`, {
+    name: recipient.label,
+  });
 }
 
 /** Data em `yyyy-mm-dd`: o prazo é dia, não hora — o link fecha no fim do dia escolhido. */
@@ -197,6 +198,8 @@ export function AudiencePicker({
   doqynLabel?: string;
   externalLabel: string;
 }) {
+  const { t } = useTranslation('documents');
+
   return (
     <SegmentedTextToggle
       value={value}
@@ -208,7 +211,7 @@ export function AudiencePicker({
         ...(doqynLabel ? [{ value: 'doqyn' as RecipientAudience, label: doqynLabel }] : []),
         { value: 'external' as RecipientAudience, label: externalLabel },
       ]}
-      aria-label="Tipo de destinatário"
+      aria-label={t('recipientFlow.tipoDeDestinatario')}
     />
   );
 }
@@ -239,6 +242,8 @@ export function InternalRecipientPicker({
    */
   emptyAction?: ReactNode;
 }) {
+  const { t } = useTranslation('documents');
+
   if (selected) {
     return (
       <div className="recipient-chosen">
@@ -248,7 +253,7 @@ export function InternalRecipientPicker({
           <p className="type-caption truncate text-doqyn-muted">{selected.email}</p>
         </div>
         <Button type="button" variant="ghost" size="sm" onClick={() => onSelect(null)}>
-          Trocar
+          {t('recipientFlow.trocar')}
         </Button>
       </div>
     );
@@ -258,15 +263,15 @@ export function InternalRecipientPicker({
     <div className="flex flex-col gap-3">
       <Input
         variant="rule"
-        label="Buscar pessoa"
+        label={t('recipientFlow.buscarPessoa')}
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="Nome ou e-mail"
+        placeholder={t('recipientFlow.nomeOuEMail')}
         autoComplete="off"
       />
       <div className="recipient-candidates">
         {loading ? (
-          <p className="type-caption px-1 py-2 text-doqyn-muted">Buscando…</p>
+          <p className="type-caption px-1 py-2 text-doqyn-muted">{t('recipientFlow.buscando')}</p>
         ) : candidates.length === 0 ? (
           <p className="type-caption px-1 py-2 text-doqyn-muted">{emptyLabel}</p>
         ) : (
@@ -276,11 +281,13 @@ export function InternalRecipientPicker({
                   primeira que não veio do histórico — sem ele, a lista pareceria uma ordem
                   arbitrária, que é justamente o que ela deixou de ser. */}
               {index === 0 && candidate.frequent ? (
-                <p className="type-eyebrow px-1 pt-1 uppercase text-doqyn-subtle">Frequentes</p>
+                <p className="type-eyebrow px-1 pt-1 uppercase text-doqyn-subtle">
+                  {t('recipientFlow.frequentes')}
+                </p>
               ) : null}
               {!candidate.frequent && candidates[index - 1]?.frequent ? (
                 <p className="type-eyebrow px-1 pt-3 uppercase text-doqyn-subtle">
-                  Todo mundo da empresa
+                  {t('recipientFlow.todoMundoDaEmpresa')}
                 </p>
               ) : null}
               <button
@@ -313,34 +320,49 @@ export function ExternalRecipientFields({
   onChange,
   requireName,
   phoneError,
+  recipientLocale,
+  onRecipientLocaleChange,
 }: {
   value: ExternalRecipientDraft;
   onChange: (value: ExternalRecipientDraft) => void;
   requireName: boolean;
   phoneError?: string;
+  /** `''` = sem escolha: o portal segue o navegador de quem abre. */
+  recipientLocale?: string;
+  onRecipientLocaleChange?: (value: string) => void;
 }) {
+  const { t } = useTranslation('documents');
+  /**
+   * Todos os idiomas que o DOQYN fala, inclusive os ainda em preparo.
+   *
+   * A regra de não oferecer idioma em preparo (P9) vale para a tela de quem usa o app. Aqui quem
+   * envia escolhe pela outra ponta — sabe que o fornecedor lê inglês —, e esconder o idioma deixaria
+   * o seletor sem uso até a promoção. Decisão do usuário em 13/09/2026.
+   */
+  const showLocale = Boolean(onRecipientLocaleChange);
+
   return (
     <div className="recipient-fields">
       <Input
         variant="rule"
-        label={requireName ? 'Nome' : 'Nome (opcional)'}
+        label={requireName ? t('recipientFlow.name') : t('recipientFlow.nameOptional')}
         value={value.name}
         onChange={(event) => onChange({ ...value, name: event.target.value })}
-        placeholder="Como a pessoa assina"
+        placeholder={t('recipientFlow.comoAPessoaAssina')}
         autoComplete="off"
       />
       <Input
         variant="rule"
         type="email"
-        label="E-mail"
+        label={t('recipientFlow.eMail')}
         value={value.email}
         onChange={(event) => onChange({ ...value, email: event.target.value })}
-        placeholder="pessoa@empresa.com.br"
+        placeholder={t('recipientFlow.emailPlaceholder')}
         autoComplete="off"
       />
       <WhatsappInput
         variant="rule"
-        label="Telefone (opcional)"
+        label={t('recipientFlow.telefoneOpcional')}
         value={value.phone}
         onChange={(next) => onChange({ ...value, phone: next })}
         placeholder={WHATSAPP_PLACEHOLDER}
@@ -348,12 +370,27 @@ export function ExternalRecipientFields({
       />
       <Input
         variant="rule"
-        label="Organização (opcional)"
+        label={t('recipientFlow.organizacaoOpcional')}
         value={value.organizationName}
         onChange={(event) => onChange({ ...value, organizationName: event.target.value })}
-        placeholder="Onde a pessoa trabalha"
+        placeholder={t('recipientFlow.ondeAPessoaTrabalha')}
         autoComplete="off"
       />
+      {showLocale ? (
+        <Select
+          variant="rule"
+          label={t('recipientFlow.recipientLocale')}
+          value={recipientLocale ?? ''}
+          onChange={(event) => onRecipientLocaleChange?.(event.target.value)}
+          options={[
+            { value: '', label: t('recipientFlow.recipientLocaleAuto') },
+            ...LOCALES.map((locale) => ({
+              value: locale.code,
+              label: locale.nativeName,
+            })),
+          ]}
+        />
+      ) : null}
     </div>
   );
 }
@@ -367,7 +404,7 @@ export function ConditionsStep({
   toggles,
   message,
   onMessageChange,
-  messageLabel = 'Mensagem (opcional)',
+  messageLabel,
   messagePlaceholder,
 }: {
   expiresAt: string;
@@ -385,15 +422,17 @@ export function ConditionsStep({
   messageLabel?: string;
   messagePlaceholder?: string;
 }) {
+  const { t } = useTranslation('documents');
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <DateField
           variant="rule"
-          label="Válido até"
+          label={t('recipientFlow.validoAte')}
           value={expiresAt}
           onChange={onExpiresAtChange}
-          placeholder="Escolher data"
+          placeholder={t('recipientFlow.escolherData')}
         />
         {expiresHint ? <p className="type-caption text-doqyn-subtle">{expiresHint}</p> : null}
       </div>
@@ -414,7 +453,7 @@ export function ConditionsStep({
 
       <Textarea
         variant="rule"
-        label={messageLabel}
+        label={messageLabel ?? t('recipientFlow.messageOptional')}
         value={message}
         onChange={(event) => onMessageChange(event.target.value)}
         placeholder={messagePlaceholder}
@@ -519,7 +558,8 @@ export function AccessList({
 
 /* ── Link emitido ─────────────────────────────────────────────────────── */
 
-export function IssuedLink({ url, label = 'Link do convidado' }: { url: string; label?: string }) {
+export function IssuedLink({ url, label }: { url: string; label?: string }) {
+  const { t } = useTranslation('documents');
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -543,12 +583,12 @@ export function IssuedLink({ url, label = 'Link do convidado' }: { url: string; 
 
   return (
     <div className="recipient-link">
-      <p className="register-label text-doqyn-subtle">{label}</p>
+      <p className="register-label text-doqyn-subtle">{label ?? t('recipientFlow.guestLink')}</p>
       <div className="recipient-link__row">
         <code className="recipient-link__value">{url}</code>
         <Button type="button" variant="secondary" size="sm" onClick={() => void handleCopy()}>
           <Icon name={copied ? 'check' : 'content_copy'} size={ICON_SIZE.xs} aria-hidden />
-          {copied ? 'Copiado' : 'Copiar'}
+          {copied ? t('recipientFlow.copied') : t('recipientFlow.copy')}
         </Button>
       </div>
     </div>
@@ -578,11 +618,12 @@ export function FlowFooter({
   onSubmit: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('documents');
   const isLast = step === stepCount - 1;
   return (
     <>
       <Button type="button" variant="ghost" size="sm" onClick={step === 0 ? onCancel : onBack}>
-        {step === 0 ? 'Cancelar' : 'Voltar'}
+        {step === 0 ? t('common:actions.cancel') : t('common:actions.back')}
       </Button>
       <Button
         type="button"
@@ -590,7 +631,11 @@ export function FlowFooter({
         disabled={!canAdvance || submitting}
         onClick={isLast ? onSubmit : onNext}
       >
-        {isLast ? (submitting ? 'Enviando…' : submitLabel) : 'Continuar'}
+        {isLast
+          ? submitting
+            ? t('recipientFlow.sending')
+            : submitLabel
+          : t('recipientFlow.continue')}
       </Button>
     </>
   );
@@ -622,15 +667,18 @@ export function statusTone(status: string): 'active' | 'pending' | 'closed' {
 
 export function formatDateTime(value?: string | null): string {
   if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return formatDate(value) || '—';
 }
 
-/** Data em `yyyy-mm-dd` para leitura humana, sem passar por fuso. */
+/**
+ * Data em `yyyy-mm-dd` para leitura humana, sem passar por fuso.
+ *
+ * Monta a data no fuso local em vez de ler a string como UTC: `new Date('2026-09-12')` é meia-noite
+ * em Greenwich, e a oeste dela vira dia 11.
+ */
 export function formatExpirationDate(value: string): string {
-  const [year, month, day] = value.split('-');
-  return year && month && day ? `${day}/${month}/${year}` : '—';
+  const [year, month, day] = value.split('-').map(Number);
+  return year && month && day ? formatDate(new Date(year, month - 1, day)) || '—' : '—';
 }
 
 export function cnJoin(...values: Array<string | false | null | undefined>): string {

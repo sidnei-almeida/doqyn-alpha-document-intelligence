@@ -3,6 +3,7 @@ import { ConfidenceBadge } from '@/features/document-send/components/ConfidenceB
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { VersionComparisonPanel } from './VersionComparisonPanel';
 import type { VersionComparisonRow } from '../types';
+import { useTranslation } from 'react-i18next';
 
 type NewVersionReviewStepProps = {
   fileName: string;
@@ -34,24 +35,32 @@ export function NewVersionReviewStep({
   reviewChecked,
   onReviewCheckedChange,
 }: NewVersionReviewStepProps) {
+  const { t } = useTranslation('documentVersion');
+
   return (
     <div className="space-y-3" data-testid="update-version-review-step">
       <section className="rounded-xl border border-doqyn-border-subtle bg-doqyn-bg/40 p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-medium uppercase tracking-wide text-doqyn-muted">
-              Revisão da nova versão
+              {t('newVersionReviewStep.revisaoDaNovaVersao')}
             </p>
             <TruncatedText className="mt-1 text-[12px] text-doqyn-text">{fileName}</TruncatedText>
           </div>
           <ConfidenceBadge score={metadata.confidenceScore} />
         </div>
         <dl className="mt-3 grid gap-2 sm:grid-cols-2">
-          <ReviewField label="Categoria" value={metadata.documentType} />
-          <ReviewField label="Nome sugerido" value={metadata.suggestedName} />
-          <ReviewField label="Versão" value={`${currentVersionLabel} → ${nextVersionLabel}`} />
+          <ReviewField label={t('newVersionReviewStep.categoria')} value={metadata.documentType} />
           <ReviewField
-            label="Status"
+            label={t('newVersionReviewStep.nomeSugerido')}
+            value={metadata.suggestedName}
+          />
+          <ReviewField
+            label={t('newVersionReviewStep.versao')}
+            value={`${currentVersionLabel} → ${nextVersionLabel}`}
+          />
+          <ReviewField
+            label={t('newVersionReviewStep.status')}
             value={metadata.analysisStatus === 'requires_review' ? 'Requer revisão' : 'Concluída'}
           />
         </dl>
@@ -71,7 +80,7 @@ export function NewVersionReviewStep({
             checked={reviewChecked}
             onChange={(event) => onReviewCheckedChange(event.target.checked)}
           />
-          <span>Revisei os metadados extraídos e confirmo que a nova versão pode ser criada.</span>
+          <span>{t('newVersionReviewStep.reviseiOsMetadadosExtraidos')}</span>
         </label>
       )}
     </div>

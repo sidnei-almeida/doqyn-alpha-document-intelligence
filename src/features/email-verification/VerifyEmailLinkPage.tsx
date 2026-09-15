@@ -6,15 +6,18 @@ import { AUTH_PRIMARY_BUTTON } from '@/features/auth/components/authControls';
 import { cn } from '@/lib/utils';
 import { emailVerificationApi, getEmailVerificationErrorMessage } from './api/emailVerificationApi';
 import { clearVerificationTicket } from './verificationTicket';
+import { useTranslation } from 'react-i18next';
 
 /**
- * O caminho do link do e-mail: `/verificar-email/:token`.
+ * O caminho do link do e-mail: `/verify-email/:token`.
  *
  * Confirma sozinha ao abrir, sem botão. O clique no e-mail já foi a intenção — pedir um segundo
  * clique aqui só adicionaria um passo entre a pessoa e a conta dela. Não pede sessão nem ticket:
  * quem abre isto costuma estar no celular, onde nunca houve login.
  */
 export function VerifyEmailLinkPage() {
+  const { t } = useTranslation('auth');
+
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [state, setState] = useState<'confirming' | 'done' | 'failed'>('confirming');
@@ -32,7 +35,7 @@ export function VerifyEmailLinkPage() {
         await emailVerificationApi.confirmToken(token);
         clearVerificationTicket();
         setState('done');
-        toast.success('E-mail confirmado.');
+        toast.success(t('verifyEmailLinkPage.confirmed'));
       } catch (err) {
         setError(getEmailVerificationErrorMessage(err));
         setState('failed');
@@ -41,21 +44,18 @@ export function VerifyEmailLinkPage() {
   }, [token]);
 
   if (state === 'confirming') {
-    return <AuthHeading title="Confirmando seu e-mail…" />;
+    return <AuthHeading title={t('verifyEmailLinkPage.confirmandoSeuEMail')} />;
   }
 
   if (state === 'failed') {
     return (
       <>
         <AuthHeading
-          title="Não foi possível confirmar"
-          description={
-            error ??
-            'Este link não vale mais. Entre com seu e-mail e senha para receber um código novo.'
-          }
+          title={t('verifyEmailLinkPage.naoFoiPossivelConfirmar')}
+          description={error ?? t('verifyEmailLinkPage.linkExpired')}
         />
         <Link to="/login" className={cn(AUTH_PRIMARY_BUTTON, 'w-full')}>
-          Ir para o login
+          {t('verifyEmailLinkPage.irParaOLogin')}
         </Link>
       </>
     );
@@ -64,15 +64,15 @@ export function VerifyEmailLinkPage() {
   return (
     <>
       <AuthHeading
-        title="E-mail confirmado"
-        description="Sua conta está liberada. Entre com seu e-mail e senha para começar."
+        title={t('verifyEmailLinkPage.eMailConfirmado')}
+        description={t('verifyEmailLinkPage.suaContaEstaLiberada')}
       />
       <button
         type="button"
         onClick={() => navigate('/login', { replace: true })}
         className={cn(AUTH_PRIMARY_BUTTON, 'w-full')}
       >
-        Ir para o login
+        {t('verifyEmailLinkPage.irParaOLogin2')}
       </button>
     </>
   );

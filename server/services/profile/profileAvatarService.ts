@@ -5,10 +5,7 @@ import {
   updateUserAvatarMetadata,
 } from '../../integrations/doqynAuthInternalClient.js';
 import { isLocalStorageEnabled, isR2StorageEnabled } from '../../storage/storageConfig.js';
-import {
-  buildProfileAvatarUrl,
-  getProfileAvatarConfig,
-} from './profileAvatarConfig.js';
+import { buildProfileAvatarUrl, getProfileAvatarConfig } from './profileAvatarConfig.js';
 import { processProfileAvatarImage } from './profileAvatarProcessor.js';
 import { profileAvatarStorage } from './profileAvatarStorage.js';
 import { validateProfileAvatarUpload } from './validateProfileAvatar.js';
@@ -52,7 +49,8 @@ function mapAvatarPublic(input: {
   updatedAt?: string;
   self?: boolean;
 }): ProfileAvatarPublic {
-  const status = input.status === 'active' ? 'active' : input.status === 'removed' ? 'removed' : null;
+  const status =
+    input.status === 'active' ? 'active' : input.status === 'removed' ? 'removed' : null;
   if (status !== 'active' || input.version < 1) {
     return { status, version: input.version, updatedAt: input.updatedAt };
   }
@@ -70,11 +68,14 @@ function mapAvatarPublic(input: {
   };
 }
 
-export function buildProfileMeResponse(user: AuthUser, sessionUser?: {
-  avatarVersion?: number;
-  avatarUpdatedAt?: string | null;
-  avatarStatus?: 'active' | 'removed' | null;
-}): ProfileMeResponse {
+export function buildProfileMeResponse(
+  user: AuthUser,
+  sessionUser?: {
+    avatarVersion?: number;
+    avatarUpdatedAt?: string | null;
+    avatarStatus?: 'active' | 'removed' | null;
+  },
+): ProfileMeResponse {
   const version = sessionUser?.avatarVersion ?? 0;
   const status = sessionUser?.avatarStatus ?? null;
 
@@ -123,7 +124,6 @@ async function emitAvatarTracking(
     auditCtx,
     {
       action,
-      description: action,
       metadata: sanitizeAuditMetadata(metadata),
     },
     req,
@@ -209,7 +209,9 @@ export async function removeProfileAvatar(input: {
   const nextVersion = Math.max(current.version ?? 0, 0) + 1;
 
   if (current.status === 'active' && current.version > 0) {
-    await profileAvatarStorage.deleteVersionPrefix(input.user.id, current.version).catch(() => undefined);
+    await profileAvatarStorage
+      .deleteVersionPrefix(input.user.id, current.version)
+      .catch(() => undefined);
   }
 
   await updateUserAvatarMetadata(input.user.id, {

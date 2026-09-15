@@ -5,14 +5,17 @@ import { SegmentedTextToggle } from '@/components/ui/SegmentedTextToggle';
 import { NotificationList } from './components/NotificationList';
 import { useNotifications } from './hooks/useNotifications';
 import type { NotificationStatus } from './api/notificationsApi';
+import { useTranslation } from 'react-i18next';
 
-const FILTERS: Array<{ value: NotificationStatus | 'all'; label: string }> = [
-  { value: 'unread', label: 'Não lidas' },
-  { value: 'all', label: 'Todas' },
-  { value: 'dismissed', label: 'Dispensadas' },
+const FILTERS: Array<{ value: NotificationStatus | 'all'; labelKey: string }> = [
+  { value: 'unread', labelKey: 'notificationsPage.filters.unread' },
+  { value: 'all', labelKey: 'notificationsPage.filters.all' },
+  { value: 'dismissed', labelKey: 'notificationsPage.filters.dismissed' },
 ];
 
 export function NotificationsPage() {
+  const { t } = useTranslation('notifications');
+
   const [filter, setFilter] = useState<NotificationStatus | 'all'>('unread');
   const { notifications, unreadCount, isLoading, markRead, dismiss, markAllRead } =
     useNotifications({
@@ -22,20 +25,20 @@ export function NotificationsPage() {
 
   return (
     <PageShell
-      eyebrow="Caixa"
-      title="Notificações"
-      description="Documentos enviados, versões novas, pedidos de assinatura, compartilhamentos e vencimentos."
+      eyebrow={t('notificationsPage.eyebrow')}
+      title={t('notificationsPage.notificacoes')}
+      description={t('notificationsPage.documentosEnviadosVersoesNovas')}
       actions={
         unreadCount > 0 ? (
           <Button type="button" variant="ghost" size="sm" onClick={() => markAllRead()}>
-            Marcar tudo como lido
+            {t('notificationsPage.marcarTudoComoLido')}
           </Button>
         ) : undefined
       }
     >
       <SegmentedTextToggle
-        aria-label="Filtrar notificações"
-        options={FILTERS}
+        aria-label={t('notificationsPage.filtrarNotificacoes')}
+        options={FILTERS.map((filter) => ({ value: filter.value, label: t(filter.labelKey) }))}
         value={filter}
         onChange={setFilter}
       />

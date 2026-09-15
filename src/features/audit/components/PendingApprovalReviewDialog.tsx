@@ -4,7 +4,8 @@ import { Modal } from '@/components/ui/Modal';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { cn, formatDateTime } from '@/lib/utils';
 import type { PendingApprovalItem } from '../api/pendingApprovalsApi';
-import { PENDING_TYPE_LABELS } from '../api/pendingApprovalsApi';
+import { PENDING_TYPE_LABEL_KEYS } from '../api/pendingApprovalsApi';
+import { useTranslation } from 'react-i18next';
 
 type PendingApprovalReviewDialogProps = {
   open: boolean;
@@ -41,6 +42,8 @@ export function PendingApprovalReviewDialog({
   onApprove,
   onReject,
 }: PendingApprovalReviewDialogProps) {
+  const { t } = useTranslation('audit');
+
   if (!open || !item) return null;
 
   /**
@@ -55,14 +58,14 @@ export function PendingApprovalReviewDialog({
     <Modal
       open
       onClose={onClose}
-      title="Revisar solicitação"
-      subtitle={PENDING_TYPE_LABELS[item.type]}
+      title={t('pendingApprovalReviewDialog.revisarSolicitacao')}
+      subtitle={t(PENDING_TYPE_LABEL_KEYS[item.type])}
       size="lg"
       footer={
         isAdmin ? (
           <>
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
-              Cancelar
+              {t('pendingApprovalReviewDialog.cancelar')}
             </Button>
             <Button
               type="button"
@@ -70,10 +73,12 @@ export function PendingApprovalReviewDialog({
               onClick={() => onReject(item)}
               disabled={saving}
             >
-              Rejeitar
+              {t('pendingApprovalReviewDialog.rejeitar')}
             </Button>
             <Button type="button" onClick={() => onApprove(item)} disabled={saving}>
-              {item.type === 'document_upload' ? 'Aprovar documento' : 'Aprovar'}
+              {item.type === 'document_upload'
+                ? t('pendingApprovalReviewDialog.approveDocument')
+                : t('pendingApprovalReviewDialog.approve')}
             </Button>
           </>
         ) : undefined
@@ -82,23 +87,27 @@ export function PendingApprovalReviewDialog({
       <div className="space-y-4 text-sm">
         <dl className="detail-grid grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-3">
           <div className="detail-item min-w-0">
-            <dt className="text-xs text-doqyn-muted">Solicitante</dt>
+            <dt className="text-xs text-doqyn-muted">
+              {t('pendingApprovalReviewDialog.solicitante')}
+            </dt>
             <dd className="detail-value mt-0.5 break-words font-medium text-doqyn-text">
               {item.name}
             </dd>
           </div>
           <div className="detail-item min-w-0">
-            <dt className="text-xs text-doqyn-muted">E-mail</dt>
+            <dt className="text-xs text-doqyn-muted">{t('pendingApprovalReviewDialog.eMail')}</dt>
             <dd className="detail-value mt-0.5 break-all text-doqyn-text">{item.email}</dd>
           </div>
           <div className="detail-item min-w-0">
-            <dt className="text-xs text-doqyn-muted">Organização</dt>
+            <dt className="text-xs text-doqyn-muted">
+              {t('pendingApprovalReviewDialog.organizacao')}
+            </dt>
             <dd className="mt-0.5">
               <OrganizationValue tenantName={item.tenantName} tenantId={item.tenantId} />
             </dd>
           </div>
           <div className="detail-item min-w-0">
-            <dt className="text-xs text-doqyn-muted">Data</dt>
+            <dt className="text-xs text-doqyn-muted">{t('pendingApprovalReviewDialog.data')}</dt>
             <dd className="detail-value mt-0.5 whitespace-nowrap text-doqyn-text">
               {formatDateTime(item.requestedAt)}
             </dd>
@@ -106,9 +115,9 @@ export function PendingApprovalReviewDialog({
         </dl>
 
         <div>
-          <p className="text-xs text-doqyn-muted">Status</p>
+          <p className="text-xs text-doqyn-muted">{t('pendingApprovalReviewDialog.status')}</p>
           <Badge variant="warning" className="mt-1">
-            Pendente
+            {t('pendingApprovalReviewDialog.pendente')}
           </Badge>
         </div>
 
@@ -117,35 +126,45 @@ export function PendingApprovalReviewDialog({
             className={cn('space-y-3 rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
           >
             <div>
-              <p className="text-xs text-doqyn-muted">Documento</p>
+              <p className="text-xs text-doqyn-muted">
+                {t('pendingApprovalReviewDialog.documento')}
+              </p>
               <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">
                 {item.subject?.documentName ?? item.subject?.documentId ?? '—'}
               </p>
             </div>
             <div>
-              <p className="text-xs text-doqyn-muted">Categoria</p>
+              <p className="text-xs text-doqyn-muted">
+                {t('pendingApprovalReviewDialog.categoria')}
+              </p>
               <p className="mt-0.5 text-sm text-doqyn-text">{item.subject?.categoryName ?? '—'}</p>
             </div>
             {item.type === 'document_share' && (
               <>
                 <div>
-                  <p className="text-xs text-doqyn-muted">Compartilhar com</p>
+                  <p className="text-xs text-doqyn-muted">
+                    {t('pendingApprovalReviewDialog.compartilharCom')}
+                  </p>
                   <p className="mt-0.5 text-sm text-doqyn-text">
                     {item.subject?.memberName ?? item.subject?.memberId ?? '—'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-doqyn-muted">O que será concedido</p>
+                  <p className="text-xs text-doqyn-muted">
+                    {t('pendingApprovalReviewDialog.oQueSeraConcedido')}
+                  </p>
                   <p className="mt-0.5 text-sm text-doqyn-text">
-                    {item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'}
+                    {item.grants?.canDownload
+                      ? t('pendingApprovalReviewDialog.grantViewDownload')
+                      : t('pendingApprovalReviewDialog.grantViewOnly')}
                   </p>
                 </div>
               </>
             )}
             <p className="text-xs text-doqyn-muted">
               {item.type === 'document_share'
-                ? 'Ao aprovar, o documento é compartilhado com essa pessoa em nome do solicitante.'
-                : 'Ao aprovar, o solicitante fica liberado para baixar este documento por sete dias.'}
+                ? t('pendingApprovalReviewDialog.shareHint')
+                : t('pendingApprovalReviewDialog.downloadHint')}
             </p>
           </div>
         )}
@@ -155,24 +174,24 @@ export function PendingApprovalReviewDialog({
             className={cn('space-y-3 rounded-lg border border-doqyn-border bg-doqyn-card/50 p-4')}
           >
             <div>
-              <p className="text-xs text-doqyn-muted">Arquivo</p>
+              <p className="text-xs text-doqyn-muted">{t('pendingApprovalReviewDialog.arquivo')}</p>
               <p className="mt-0.5 break-all text-sm font-medium text-doqyn-text">
                 {item.documentUpload.originalFileName}
               </p>
             </div>
             <div>
-              <p className="text-xs text-doqyn-muted">Categoria sugerida</p>
+              <p className="text-xs text-doqyn-muted">
+                {t('pendingApprovalReviewDialog.categoriaSugerida')}
+              </p>
               <p className="mt-0.5 text-sm text-doqyn-text">
                 {item.documentUpload.className ?? item.documentUpload.classId ?? '—'}
               </p>
             </div>
             <p className="text-xs text-doqyn-muted">
-              Os metadados foram extraídos automaticamente pela IA. Ao aprovar, o documento será
-              publicado na Biblioteca em nome do solicitante.
+              {t('pendingApprovalReviewDialog.osMetadadosForamExtraidos')}
             </p>
           </div>
         )}
-
       </div>
     </Modal>
   );

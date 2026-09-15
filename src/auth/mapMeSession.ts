@@ -11,9 +11,7 @@ export function mapMeSessionToAuthUser(session: MeSession): AuthUser {
   const { user, tenant, membership } = session;
   const roles = membership.tenantRoles ?? [];
   const displayName =
-    [user.firstName, user.lastName].filter(Boolean).join(' ') ||
-    user.username ||
-    user.email;
+    [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || user.email;
 
   return {
     id: user.id ?? user.authUserId ?? user.email,
@@ -32,12 +30,12 @@ export function mapMeSessionToAuthUser(session: MeSession): AuthUser {
     avatarUpdatedAt: user.avatarUpdatedAt ?? undefined,
     avatarStatus: user.avatarStatus ?? null,
     avatarUrl: user.avatarUrl,
+    locale: user.locale,
+    timeZone: user.timeZone ?? null,
   };
 }
 
-export function resolveAccessGate(
-  membership: MeMembership | null,
-): AccessGateReason | null {
+export function resolveAccessGate(membership: MeMembership | null): AccessGateReason | null {
   if (!membership) return 'no_membership';
   if (membership.status === 'pending') return 'pending';
   if (membership.status === 'blocked') return 'blocked';

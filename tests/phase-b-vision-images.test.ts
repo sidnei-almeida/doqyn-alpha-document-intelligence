@@ -19,7 +19,7 @@ describe('Fase B.9 — upload e análise de imagens', () => {
     const source = read('src/features/document-send/uploadConstants.ts');
     assert.match(source, /image\/jpeg/);
     assert.match(source, /UPLOAD_ACCEPT/);
-    assert.match(source, /JPG, PNG ou WebP/);
+    assert.match(source, /uploadQueue\.validation\.unsupportedFormat/);
   });
 
   it('staging aceita imagem', () => {

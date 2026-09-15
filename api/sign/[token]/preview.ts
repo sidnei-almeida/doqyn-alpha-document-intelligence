@@ -12,7 +12,10 @@ import {
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../../server/utils/sanitizeAuditMetadata.js';
-import { setPreviewAssetCacheHeaders, setPreviewManifestCacheHeaders } from '../../../server/utils/previewCacheHeaders.js';
+import {
+  setPreviewAssetCacheHeaders,
+  setPreviewManifestCacheHeaders,
+} from '../../../server/utils/previewCacheHeaders.js';
 
 function resolveToken(req: VercelRequest): string | undefined {
   const fromQuery = req.query.token;
@@ -50,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const auditCtx = buildExternalSignatureAuditContext(request);
       const trackingPayload = {
         action: 'document.signature_preview_viewed' as const,
-        description: 'Preview do documento para assinatura visualizado.',
+        params: { context: 'external' },
         documentId: request.documentId,
         versionId: request.versionId,
         metadata: sanitizeAuditMetadata(
@@ -68,7 +71,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           {
             ...trackingPayload,
             action: 'document.signature_viewed',
-            description: 'Documento para assinatura visualizado.',
           },
           req,
         );
@@ -107,7 +109,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).send(file.buffer);
     }
 
-    return res.status(404).json({ message: 'Recurso de preview não encontrado.', code: 'PREVIEW_NOT_FOUND' });
+    return res
+      .status(404)
+      .json({ message: 'Recurso de preview não encontrado.', code: 'PREVIEW_NOT_FOUND' });
   } catch (error) {
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({ message: error.message, code: error.code });

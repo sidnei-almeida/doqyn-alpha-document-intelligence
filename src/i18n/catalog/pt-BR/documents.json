@@ -1,0 +1,178 @@
+{
+  "dashboardPage": {
+    "carregandoVisaoGeral": "Carregando visão geral",
+    "naoFoiPossivelCarregar": "Não foi possível carregar a visão geral",
+    "painelDeControle": "Painel de controle",
+    "porCategoria": "Por categoria",
+    "porStatus": "Por status",
+    "tentarNovamente": "Tentar novamente",
+    "eyebrow": "Visão geral",
+    "panoramaOf": "Panorama de {{name}}",
+    "panoramaDetail": "documentos, atividade e governança",
+    "byStatusSubtitle": "Onde os documentos pararam",
+    "byStatusEmpty": "Nenhum documento no período.",
+    "byCategorySubtitle": "Como o acervo se divide",
+    "byCategoryEmpty": "Nenhuma categoria com documentos."
+  },
+  "documentDetailsShared": {
+    "atualizado": "Atualizado",
+    "carregandoFicha": "Carregando ficha…",
+    "categoria": "Categoria",
+    "criado": "Criado",
+    "documento": "Documento",
+    "enviadoPor": "Enviado por",
+    "ficha": "Ficha",
+    "preview": "Preview",
+    "proprietario": "Proprietário",
+    "ultimaAtualizacaoPor": "Última atualização por",
+    "vencimento": "Vencimento",
+    "validity": {
+      "expired_one": "Vencido há {{count}} dia.",
+      "expired_other": "Vencido há {{count}} dias.",
+      "today": "Vence hoje.",
+      "inDays_one": "Vence em {{count}} dia.",
+      "inDays_other": "Vence em {{count}} dias."
+    }
+  },
+  "documentPreviewViewer": {
+    "carregandoPreview": "Carregando preview...",
+    "naoFoiPossivelCarregar": "Não foi possível carregar o preview.",
+    "visualizacaoDoDocumento": "Visualização do documento"
+  },
+  "documentThumbnail": {
+    "preparandoVisualizacao": "Preparando visualização",
+    "visualizacaoNaoDisponivel": "Visualização não disponível"
+  },
+  "documentViewerDetailsPanel": {
+    "versao": "Versão",
+    "versao2": "Versão",
+    "semNome": "sem nome"
+  },
+  "documentViewerModal": {
+    "carregandoPreviewDoDocumento": "Carregando preview do documento...",
+    "previewIndisponivel": "Preview indisponível.",
+    "versaoNaoDisponivelPara": "Versão não disponível para visualização.",
+    "visualizacaoProtegidaDownloadIndisponivel": "Visualização protegida. Download indisponível para seu perfil.",
+    "voceNaoTemPermissao": "Você não tem permissão para visualizar este documento.",
+    "typeImage": "Imagem",
+    "printUnavailable": "A impressão deste documento não está disponível para seu perfil.",
+    "loadDocumentFailed": "Não foi possível carregar o documento.",
+    "downloadFailed": "Não foi possível baixar o documento.",
+    "manifestFailed": "Não foi possível carregar o manifest de preview.",
+    "versionLabel": "Versão {{version}}",
+    "pageOf": "Página {{current}} de {{total}}"
+  },
+  "documentViewerToolbar": {
+    "atualizarDocumento": "Atualizar documento",
+    "atualizarPreview": "Atualizar preview",
+    "aumentarZoom": "Aumentar zoom",
+    "baixarOriginal": "Baixar original",
+    "carregandoDocumento": "Carregando documento…",
+    "diminuirZoom": "Diminuir zoom",
+    "fecharVisualizacaoDoDocumento": "Fechar visualização do documento",
+    "largura": "Largura",
+    "pagina": "Página",
+    "paginaAnterior": "Página anterior",
+    "proximaPagina": "Próxima página",
+    "verTracking": "Ver tracking",
+    "hideDetails": "Ocultar detalhes",
+    "showDetails": "Ver detalhes"
+  },
+  "imageViewer": {
+    "carregandoImagem": "Carregando imagem…",
+    "dimensions": "{{width}} × {{height}}px",
+    "girar90": "Girar 90°",
+    "metadadosDeImagemIndisponiveis": "Metadados de imagem indisponíveis."
+  },
+  "pdfPagesViewer": {
+    "esteDocumentoEGrande": "Este documento é grande. Algumas páginas serão carregadas sob demanda.",
+    "naoFoiPossivelCarregar": "Não foi possível carregar a página",
+    "nenhumaPaginaDisponivelPara": "Nenhuma página disponível para visualização.",
+    "previewEmProcessamento": "Preview em processamento…",
+    "pageAlt": "Página {{page}}",
+    "thumbAlt": "Miniatura página {{page}}",
+    "hideThumbnails": "Ocultar miniaturas",
+    "showThumbnails": "Mostrar miniaturas"
+  },
+  "recipientFlow": {
+    "buscando": "Buscando…",
+    "buscarPessoa": "Buscar pessoa",
+    "comoAPessoaAssina": "Como a pessoa assina",
+    "eMail": "E-mail",
+    "escolherData": "Escolher data",
+    "frequentes": "Frequentes",
+    "nomeOuEMail": "Nome ou e-mail",
+    "ondeAPessoaTrabalha": "Onde a pessoa trabalha",
+    "organizacaoOpcional": "Organização (opcional)",
+    "telefoneOpcional": "Telefone (opcional)",
+    "tipoDeDestinatario": "Tipo de destinatário",
+    "todoMundoDaEmpresa": "Todo mundo da empresa",
+    "trocar": "Trocar",
+    "validoAte": "Válido até",
+    "steps": {
+      "conditions": "Condições",
+      "confirm": "Confirmar"
+    },
+    "audienceInternal": "Da sua empresa",
+    "audienceDoqyn": "Outra conta DOQYN",
+    "audienceExternal": "Convidado externo",
+    "noMatch": "Ninguém encontrado com esse nome ou e-mail.",
+    "invalidPhone": "Informe um telefone válido com DDI, por exemplo +55 54 99999-9999.",
+    "copyLink": "Copiar link",
+    "yes": "Sim",
+    "no": "Não",
+    "summaryDocument": "Documento",
+    "summaryValidUntil": "Válido até",
+    "summaryMessage": "Mensagem",
+    "describe": {
+      "internal": "{{name}} (daqui)",
+      "doqyn": "{{name}} (outra conta DOQYN)",
+      "external": "{{name}} (convidado externo)"
+    },
+    "name": "Nome",
+    "nameOptional": "Nome (opcional)",
+    "emailPlaceholder": "pessoa@empresa.com.br",
+    "messageOptional": "Mensagem (opcional)",
+    "guestLink": "Link do convidado",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "sending": "Enviando…",
+    "continue": "Continuar",
+    "recipientLocale": "Idioma do convite",
+    "recipientLocaleAuto": "O do navegador de quem abrir"
+  },
+  "transferOwnershipModal": {
+    "cancelar": "Cancelar",
+    "exMudancaDeResponsavel": "Ex.: mudança de responsável pela pasta",
+    "motivoOpcional": "Motivo (opcional)",
+    "novoProprietario": "Novo proprietário",
+    "proprietarioAtual": "Proprietário atual",
+    "transferir": "Transferir",
+    "transferirPropriedade": "Transferir propriedade",
+    "selectOwner": "Selecione o novo proprietário.",
+    "transferred": "Propriedade transferida para {{name}}.",
+    "transferFailed": "Não foi possível transferir a propriedade.",
+    "selectUser": "Selecione um usuário"
+  },
+  "unsupportedViewer": {
+    "baixarOriginal": "Baixar original",
+    "esteTipoDeArquivo": "Este tipo de arquivo ainda não possui visualização integrada.",
+    "tipoDetectado": "Tipo detectado:"
+  },
+  "previewError": {
+    "notReady": "O preview ainda não está disponível para este documento.",
+    "failed": "Não foi possível gerar o preview deste documento.",
+    "notFound": "Preview não encontrado para este documento.",
+    "accessDenied": "Você não tem permissão para visualizar este documento.",
+    "documentNotFound": "Documento não encontrado.",
+    "sessionExpired": "Sua sessão expirou. Faça login novamente.",
+    "loadFailed": "Não foi possível carregar o preview agora."
+  },
+  "previewStatus": {
+    "ready": "Preview disponível",
+    "failed": "Falha no preview",
+    "skipped": "Preview pendente",
+    "missing": "Sem preview",
+    "unavailable": "Preview indisponível"
+  }
+}

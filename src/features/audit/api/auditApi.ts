@@ -1,4 +1,6 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { i18n } from '@/i18n';
+import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 import type { AuditEventFilters, AuditEventsResponse, AuditOverview } from '@/types/audit';
 
 const API_BASE = '/api';
@@ -16,10 +18,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    const body = data as { message?: unknown; code?: unknown };
+    const serverMessage = typeof body.message === 'string' ? body.message : undefined;
     const message =
-      typeof (data as { message?: string }).message === 'string'
-        ? (data as { message: string }).message
-        : 'Erro na requisição';
+      typeof body.code === 'string'
+        ? getFriendlyAuthErrorMessage(body.code, serverMessage)
+        : (serverMessage ?? i18n.t('common:feedback.requestFailed'));
     throw new Error(message);
   }
 

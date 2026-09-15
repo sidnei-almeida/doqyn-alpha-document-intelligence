@@ -9,6 +9,7 @@ import { TrackingSummaryStrip } from './components/TrackingSummaryStrip';
 import { useDocumentTracking } from './hooks/useDocumentTracking';
 import { useTrackingSummary } from './hooks/useTrackingSummary';
 import type { DocumentTrackingFilters } from '@/types/document-tracking';
+import { useTranslation } from 'react-i18next';
 
 const EMPTY_FILTERS: DocumentTrackingFilters = {
   q: '',
@@ -41,6 +42,8 @@ function hasActiveTrackingFilters(filters: DocumentTrackingFilters): boolean {
 }
 
 export function TrackingPage() {
+  const { t } = useTranslation('tracking');
+
   const {
     filters,
     setFilters,
@@ -66,9 +69,9 @@ export function TrackingPage() {
 
   return (
     <PageShell
-      eyebrow="Rastreabilidade"
-      title="Tracking documental"
-      description="Investigue quem acessou, visualizou, baixou ou alterou documentos, com rastreabilidade completa e dados sanitizados."
+      eyebrow={t('trackingPage.eyebrow')}
+      title={t('trackingPage.trackingDocumental')}
+      description={t('trackingPage.investigueQuemAcessouVisualizou')}
       actions={
         <span className="font-mono text-micro tabular-nums text-doqyn-subtle">{listSummary}</span>
       }
@@ -87,10 +90,10 @@ export function TrackingPage() {
       <div className="flex min-h-0 flex-col gap-4">
         {isLoading ? (
           <p className="border-t border-doqyn-border px-3 py-10 text-center text-caption text-doqyn-muted">
-            Carregando eventos…
+            {t('trackingPage.carregandoEventos')}
           </p>
         ) : isError ? (
-          <InlineErrorHint message="Não foi possível carregar o tracking documental." />
+          <InlineErrorHint message={t('trackingPage.loadError')} />
         ) : (
           <TrackingEventsTable
             items={items}
@@ -118,7 +121,7 @@ export function TrackingPage() {
                   size="sm"
                   onClick={() => setFilters(EMPTY_FILTERS)}
                 >
-                  Limpar filtros
+                  {t('trackingPage.limparFiltros')}
                 </Button>
               ) : undefined
             }
@@ -126,7 +129,7 @@ export function TrackingPage() {
               hasMore ? (
                 <div className="flex justify-center">
                   <Button variant="secondary" onClick={() => loadMore()} disabled={isFetchingMore}>
-                    {isFetchingMore ? 'Carregando...' : 'Carregar mais'}
+                    {isFetchingMore ? t('trackingPage.loadingMore') : t('trackingPage.loadMore')}
                   </Button>
                 </div>
               ) : undefined

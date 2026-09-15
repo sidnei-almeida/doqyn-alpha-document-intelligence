@@ -122,12 +122,20 @@ export type DocumentAuditContext = {
   requestId?: string;
   /** Início da requisição em epoch ms — origem do `durationMs` da trilha. */
   startedAt?: number;
+  /** Idioma de quem age: é nele que a frase do evento fica gravada. Ausente, pt-BR. */
+  actorLocale?: string;
 };
 
 export type DocumentAuditEventInput = {
   action: DocumentAuditAction | string;
   severity?: DocumentAuditSeverity;
-  description: string;
+  /**
+   * Frase pronta. **Evento novo não passa**: sem ela, a frase sai do catálogo `auditEvents` pela
+   * ação, no idioma do ator, e o evento grava `params` para ser relido em qualquer idioma.
+   */
+  description?: string;
+  /** Valores da frase e a variante (`context`). Passam por `sanitizeAuditMetadata`. */
+  params?: Record<string, string | number | boolean>;
   documentId?: string | null;
   versionId?: string | null;
   uploadJobId?: string;
@@ -197,6 +205,8 @@ export type DocumentTimelineItem = {
   severity: DocumentAuditSeverity;
   occurredAt: string;
   summary: string;
+  /** Presente só em evento gravado pelo catálogo; é o sinal de que a frase pode ser relida. */
+  params?: Record<string, string | number | boolean>;
   actor: DocumentTimelineActor;
   context?: DocumentTimelineContext;
   documentId?: string | null;
@@ -212,6 +222,7 @@ export type DocumentTrackingListItem = {
   action: string;
   severity: DocumentAuditSeverity;
   summary: string;
+  params?: Record<string, string | number | boolean>;
   document: {
     documentId: string | null;
     name: string;
@@ -247,68 +258,4 @@ export type DocumentTrackingDetail = DocumentTrackingListItem & {
   durationMs?: number;
   security?: Record<string, unknown>;
   securityContext?: Record<string, unknown>;
-};
-
-export const DOCUMENT_AUDIT_ACTION_LABELS: Record<string, string> = {
-  'document.upload_started': 'Upload iniciado',
-  'document.upload_completed': 'Upload concluído',
-  'document.upload_failed': 'Falha no upload',
-  'document.analysis_started': 'Análise iniciada',
-  'document.analysis_completed': 'Análise concluída',
-  'document.analysis_failed': 'Falha na análise',
-  'document.review_confirmed': 'Revisão confirmada',
-  'document.metadata_updated': 'Metadados atualizados',
-  'document.filename_updated': 'Nome do arquivo atualizado',
-  'document.category_updated': 'Categoria atualizada',
-  'document.moved': 'Documento movido de categoria',
-  'document.share_created': 'Compartilhamento criado',
-  'document.share_revoked': 'Compartilhamento revogado',
-  'document.shared_viewed': 'Documento compartilhado visualizado',
-  'document.shared_downloaded': 'Download de documento compartilhado',
-  'document.share_denied': 'Compartilhamento negado',
-  'document.version_created': 'Nova versão criada',
-  'document.ownership_transferred': 'Propriedade transferida',
-  'document.preview_generated': 'Preview gerado',
-  'document.preview_failed': 'Falha no preview',
-  'document.preview_viewed': 'Preview visualizado',
-  'document.preview_denied': 'Preview negado',
-  'document.viewer_opened': 'Viewer aberto',
-  'document.viewer_closed': 'Viewer fechado',
-  'document.print_attempt_blocked': 'Impressão bloqueada',
-  'document.download_attempted': 'Download tentado',
-  'document.downloaded': 'Download realizado',
-  'document.download_denied': 'Download negado',
-  'document.download_failed': 'Falha no download',
-  'access.document_denied': 'Acesso negado',
-  'access.document_allowed': 'Acesso permitido',
-  'file_explorer.folder_opened': 'Pasta aberta',
-  'file_explorer.search_performed': 'Busca realizada',
-  'file_explorer.filter_applied': 'Filtro aplicado',
-  'file_explorer.details_opened': 'Detalhes abertos',
-  'document.storage_promoted': 'Arquivo promovido ao storage definitivo',
-  'document.trash_moved': 'Documento movido para a lixeira',
-  'document.trash_restored': 'Documento restaurado da lixeira',
-  'document.deactivated': 'Documento desativado após lixeira',
-  'document.reactivated': 'Documento reativado',
-  'document.permanent_deleted': 'Documento excluído permanentemente',
-  'document.trash_purge_failed': 'Falha na purga de storage',
-  'document.signature_request_created': 'Solicitação de assinatura criada',
-  'document.signature_internal_assigned': 'Assinatura atribuída a usuário interno',
-  'document.signature_internal_opened': 'Assinatura interna aberta',
-  'document.signature_external_invite_created': 'Convite externo de assinatura criado',
-  'document.signature_external_opened': 'Assinatura externa aberta',
-  'document.signature_link_opened': 'Link de assinatura aberto',
-  'document.signature_preview_viewed': 'Preview para assinatura visualizado',
-  'document.signature_viewed': 'Documento para assinatura visualizado',
-  'document.signature_consent_checked': 'Aceite de assinatura registrado',
-  'document.signature_completed': 'Assinatura eletrônica concluída',
-  'document.signature_declined': 'Assinatura recusada',
-  'document.signature_request_cancelled': 'Solicitação de assinatura revogada',
-  'document.signature_expired': 'Solicitação de assinatura expirada',
-  'document.signed_pdf_generated': 'PDF assinado gerado',
-  'document.signature_verification_opened': 'Validação de assinatura aberta',
-  'document.signature_downloaded': 'PDF assinado baixado',
-  'document.created': 'Documento criado',
-  'document.metadata.confirmed': 'Metadados confirmados',
-  'document.metadata.reviewed_confirmed': 'Revisão confirmada com ajustes',
 };

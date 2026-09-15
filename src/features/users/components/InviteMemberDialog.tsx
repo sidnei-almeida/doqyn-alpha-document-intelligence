@@ -11,9 +11,12 @@ import {
   PlatformRolesSection,
   type DocumentGroupOption,
 } from './AccessFormSections';
+import { formatDate } from '@/i18n/formats';
+import { useTranslation } from 'react-i18next';
 
 type InviteResult = {
-  inviteLink: string;
+  /** Ausente em produção: o token do convite chega só a quem foi convidado, pelo e-mail. */
+  inviteLink?: string;
   expiresAt: string;
   /** Falso quando o convite nasceu mas nada foi entregue. */
   emailSent: boolean;
@@ -28,10 +31,10 @@ type InviteResult = {
  * O código vem do auth-service e nomeia a causa; traduzir aqui evita mostrar `email_disabled`
  * para quem precisa decidir se manda o link pelo WhatsApp ou pede para alguém ligar o envio.
  */
-const EMAIL_SKIP_REASON: Record<string, string> = {
-  email_disabled: 'O envio de e-mail está desligado neste ambiente.',
-  smtp_not_configured: 'Nenhum provedor de e-mail está configurado.',
-  send_failed: 'O provedor recusou a entrega.',
+const EMAIL_SKIP_REASON_KEYS: Record<string, string> = {
+  email_disabled: 'inviteMemberDialog.skipReason.emailDisabled',
+  smtp_not_configured: 'inviteMemberDialog.skipReason.smtpNotConfigured',
+  send_failed: 'inviteMemberDialog.skipReason.sendFailed',
 };
 
 type InviteMemberDialogProps = {
@@ -49,9 +52,7 @@ type InviteMemberDialogProps = {
 };
 
 function formatExpiry(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(iso, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /**
@@ -62,9 +63,11 @@ function formatExpiry(iso: string): string {
  * Por isso papéis e grupos são escolhidos aqui — é o único momento em que alguém decide o que o
  * convidado alcança. Sem grupo, a conta nasce ativa e não enxerga documento nenhum.
  *
- * O diálogo tem dois estados, não dois passos: antes de criar é formulário, depois é o link.
- * O link **é** o produto da ação, então ele não pode passar num toast que some sozinho — quem
- * fechou sem copiar perdeu o convite, e o caminho de volta é revogar e convidar de novo.
+ * O diálogo tem dois estados, não dois passos: antes de criar é formulário, depois é o resultado.
+ *
+ * Em produção o resultado não traz link. O link carrega o token, e com o token em mãos quem
+ * convidou conseguia aceitar pelo convidado. Fora de produção o link aparece para permitir testar
+ * o fluxo sem provedor de e-mail.
  */
 export function InviteMemberDialog({
   documentGroups,
@@ -73,6 +76,8 @@ export function InviteMemberDialog({
   onClose,
   onInvited,
 }: InviteMemberDialogProps) {
+  const { t } = useTranslation('users');
+
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -96,12 +101,12 @@ export function InviteMemberDialog({
       setCreated(result);
       onInvited();
     } catch (error) {
-      showApiErrorToast(error, 'Não foi possível criar o convite.');
+      showApiErrorToast(error, t('inviteMemberDialog.createFailed'));
     }
   };
 
   const copy = async () => {
-    if (!created) return;
+    if (!created?.inviteLink) return;
     try {
       await navigator.clipboard.writeText(created.inviteLink);
       setCopied(true);
@@ -111,8 +116,8 @@ export function InviteMemberDialog({
     } catch {
       showAppToast({
         type: 'error',
-        title: 'Não foi possível copiar',
-        message: 'Selecione o link e copie manualmente.',
+        title: t('inviteMemberDialog.copyFailedTitle'),
+        message: t('inviteMemberDialog.copyFailedMessage'),
       });
     }
   };
@@ -121,13 +126,17 @@ export function InviteMemberDialog({
     <Modal
       open
       onClose={onClose}
-      title={created ? 'Convite criado' : 'Convidar para a empresa'}
+      title={created ? t('inviteMemberDialog.titleCreated') : t('inviteMemberDialog.titleNew')}
       subtitle={
         created
-          ? created.emailSent
-            ? 'O convite foi enviado por e-mail. Este link é o mesmo, se quiser mandar por outro canal.'
-            : 'Envie este link para a pessoa. Ele funciona uma vez só.'
-          : 'A pessoa recebe um link, preenche os próprios dados e entra direto.'
+          ? created.inviteLink
+            ? created.emailSent
+              ? t('inviteMemberDialog.subtitleEmailed')
+              : t('inviteMemberDialog.subtitleLinkOnly')
+            : created.emailSent
+              ? t('inviteMemberDialog.subtitleEmailedNoLink')
+              : t('inviteMemberDialog.subtitleNotSent')
+          : t('inviteMemberDialog.subtitleNew')
       }
       size="lg"
       // Há dado digitado em jogo antes de criar, e o link depois: clicar fora não pode
@@ -136,15 +145,15 @@ export function InviteMemberDialog({
       footer={
         created ? (
           <Button type="button" onClick={onClose}>
-            Concluir
+            {t('inviteMemberDialog.concluir')}
           </Button>
         ) : (
           <>
             <Button type="button" variant="secondary" onClick={onClose}>
-              Cancelar
+              {t('inviteMemberDialog.cancelar')}
             </Button>
             <Button type="button" onClick={() => void submit()} disabled={!canSubmit}>
-              {saving ? 'Criando…' : 'Criar convite'}
+              {saving ? t('inviteMemberDialog.creating') : t('inviteMemberDialog.create')}
             </Button>
           </>
         )
@@ -152,37 +161,45 @@ export function InviteMemberDialog({
     >
       {created ? (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <span className="register-label text-doqyn-subtle">Link do convite</span>
-            <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-[3px] border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 font-mono text-micro text-doqyn-text">
-                {created.inviteLink}
-              </code>
-              <Button type="button" variant="secondary" size="sm" onClick={() => void copy()}>
-                <Icon name={copied ? 'check' : 'content_copy'} size={ICON_SIZE.xs} />
-                {copied ? 'Copiado' : 'Copiar'}
-              </Button>
+          {created.inviteLink ? (
+            <div className="space-y-2">
+              <span className="register-label text-doqyn-subtle">
+                {t('inviteMemberDialog.linkDoConvite')}
+              </span>
+              <div className="flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-[3px] border border-doqyn-border-subtle bg-doqyn-card px-3 py-2 font-mono text-micro text-doqyn-text">
+                  {created.inviteLink}
+                </code>
+                <Button type="button" variant="secondary" size="sm" onClick={() => void copy()}>
+                  <Icon name={copied ? 'check' : 'content_copy'} size={ICON_SIZE.xs} />
+                  {copied ? t('inviteMemberDialog.copied') : t('inviteMemberDialog.copy')}
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <p className="type-caption text-doqyn-muted">
-            Vale até {formatExpiry(created.expiresAt)}. Depois disso ele para de abrir, e é
-            preciso convidar de novo.
+            {t('inviteMemberDialog.validUntilNotice', { date: formatExpiry(created.expiresAt) })}
           </p>
 
           {/* O aviso é do tamanho da consequência: o convite existe, mas ninguém foi avisado.
               Sem isto o gestor fecha o diálogo achando que a pessoa recebeu. */}
           {!created.emailSent ? (
-            <p className="border-l-2 border-doqyn-warning/50 pl-3 type-caption text-doqyn-muted">
-              <span className="font-medium text-doqyn-text">O e-mail não foi enviado.</span>{' '}
-              {EMAIL_SKIP_REASON[created.emailSkipReason ?? ''] ??
-                'A entrega não foi confirmada.'}{' '}
-              Copie o link acima e envie por outro canal.
+            <p className="type-caption border-l-2 border-doqyn-warning/50 pl-3 text-doqyn-muted">
+              <span className="font-medium text-doqyn-text">
+                {t('inviteMemberDialog.oEMailNao')}
+              </span>{' '}
+              {EMAIL_SKIP_REASON_KEYS[created.emailSkipReason ?? '']
+                ? t(EMAIL_SKIP_REASON_KEYS[created.emailSkipReason ?? '']!)
+                : t('inviteMemberDialog.skipReason.unknown')}{' '}
+              {created.inviteLink
+                ? t('inviteMemberDialog.copieOLinkAcima')
+                : t('inviteMemberDialog.inviteAgainLater')}
             </p>
           ) : null}
 
           {created.groupsWarning ? (
-            <p className="border-l-2 border-doqyn-warning/50 pl-3 type-caption text-doqyn-muted">
+            <p className="type-caption border-l-2 border-doqyn-warning/50 pl-3 text-doqyn-muted">
               {created.groupsWarning}
             </p>
           ) : null}
@@ -192,10 +209,10 @@ export function InviteMemberDialog({
           <Input
             variant="rule"
             type="email"
-            label="E-mail"
+            label={t('inviteMemberDialog.eMail')}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="pessoa@exemplo.com"
+            placeholder={t('inviteMemberDialog.emailPlaceholder')}
             autoComplete="off"
             autoFocus
           />
@@ -205,14 +222,14 @@ export function InviteMemberDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               variant="rule"
-              label="Nome (opcional)"
+              label={t('inviteMemberDialog.nomeOpcional')}
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
               autoComplete="off"
             />
             <Input
               variant="rule"
-              label="Sobrenome (opcional)"
+              label={t('inviteMemberDialog.sobrenomeOpcional')}
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
               autoComplete="off"
@@ -231,8 +248,7 @@ export function InviteMemberDialog({
               administrador é exceção legítima: ele alcança tudo por papel. */}
           {documentGroupIds.length === 0 && !platformRoles.includes('company_admin') ? (
             <p className="type-caption text-doqyn-muted">
-              Sem nenhum grupo, a pessoa entra mas não alcança documento nenhum. O acesso se dá
-              ao grupo, nunca à pessoa solta.
+              {t('inviteMemberDialog.semNenhumGrupoA')}
             </p>
           ) : null}
         </div>

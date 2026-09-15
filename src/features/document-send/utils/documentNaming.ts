@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import type { ExtractedMetadata } from '../types';
 
 type NameMetadataInput = {
@@ -85,53 +86,82 @@ export function generateDocumentNameFromExtracted(
   });
 }
 
+/**
+ * A ficha de metadados que a tela de envio mostra antes de confirmar.
+ *
+ * Resolve na chamada porque roda durante o render; a contagem de caracteres passou a ser plural
+ * de catálogo, e não `${n} caracteres` — em inglês a forma singular existe, e o texto truncado é
+ * outra frase inteira, não um sufixo colado.
+ */
 export function metadataToFields(metadata: ExtractedMetadata): { label: string; value: string }[] {
   const statusLabel =
     metadata.analysisStatus === 'completed'
-      ? 'Análise concluída'
+      ? i18n.t('documentSend:metadataValue.analiseConcluida')
       : metadata.analysisStatus === 'requires_review'
-        ? 'Requer revisão'
-        : 'Erro na análise';
+        ? i18n.t('documentSend:metadataValue.requerRevisao')
+        : i18n.t('documentSend:metadataValue.erroNaAnalise');
 
   const fields: { label: string; value: string }[] = [
-    { label: 'Nome original', value: metadata.originalFileName ?? '—' },
-    { label: 'Nome sugerido', value: metadata.suggestedName },
-    { label: 'Classe identificada', value: metadata.documentType },
-    { label: 'Status da análise', value: statusLabel },
     {
-      label: 'Confiança da classificação',
+      label: i18n.t('documentSend:metadataField.nomeOriginal'),
+      value: metadata.originalFileName ?? '—',
+    },
+    { label: i18n.t('documentSend:metadataField.nomeSugerido'), value: metadata.suggestedName },
+    {
+      label: i18n.t('documentSend:metadataField.classeIdentificada'),
+      value: metadata.documentType,
+    },
+    { label: i18n.t('documentSend:metadataField.statusDaAnalise'), value: statusLabel },
+    {
+      label: i18n.t('documentSend:metadataField.confiancaDaClassificacao'),
       value: `${Math.round(metadata.confidenceScore * 100)}%`,
     },
   ];
 
   if (metadata.classificationReason) {
-    fields.push({ label: 'Justificativa', value: metadata.classificationReason });
+    fields.push({
+      label: i18n.t('documentSend:metadataField.justificativa'),
+      value: metadata.classificationReason,
+    });
   }
 
   if (metadata.missingFields && metadata.missingFields.length > 0) {
     fields.push({
-      label: 'Campos ausentes',
+      label: i18n.t('documentSend:metadataField.camposAusentes'),
       value: metadata.missingFields.join(', '),
     });
   }
 
-  fields.push({ label: 'Versão sugerida', value: metadata.suggestedVersion });
+  fields.push({
+    label: i18n.t('documentSend:metadataField.versaoSugerida'),
+    value: metadata.suggestedVersion,
+  });
 
   if (metadata.textExtraction) {
     fields.push({
-      label: 'Texto extraído',
+      label: i18n.t('documentSend:metadataField.textoExtraido'),
       value: metadata.textExtraction.truncated
-        ? `${metadata.textExtraction.charCount} caracteres (truncado)`
-        : `${metadata.textExtraction.charCount} caracteres`,
+        ? i18n.t('documentSend:metadataValue.caracteresTruncado', {
+            count: metadata.textExtraction.charCount,
+          })
+        : i18n.t('documentSend:metadataValue.caracteres', {
+            count: metadata.textExtraction.charCount,
+          }),
     });
   }
 
   if (metadata.savedDocumentId) {
-    fields.push({ label: 'Status de persistência', value: 'Metadados confirmados' });
+    fields.push({
+      label: i18n.t('documentSend:metadataField.statusDePersistencia'),
+      value: i18n.t('documentSend:metadataValue.metadadosConfirmados'),
+    });
   }
 
   if (import.meta.env.DEV && metadata.storageStatus === 'pending') {
-    fields.push({ label: 'Armazenamento de arquivo', value: 'Pendente' });
+    fields.push({
+      label: i18n.t('documentSend:metadataField.armazenamentoDeArquivo'),
+      value: i18n.t('documentSend:metadataValue.pendente'),
+    });
   }
 
   return fields;

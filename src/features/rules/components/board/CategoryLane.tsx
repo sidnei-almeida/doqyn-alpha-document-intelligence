@@ -9,7 +9,14 @@ import { useRef, useState, type ReactNode } from 'react';
 import type { DocumentCategory } from '@/types/rules';
 import { CategoryGlyph } from '../access/CategoryGlyph';
 import type { SimulationResult } from '../access/accessModel';
-import { reachLabel, type CategoryReach } from './governanceProgress';
+import type { CategoryReach, CategoryReachState } from './governanceProgress';
+import { useTranslation } from 'react-i18next';
+
+const REACH_KEYS: Record<CategoryReachState, string> = {
+  reached: 'categoryLane.reach.reached',
+  'empty-groups': 'categoryLane.reach.emptyGroups',
+  unreached: 'categoryLane.reach.unreached',
+};
 
 export type CategoryLaneProps = {
   category: DocumentCategory;
@@ -43,6 +50,8 @@ function LaneMenu({
   onOpenDetails: () => void;
   onConfigureExtraction?: () => void;
 }) {
+  const { t } = useTranslation('rules');
+
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -50,7 +59,7 @@ function LaneMenu({
     <>
       <IconButton
         ref={anchorRef}
-        label={`Opções de ${categoryName}`}
+        label={t('categoryLane.options', { category: categoryName })}
         onClick={() => setOpen((prev) => !prev)}
       >
         <Icon name="more_vert" size={ICON_SIZE.sm} aria-hidden />
@@ -70,7 +79,8 @@ function LaneMenu({
           }}
         >
           <Icon name="info" size={ICON_SIZE.xs} aria-hidden />
-          Detalhes da categoria
+
+          {t('categoryLane.detalhesDaCategoria')}
         </button>
         {onConfigureExtraction ? (
           <button
@@ -82,7 +92,8 @@ function LaneMenu({
             }}
           >
             <Icon name="tune" size={ICON_SIZE.xs} aria-hidden />
-            Campos da análise
+
+            {t('categoryLane.camposDaAnalise')}
           </button>
         ) : null}
       </AnchoredPopover>
@@ -109,6 +120,7 @@ export function CategoryLane({
   children,
   emptyLabel,
 }: CategoryLaneProps) {
+  const { t } = useTranslation('rules');
   const { setNodeRef, isOver } = useDroppable({
     id: `lane:${category.id}`,
     data: { categoryId: category.id },
@@ -134,20 +146,22 @@ export function CategoryLane({
                   <>
                     <span className="access-lane__score-from">{peopleCount}</span>
                     <span aria-hidden> → </span>
-                    <span className="access-lane__score-to">{previewCount} pessoas veem</span>
+                    <span className="access-lane__score-to">
+                      {t('categoryLane.previewReach', { count: previewCount })}
+                    </span>
                     <span className="access-lane__score-delta">
                       {delta > 0 ? `+${delta}` : String(delta)}
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className="access-lane__score-to">{peopleCount}</span>
-                    {peopleCount === 1 ? ' pessoa alcança' : ' pessoas alcançam'}
+                    <span className="access-lane__score-to">{peopleCount}</span>{' '}
+                    {t('categoryLane.peopleReach', { count: peopleCount })}
                     <span className="access-lane__score-sep" aria-hidden>
                       ·
                     </span>
-                    <span className="access-lane__score-to">{reach.groupCount}</span>
-                    {reach.groupCount === 1 ? ' grupo conectado' : ' grupos conectados'}
+                    <span className="access-lane__score-to">{reach.groupCount}</span>{' '}
+                    {t('categoryLane.groupsConnected', { count: reach.groupCount })}
                   </>
                 )}
               </p>
@@ -155,7 +169,9 @@ export function CategoryLane({
                 className="access-lane__meter"
                 data-state={reach.state}
                 role="img"
-                aria-label={`${Math.round(reach.coverage * 100)}% das pessoas da empresa alcançam esta categoria`}
+                aria-label={t('categoryLane.coverage', {
+                  percent: Math.round(reach.coverage * 100),
+                })}
               >
                 <span
                   className="access-lane__meter-fill"
@@ -166,10 +182,10 @@ export function CategoryLane({
           ) : null}
         </div>
         {!showReach ? null : outOfReach ? (
-          <span className="access-lane__flag">fora do alcance</span>
+          <span className="access-lane__flag">{t('categoryLane.outOfReach')}</span>
         ) : (
           <span className="access-lane__seal" data-state={reach.state}>
-            {reachLabel(reach.state)}
+            {t(REACH_KEYS[reach.state])}
           </span>
         )}
         {isAdmin ? (

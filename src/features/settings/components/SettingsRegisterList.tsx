@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type SettingsRegisterEntry = {
   icon: string;
@@ -22,6 +23,8 @@ export function SettingsRegisterList({
   entries: SettingsRegisterEntry[];
   className?: string;
 }) {
+  const { t } = useTranslation('settings');
+
   return (
     <ul className={cn('settings-register', className)}>
       {entries.map((entry) => (
@@ -35,7 +38,7 @@ export function SettingsRegisterList({
           </div>
           {entry.href ? (
             <Link to={entry.href} className="settings-register__action">
-              <span>{entry.linkLabel ?? 'Abrir'}</span>
+              <span>{entry.linkLabel ?? t('settingsRegisterList.open')}</span>
               <Icon name="chevron_right" size={14} aria-hidden />
             </Link>
           ) : null}

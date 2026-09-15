@@ -29,6 +29,8 @@ export async function enqueuePdfAnalysisJob(input: {
   jobKind?: AnalysisJobKind;
   documentId?: string;
   membershipId?: string;
+  /** Idioma de quem enviou, para o worker escrever resumo e nome nele. */
+  outputLocale?: string;
 }): Promise<AnalysisEnqueueResponse> {
   if (!isAsyncPdfAnalysisAvailable()) {
     throw new ServiceError(
@@ -82,6 +84,7 @@ export async function enqueuePdfAnalysisJob(input: {
       jobKind: input.jobKind ?? 'initial',
       documentId: input.documentId,
       membershipId: input.membershipId,
+      outputLocale: input.outputLocale,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao enfileirar análise.';
@@ -110,6 +113,13 @@ export async function enqueuePdfAnalysisJobFromStaging(input: {
   jobKind?: AnalysisJobKind;
   documentId?: string;
   membershipId?: string;
+  /** Idioma de quem enviou, para o worker escrever resumo e nome nele. */
+  outputLocale?: string;
+  /**
+   * Hash já resolvido pela entrada da rota (vindo do navegador, com o tamanho conferido). Sem ele,
+   * calcula baixando o provisório — o que a rota já tinha feito, e custava um download a mais.
+   */
+  fileHash?: string;
 }): Promise<AnalysisEnqueueResponse> {
   if (!isAsyncPdfAnalysisAvailable()) {
     throw new ServiceError(
@@ -119,14 +129,18 @@ export async function enqueuePdfAnalysisJobFromStaging(input: {
     );
   }
 
-  const { fileHash } = await assertAndHashAnalysisStaging({
-    tenantId: input.tenantId,
-    jobId: input.jobId,
-    originalFileName: input.originalFileName,
-    mimeType: input.mimeType,
-    expectedSizeBytes: input.fileSizeBytes,
-    storageScope: input.storageScope,
-  });
+  const fileHash =
+    input.fileHash ??
+    (
+      await assertAndHashAnalysisStaging({
+        tenantId: input.tenantId,
+        jobId: input.jobId,
+        originalFileName: input.originalFileName,
+        mimeType: input.mimeType,
+        expectedSizeBytes: input.fileSizeBytes,
+        storageScope: input.storageScope,
+      })
+    ).fileHash;
 
   const extension = sanitizeFileExtension({
     extension: input.originalFileName.split('.').pop(),
@@ -170,6 +184,7 @@ export async function enqueuePdfAnalysisJobFromStaging(input: {
       jobKind: input.jobKind ?? 'initial',
       documentId: input.documentId,
       membershipId: input.membershipId,
+      outputLocale: input.outputLocale,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha ao enfileirar análise.';

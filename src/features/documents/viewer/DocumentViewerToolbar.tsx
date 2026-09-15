@@ -5,6 +5,7 @@ import { TruncatedText } from '@/components/ui/TruncatedText';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { DocumentViewerPermissionFlags } from './documentViewerTypes';
+import { useTranslation } from 'react-i18next';
 
 export type DocumentViewerToolbarProps = {
   title: string;
@@ -96,6 +97,8 @@ export function DocumentViewerToolbar({
   closeButtonRef,
   className,
 }: DocumentViewerToolbarProps) {
+  const { t } = useTranslation('documents');
+
   const showPdfControls = Boolean(onZoomIn && onZoomOut);
 
   const actions: ReactNode[] = [];
@@ -103,7 +106,7 @@ export function DocumentViewerToolbar({
     actions.push(
       <IconButton
         key="download"
-        label="Baixar original"
+        label={t('documentViewerToolbar.baixarOriginal')}
         disabled={isDownloading}
         onClick={onDownload}
       >
@@ -117,14 +120,22 @@ export function DocumentViewerToolbar({
   }
   if (permissions?.canViewTracking && onViewTracking) {
     actions.push(
-      <IconButton key="tracking" label="Ver tracking" onClick={onViewTracking}>
+      <IconButton
+        key="tracking"
+        label={t('documentViewerToolbar.verTracking')}
+        onClick={onViewTracking}
+      >
         <Icon name="history" size={ICON_SIZE.sm} />
       </IconButton>,
     );
   }
   if (permissions?.canUpdate && onUpdateDocument) {
     actions.push(
-      <IconButton key="update" label="Atualizar documento" onClick={onUpdateDocument}>
+      <IconButton
+        key="update"
+        label={t('documentViewerToolbar.atualizarDocumento')}
+        onClick={onUpdateDocument}
+      >
         <Icon name="upload" size={ICON_SIZE.sm} />
       </IconButton>,
     );
@@ -137,7 +148,9 @@ export function DocumentViewerToolbar({
       <div className="flex items-start justify-between gap-4 px-4 py-3 sm:px-5">
         <div className="min-w-0 flex-1">
           {isLoading ? (
-            <p className="text-caption text-doqyn-muted">Carregando documento…</p>
+            <p className="text-caption text-doqyn-muted">
+              {t('documentViewerToolbar.carregandoDocumento')}
+            </p>
           ) : (
             <>
               <TruncatedText
@@ -159,7 +172,11 @@ export function DocumentViewerToolbar({
           {actions.length > 0 && onToggleDetails && <ToolDivider />}
           {onToggleDetails && (
             <IconButton
-              label={showDetails ? 'Ocultar detalhes' : 'Ver detalhes'}
+              label={
+                showDetails
+                  ? t('documentViewerToolbar.hideDetails')
+                  : t('documentViewerToolbar.showDetails')
+              }
               aria-pressed={showDetails}
               onClick={onToggleDetails}
               className={cn(showDetails && 'bg-doqyn-surface-hover text-doqyn-primary')}
@@ -170,7 +187,7 @@ export function DocumentViewerToolbar({
           <ToolDivider />
           <IconButton
             ref={closeButtonRef}
-            label="Fechar visualização do documento"
+            label={t('documentViewerToolbar.fecharVisualizacaoDoDocumento')}
             onClick={onClose}
           >
             <Icon name="close" size={ICON_SIZE.sm} />
@@ -180,35 +197,54 @@ export function DocumentViewerToolbar({
 
       {showPdfControls && (
         <div className="flex flex-wrap items-center gap-0.5 border-t border-doqyn-border-subtle px-3 py-1.5 sm:px-4">
-          <IconButton label="Diminuir zoom" disabled={!canZoomOut} onClick={onZoomOut}>
+          <IconButton
+            label={t('documentViewerToolbar.diminuirZoom')}
+            disabled={!canZoomOut}
+            onClick={onZoomOut}
+          >
             <Icon name="remove" size={ICON_SIZE.xs} />
           </IconButton>
-          <IconButton label="Aumentar zoom" disabled={!canZoomIn} onClick={onZoomIn}>
+          <IconButton
+            label={t('documentViewerToolbar.aumentarZoom')}
+            disabled={!canZoomIn}
+            onClick={onZoomIn}
+          >
             <Icon name="add" size={ICON_SIZE.xs} />
           </IconButton>
 
           <ToolDivider />
 
-          <ToolTextButton label="Largura" onClick={onFitWidth} />
-          <ToolTextButton label="Página" icon="fullscreen" onClick={onFitPage} />
+          <ToolTextButton label={t('documentViewerToolbar.largura')} onClick={onFitWidth} />
+          <ToolTextButton
+            label={t('documentViewerToolbar.pagina')}
+            icon="fullscreen"
+            onClick={onFitPage}
+          />
 
           {pageLabel && (
             <>
               <ToolDivider />
-              <IconButton label="Página anterior" onClick={onPreviousPage}>
+              <IconButton
+                label={t('documentViewerToolbar.paginaAnterior')}
+                onClick={onPreviousPage}
+              >
                 <Icon name="chevron_left" size={ICON_SIZE.xs} />
               </IconButton>
               <span className="min-w-[6.5rem] text-center font-mono text-micro tabular-nums text-doqyn-subtle">
                 {pageLabel}
               </span>
-              <IconButton label="Próxima página" onClick={onNextPage}>
+              <IconButton label={t('documentViewerToolbar.proximaPagina')} onClick={onNextPage}>
                 <Icon name="chevron_right" size={ICON_SIZE.xs} />
               </IconButton>
             </>
           )}
 
           {onRefresh && (
-            <IconButton label="Atualizar preview" onClick={onRefresh} className="ml-auto">
+            <IconButton
+              label={t('documentViewerToolbar.atualizarPreview')}
+              onClick={onRefresh}
+              className="ml-auto"
+            >
               <Icon name="refresh" size={ICON_SIZE.xs} />
             </IconButton>
           )}

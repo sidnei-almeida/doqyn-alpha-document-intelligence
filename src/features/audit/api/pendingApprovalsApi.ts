@@ -1,5 +1,7 @@
+import { i18n } from '@/i18n';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
 import type { CompanyMemberDto } from '@/features/users/api/usersApi';
+import { parseApiError } from '@/lib/apiErrors';
 
 /**
  * Um pedido esperando decisão, na forma que o servidor devolve.
@@ -90,7 +92,7 @@ export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
   });
 
   if (!response.ok) {
-    throw new Error('Não foi possível carregar as pendências.');
+    throw new Error(i18n.t('audit:error.falhaCarregarPendencias'));
   }
 
   const data = (await response.json()) as { items?: PendingApprovalDto[] };
@@ -115,13 +117,13 @@ export async function decideApprovalRequest(
   );
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { message?: string };
-    throw new Error(body.message ?? 'Não foi possível registrar a decisão.');
+    throw await parseApiError(response, i18n.t('audit:error.decisionFailed'));
   }
 }
 
-export const PENDING_TYPE_LABELS: Record<PendingApprovalItem['type'], string> = {
-  document_upload: 'Envio de documento',
-  document_download: 'Download de documento',
-  document_share: 'Compartilhamento de documento',
+/** Chaves do namespace `audit`; a tela traduz. */
+export const PENDING_TYPE_LABEL_KEYS: Record<PendingApprovalItem['type'], string> = {
+  document_upload: 'audit:pendingType.documentUpload',
+  document_download: 'audit:pendingType.documentDownload',
+  document_share: 'audit:pendingType.documentShare',
 };

@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
+import { isUncategorizedCategory } from '@shared/systemCategory';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
 import type { DocumentListItem } from '@/types/document-library';
 import type { LibraryFolder, LibraryViewMode } from '../types/library';
 import { ICON_SIZE } from '@/lib/iconDefaults';
-import { VIEW_MODE_ICONS, VIEW_MODE_LABELS, VIEW_MODE_ORDER } from '../utils/libraryViewMode';
+import { VIEW_MODE_ICONS, VIEW_MODE_LABEL_KEYS, VIEW_MODE_ORDER } from '../utils/libraryViewMode';
+import { useTranslation } from 'react-i18next';
 
 export type ExplorerContextMenuState =
   | { kind: 'empty'; x: number; y: number; scope: 'root' | 'folder' }
@@ -121,6 +123,8 @@ export function ExplorerContextMenu({
   onRenameFolder,
   onDeleteFolder,
 }: ExplorerContextMenuProps) {
+  const { t } = useTranslation('library');
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -131,8 +135,7 @@ export function ExplorerContextMenu({
    * não descobrir isso depois de clicar.
    */
   const folder = state?.kind === 'folder' ? state.folder : null;
-  const isUncategorized =
-    folder?.slug === 'sem-categoria' || folder?.name === 'Sem categoria' || false;
+  const isUncategorized = folder ? isUncategorizedCategory(folder) : false;
 
   useEffect(() => {
     if (!state) return;
@@ -169,7 +172,7 @@ export function ExplorerContextMenu({
     <div
       ref={menuRef}
       role="menu"
-      aria-label="Menu de contexto"
+      aria-label={t('explorerContextMenu.menuDeContexto')}
       className={
         state.kind === 'file'
           ? 'menu-enter fixed z-[90] min-w-[248px] max-w-[300px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-panel py-1 shadow-dropdown'
@@ -180,7 +183,11 @@ export function ExplorerContextMenu({
     >
       {state.kind === 'empty' && (
         <>
-          <MenuItem label="Enviar documento" icon="upload" onClick={() => run(onUpload)} />
+          <MenuItem
+            label={t('explorerContextMenu.enviarDocumento')}
+            icon="upload"
+            onClick={() => run(onUpload)}
+          />
           {state.scope === 'root' && (
             <Link
               to="/rules?nova=categoria"
@@ -189,18 +196,28 @@ export function ExplorerContextMenu({
               onClick={onClose}
             >
               <Icon name="create_new_folder" size={ICON_SIZE.sm} className="text-doqyn-muted" />
-              Nova categoria
+
+              {t('explorerContextMenu.novaCategoria')}
             </Link>
           )}
           {state.scope === 'folder' && (
             <Link to="/rules" role="menuitem" className={itemClass} onClick={onClose}>
               <Icon name="balance" size={ICON_SIZE.sm} className="text-doqyn-muted" />
-              Ver regras desta categoria
+
+              {t('explorerContextMenu.verRegrasDestaCategoria')}
             </Link>
           )}
-          <MenuItem label="Atualizar" icon="refresh" onClick={() => run(onRefresh)} />
           <MenuItem
-            label={state.scope === 'folder' ? 'Ver informações da pasta atual' : 'Ver informações'}
+            label={t('explorerContextMenu.atualizar')}
+            icon="refresh"
+            onClick={() => run(onRefresh)}
+          />
+          <MenuItem
+            label={
+              state.scope === 'folder'
+                ? t('explorerContextMenu.infoCurrentFolder')
+                : t('explorerContextMenu.verInformacoes')
+            }
             icon="info"
             onClick={() => run(() => onShowContextInfo?.())}
           />
@@ -211,7 +228,7 @@ export function ExplorerContextMenu({
           {VIEW_MODE_ORDER.map((mode) => (
             <MenuItem
               key={mode}
-              label={VIEW_MODE_LABELS[mode]}
+              label={t(VIEW_MODE_LABEL_KEYS[mode])}
               icon={VIEW_MODE_ICONS[mode]}
               onClick={() => run(() => onViewModeChange(mode))}
               disabled={viewMode === mode}
@@ -223,34 +240,35 @@ export function ExplorerContextMenu({
       {state.kind === 'folder' && (
         <>
           <MenuItem
-            label="Abrir"
+            label={t('explorerContextMenu.abrir')}
             icon="folder_open"
             onClick={() => run(() => onOpenFolder?.(state.folder))}
           />
           <MenuItem
-            label="Enviar documento nesta pasta"
+            label={t('explorerContextMenu.enviarDocumentoNestaPasta')}
             icon="upload"
             onClick={() => run(() => onUploadInFolder?.(state.folder))}
           />
           <MenuItem
-            label="Ver informações"
+            label={t('explorerContextMenu.verInformacoes')}
             icon="info"
             onClick={() => run(() => onShowFolderInfo?.(state.folder))}
           />
           <Link to="/rules" role="menuitem" className={itemClass} onClick={onClose}>
             <Icon name="balance" size={ICON_SIZE.sm} className="text-doqyn-muted" />
-            Ver regras
+
+            {t('explorerContextMenu.verRegras')}
           </Link>
           {/* Sem categoria não se renomeia nem se apaga: é o destino de quem perde a pasta, e
               sem ela a exclusão da próxima não teria para onde mandar os documentos. */}
           <MenuItem
-            label="Renomear categoria"
+            label={t('explorerContextMenu.renomearCategoria')}
             icon="edit"
             disabled={isUncategorized || !onRenameFolder}
             onClick={() => run(() => onRenameFolder?.(state.folder))}
           />
           <MenuItem
-            label="Excluir categoria"
+            label={t('explorerContextMenu.excluirCategoria')}
             icon="delete"
             danger
             disabled={isUncategorized || !onDeleteFolder}
@@ -309,69 +327,69 @@ export function ExplorerContextMenu({
               <>
                 <MenuItem
                   compact
-                  label="Visualizar"
+                  label={t('explorerContextMenu.visualizar')}
                   icon="visibility"
                   disabled={!canPreview}
                   onClick={() => run(() => (onPreviewFile ?? onOpenFile)?.(doc))}
                 />
                 <MenuItem
                   compact
-                  label="Baixar"
+                  label={t('explorerContextMenu.baixar')}
                   icon="download"
                   disabled={!canDownload}
                   title={
                     downloadNeedsApproval
-                      ? 'Baixar este documento depende de aprovação do administrador.'
+                      ? t('explorerContextMenu.downloadNeedsApproval')
                       : undefined
                   }
                   onClick={() => run(() => onDownloadFile?.(doc))}
                 />
                 <MenuItem
                   compact
-                  label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                  label={t(isFavorite ? 'favorites.remove' : 'favorites.add')}
                   icon="star"
                   onClick={() => run(() => onToggleFavorite?.(doc))}
                 />
                 <MenuItem
                   compact
-                  label="Ver detalhes"
+                  label={t('explorerContextMenu.verDetalhes')}
                   icon="info"
                   onClick={() => run(() => onSelectFileDetails?.(doc))}
                 />
                 {canTracking && (
                   <MenuItem
                     compact
-                    label="Ver tracking"
+                    label={t('explorerContextMenu.verTracking')}
                     icon="history"
                     onClick={() => run(() => onTrackingFile?.(doc))}
                   />
                 )}
                 <MenuItem
                   compact
-                  label="Atualizar documento"
+                  label={t('explorerContextMenu.atualizarDocumento')}
                   icon="upload"
                   disabled={!canUpdate}
                   onClick={() => run(() => onUpdateDocument?.(doc))}
                 />
                 <MenuItem
                   compact
-                  label="Compartilhar"
+                  label={t('explorerContextMenu.compartilhar')}
                   icon="share"
                   disabled={!canOpenShare}
                   title={
                     doc.permissions?.sharedViaGrant
-                      ? 'Você não pode compartilhar um documento recebido por compartilhamento.'
+                      ? t('explorerContextMenu.shareReceived')
                       : shareNeedsApproval
-                        ? 'Compartilhar este documento depende de aprovação do administrador.'
+                        ? t('explorerContextMenu.shareNeedsApproval')
                         : !doc.permissions?.canShare
-                          ? 'Você não tem permissão para compartilhar este documento.'
+                          ? t('explorerContextMenu.noSharePermission')
                           : undefined
                   }
                   onClick={() => run(() => onShareFile?.(doc))}
                 />
                 <MenuItem
                   compact
-                  label="Solicitar assinatura"
+                  label={t('explorerContextMenu.solicitarAssinatura')}
                   icon="draw"
                   disabled={!canShare}
                   onClick={() => run(() => onRequestSignatureFile?.(doc))}
@@ -379,7 +397,7 @@ export function ExplorerContextMenu({
                 {hasSignatureActivity ? (
                   <MenuItem
                     compact
-                    label="Ver assinaturas"
+                    label={t('explorerContextMenu.verAssinaturas')}
                     icon="history_edu"
                     onClick={() => run(() => onViewSignaturesFile?.(doc))}
                   />
@@ -387,36 +405,36 @@ export function ExplorerContextMenu({
                 {canDownloadSignedPdf ? (
                   <MenuItem
                     compact
-                    label="Baixar PDF assinado"
+                    label={t('explorerContextMenu.baixarPdfAssinado')}
                     icon="task"
                     onClick={() => run(() => onDownloadSignedPdfFile?.(doc))}
                   />
                 ) : null}
                 <MenuItem
                   compact
-                  label="Mover"
+                  label={t('explorerContextMenu.mover')}
                   icon="drive_file_move"
                   disabled={!canMove}
                   title={
                     !canUpdate
-                      ? 'Você não tem permissão para mover este documento.'
+                      ? t('explorerContextMenu.noMovePermission')
                       : isTrashView
-                        ? 'Este documento está na Lixeira e não pode ser movido.'
+                        ? t('explorerContextMenu.inTrashCantMove')
                         : isDeactivatedView
-                          ? 'Este documento está desativado e não pode ser movido.'
+                          ? t('explorerContextMenu.deactivatedCantMove')
                           : undefined
                   }
                   onClick={() => run(() => onMoveFile?.(doc))}
                 />
                 <MenuItem
                   compact
-                  label="Metadados"
+                  label={t('explorerContextMenu.metadados')}
                   icon="list_alt"
                   disabled={!onEditMetadataFile || archiveView}
                   title={
                     archiveView
-                      ? 'Documento arquivado não tem ficha editável.'
-                      : 'Conferir e corrigir os campos deste documento'
+                      ? t('explorerContextMenu.archivedNoMetadata')
+                      : t('explorerContextMenu.editMetadataHint')
                   }
                   onClick={() => run(() => onEditMetadataFile?.(doc))}
                 />
@@ -425,7 +443,7 @@ export function ExplorerContextMenu({
                     <div className="my-1 border-t border-doqyn-border-subtle" />
                     <MenuItem
                       compact
-                      label="Restaurar"
+                      label={t('explorerContextMenu.restaurar')}
                       icon="restore_from_trash"
                       onClick={() => run(() => onRestoreFile?.(doc))}
                     />
@@ -435,7 +453,7 @@ export function ExplorerContextMenu({
                     <div className="my-1 border-t border-doqyn-border-subtle" />
                     <MenuItem
                       compact
-                      label="Recuperar"
+                      label={t('explorerContextMenu.recuperar')}
                       icon="replay"
                       onClick={() => run(() => onReactivateFile?.(doc))}
                     />
@@ -446,7 +464,7 @@ export function ExplorerContextMenu({
                       <div className="my-1 border-t border-doqyn-border-subtle" />
                       <MenuItem
                         compact
-                        label="Mover para lixeira"
+                        label={t('explorerContextMenu.moverParaLixeira')}
                         icon="delete"
                         danger
                         onClick={() => run(() => onTrashFile?.(doc))}

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { DoqynVerifiedSession } from './providers/doqynAuthProvider.js';
-import { redisGetJson, redisSetJson } from '../redis/redisClient.js';
+import { redisDel, redisGetJson, redisSetJson } from '../redis/redisClient.js';
 
 function readBool(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim() === '') return defaultValue;
@@ -40,4 +40,21 @@ export async function setCachedDoqynSession(
 ): Promise<void> {
   if (!isSessionCacheEnabled()) return;
   await redisSetJson(buildSessionCacheKey(sessionToken), session, getSessionCacheTtlSeconds());
+}
+
+/**
+ * Esquece a sessão em cache para que a próxima requisição releia o auth-service.
+ *
+ * Existe por causa do idioma. A sessão fica em cache por 45 segundos, e dentro dessa janela o
+ * `AuthUser` guardado ainda carrega o locale antigo — então alguém que acabou de mudar para
+ * inglês podia disparar um compartilhamento e ver o e-mail sair em português. Quarenta e cinco
+ * segundos é pouco, mas é exatamente o intervalo em que a pessoa está testando se a troca
+ * funcionou.
+ *
+ * Serve para qualquer dado de sessão que o usuário edita e vê de volta — nome, avatar, papel —,
+ * não só para o idioma.
+ */
+export async function invalidateCachedDoqynSession(sessionToken: string): Promise<void> {
+  if (!isSessionCacheEnabled()) return;
+  await redisDel(buildSessionCacheKey(sessionToken));
 }

@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
 /**
@@ -48,16 +50,26 @@ export function ContactRow({
   );
 }
 
-/** "12 trocas · última há 3 dias" — a contagem crua, sem o score, que não é para ler. */
-export function formatContactMeta(interactions: number, lastInteractionAt: string): string {
-  const trocas = `${interactions} ${interactions === 1 ? 'troca' : 'trocas'}`;
-  const dias = Math.floor((Date.now() - new Date(lastInteractionAt).getTime()) / 86_400_000);
+/**
+ * "12 trocas · última há 3 dias" — a contagem crua, sem o score, que não é para ler.
+ *
+ * Hook, e não função solta: a tela de contatos também usa, e é o `useTranslation` daqui que
+ * garante o catálogo `directory` carregado lá.
+ */
+export function useFormatContactMeta() {
+  const { t } = useTranslation('directory');
 
-  if (Number.isNaN(dias)) return trocas;
-  if (dias <= 0) return `${trocas} · última hoje`;
-  if (dias === 1) return `${trocas} · última ontem`;
-  if (dias < 30) return `${trocas} · última há ${dias} dias`;
+  return useCallback(
+    (interactions: number, lastInteractionAt: string): string => {
+      const trocas = t('contactMeta.trocas', { count: interactions });
+      const dias = Math.floor((Date.now() - new Date(lastInteractionAt).getTime()) / 86_400_000);
 
-  const meses = Math.floor(dias / 30);
-  return `${trocas} · última há ${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+      if (Number.isNaN(dias)) return trocas;
+      if (dias <= 0) return t('contactMeta.ultimaHoje', { trocas });
+      if (dias === 1) return t('contactMeta.ultimaOntem', { trocas });
+      if (dias < 30) return t('contactMeta.ultimaDias', { trocas, count: dias });
+      return t('contactMeta.ultimaMeses', { trocas, count: Math.floor(dias / 30) });
+    },
+    [t],
+  );
 }

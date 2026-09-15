@@ -6,6 +6,7 @@ import { DoqynMark } from '@/components/brand/DoqynMark';
 import { AntechamberDocument } from '@/features/auth/components/AntechamberDocument';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Largura da coluna do formulário, por rota.
@@ -17,19 +18,19 @@ import { cn } from '@/lib/utils';
  */
 const COLUMN_WIDTH: Record<string, string> = {
   '/login': 'max-w-[368px]',
-  '/acesso': 'max-w-[452px]',
-  '/criar-empresa': 'max-w-[520px]',
-  '/criar-acesso-cpf': 'max-w-[520px]',
+  '/access': 'max-w-[452px]',
+  '/signup/company': 'max-w-[520px]',
+  '/signup/individual': 'max-w-[520px]',
 };
 
 /**
  * Rotas com parâmetro na URL, que não casam por igualdade.
  *
- * O convite é `/convite/:token`, então `COLUMN_WIDTH[pathname]` nunca acha — e a tela caía na
+ * O convite é `/invite/:token`, então `COLUMN_WIDTH[pathname]` nunca acha — e a tela caía na
  * largura de 452px, estreita demais para um formulário que pede nome, senha, WhatsApp, cargo e
  * setor. Mesma medida dos outros cadastros, pelo mesmo motivo.
  */
-const COLUMN_WIDTH_BY_PREFIX: Array<[string, string]> = [['/convite/', 'max-w-[520px]']];
+const COLUMN_WIDTH_BY_PREFIX: Array<[string, string]> = [['/invite/', 'max-w-[520px]']];
 
 function resolveColumnWidth(pathname: string): string {
   const exact = COLUMN_WIDTH[pathname];
@@ -62,6 +63,8 @@ function resolveColumnWidth(pathname: string): string {
  * largura de celular, o documento viraria enfeite ilegível.
  */
 export function AuthSplitShell() {
+  const { t } = useTranslation('components');
+
   const location = useLocation();
   const width = resolveColumnWidth(location.pathname);
 
@@ -82,7 +85,7 @@ export function AuthSplitShell() {
           <span className="auth-stage auth-stage--mark flex items-center gap-2.5">
             <DoqynMark size={26} className="shrink-0 text-doqyn-accent-active" />
             <span className="font-display text-[17px] font-medium uppercase leading-none tracking-[0.16em] text-doqyn-text">
-              Doqyn
+              {t('authSplitShell.doqyn')}
             </span>
           </span>
 
@@ -93,7 +96,8 @@ export function AuthSplitShell() {
 
           <p className="auth-stage auth-stage--foot mt-9 flex items-center gap-1.5 text-micro text-doqyn-subtle">
             <Icon name="shield" size={ICON_SIZE.xs} />
-            Ambiente corporativo seguro
+
+            {t('authSplitShell.ambienteCorporativoSeguro')}
           </p>
         </div>
       </section>

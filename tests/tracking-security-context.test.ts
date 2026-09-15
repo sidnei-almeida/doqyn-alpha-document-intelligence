@@ -20,6 +20,7 @@ import {
 import { formatSecurityContextDisplay } from '../src/features/tracking/utils/trackingDisplay.js';
 import { DOCUMENT_SECURITY_CONTEXT_ACTIONS } from '../server/services/tracking/trackingTypes.js';
 import { sanitizeAuditMetadata } from '../server/utils/sanitizeAuditMetadata.js';
+import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -134,8 +135,8 @@ describe('tracking securityContext', () => {
     const drawer = read('src/features/tracking/components/TrackingEventLogDetail.tsx');
     const display = read('src/features/tracking/utils/trackingDisplay.ts');
     assert.ok(drawer.includes('formatSecurityContextDisplay'));
-    assert.ok(drawer.includes('Contexto de acesso'));
-    assert.ok(drawer.includes('Local aproximado'));
+    assert.ok(drawer.includes('.contextoDeAcesso'));
+    assert.ok(drawer.includes('trackingEventLogDetail.security.location'));
     assert.ok(display.includes('ipAddressMasked'));
     assert.equal(drawer.includes('user-agent bruto'), false);
   });
@@ -229,6 +230,7 @@ describe('tracking securityContext', () => {
   });
 
   it('UI mostra Rede local para eventos locais', () => {
+    initI18nForTests();
     const display = formatSecurityContextDisplay({
       browser: 'Firefox',
       browserVersion: '152',

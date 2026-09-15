@@ -93,7 +93,7 @@ describe('diretório DOQYN — a fronteira do e-mail', () => {
 
     // O aviso diz o que fazer, e não quantos são: a contagem total é o que um diretório
     // varrível entregaria de graça.
-    assert.ok(field.includes('Digite mais letras para estreitar'));
+    assert.ok(field.includes('.haMaisGenteCom'));
     assert.ok(!field.includes('search.data?.total'));
   });
 
@@ -143,11 +143,11 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     // que aquele caminho existia, nem que a busca era por apelido.
     assert.ok(flow.includes("'internal' | 'doqyn' | 'external'"));
     for (const modal of [share, sig]) {
-      assert.ok(modal.includes('doqynLabel="Outra conta DOQYN"'));
+      assert.ok(modal.includes(".audienceDoqyn')"));
       assert.ok(modal.includes("audience === 'doqyn'"));
       // E o campo não é mais repetido embaixo da busca de colegas: duas cópias fariam a pessoa
       // escolher entre elas sem saber a diferença.
-      assert.ok(modal.includes('Não é daqui? Buscar por nome de usuário'));
+      assert.ok(modal.includes('.naoEDaquiBuscar'));
     }
   });
 
@@ -157,10 +157,10 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
     const req = read('src/features/requests/components/RequestDocumentModal.tsx');
 
     // Era o rótulo que mentia: o campo sempre aceitou apelido, e dizia "e-mail".
-    assert.ok(field.includes("label = 'Nome de usuário de quem é de fora daqui'"));
+    assert.ok(field.includes("label ?? t('crossTenantRecipientField.label')"));
     assert.ok(field.includes('placeholder="joao.silva"'));
-    assert.ok(sig.includes('label="Nome de usuário de quem vai assinar"'));
-    assert.ok(req.includes('label="Nome de usuário de quem vai enviar"'));
+    assert.ok(sig.includes('.nomeDeUsuarioDe'));
+    assert.ok(req.includes('.nomeDeUsuarioDe'));
 
     // O e-mail continua aceito: é ele que leva a quem **não** tem conta, e recebe por link.
     assert.ok(field.includes('onFallbackToLink'));
@@ -183,6 +183,6 @@ describe('diretório DOQYN — o campo que atravessa a fronteira', () => {
 
     // O servidor colapsa `doqyn_user` em `external` com a chave desligada, então o caso nem chega.
     assert.ok(field.includes("lookup.data.kind === 'doqyn_user'"));
-    assert.ok(field.includes('Esse e-mail não tem conta DOQYN.'));
+    assert.ok(field.includes('.semConta'));
   });
 });

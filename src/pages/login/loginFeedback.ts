@@ -1,4 +1,6 @@
 import type { AlertBannerVariant } from '@/components/ui/AlertBanner';
+import { i18n } from '@/i18n';
+import ptPages from '@/i18n/catalog/pt-BR/pages.json';
 
 export function getLoginAlertVariant(code: string | null): AlertBannerVariant {
   if (!code) return 'error';
@@ -25,29 +27,31 @@ export function getLoginAlertVariant(code: string | null): AlertBannerVariant {
   return 'error';
 }
 
+type LoginAlertTitle = keyof typeof ptPages.loginFeedback.title;
+
+const TITLE_BY_CODE: Record<string, LoginAlertTitle> = {
+  INVALID_CREDENTIALS: 'invalidCredentials',
+  USER_DISABLED: 'userDisabled',
+  MEMBERSHIP_PENDING: 'membershipPending',
+  MEMBERSHIP_BLOCKED: 'membershipBlocked',
+  MEMBERSHIP_REJECTED: 'membershipRejected',
+  NO_ACTIVE_MEMBERSHIP: 'noActiveMembership',
+  SESSION_EXPIRED: 'sessionExpired',
+  INVALID_SESSION: 'sessionExpired',
+  OAUTH_EMAIL_NOT_VERIFIED: 'oauthEmailNotVerified',
+  OAUTH_CALLBACK_FAILED: 'oauthUnavailable',
+  OAUTH_PROVIDER_DISABLED: 'oauthUnavailable',
+};
+
+/**
+ * O título no idioma ativo, com o `pt-BR` embutido como rede.
+ *
+ * Chamado também fora da tela de login — e em teste, onde o catálogo `pages` não foi carregado.
+ * Sem a rede, o título viraria a chave crua.
+ */
 export function getLoginAlertTitle(code: string | null): string | undefined {
-  switch (code) {
-    case 'INVALID_CREDENTIALS':
-      return 'Credenciais inválidas';
-    case 'USER_DISABLED':
-      return 'Conta desativada';
-    case 'MEMBERSHIP_PENDING':
-      return 'Aguardando aprovação';
-    case 'MEMBERSHIP_BLOCKED':
-      return 'Acesso bloqueado';
-    case 'MEMBERSHIP_REJECTED':
-      return 'Solicitação rejeitada';
-    case 'NO_ACTIVE_MEMBERSHIP':
-      return 'Sem ambiente ativo';
-    case 'SESSION_EXPIRED':
-    case 'INVALID_SESSION':
-      return 'Sessão expirada';
-    case 'OAUTH_EMAIL_NOT_VERIFIED':
-      return 'E-mail não verificado pelo provedor';
-    case 'OAUTH_CALLBACK_FAILED':
-    case 'OAUTH_PROVIDER_DISABLED':
-      return 'Login social indisponível';
-    default:
-      return undefined;
-  }
+  const title = code ? TITLE_BY_CODE[code] : undefined;
+  if (!title) return undefined;
+  const key = `pages:loginFeedback.title.${title}`;
+  return i18n.exists(key) ? i18n.t(key) : ptPages.loginFeedback.title[title];
 }

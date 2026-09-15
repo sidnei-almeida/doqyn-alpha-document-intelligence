@@ -3,6 +3,7 @@ import { connectRedisOnBoot } from '../redis/redisClient.js';
 import { runAnalysisWorkerLoop } from './analysisWorker.js';
 import { runEmbeddingWorkerLoop } from './embeddingWorker.js';
 import { runChunkingWorkerLoop } from './chunkingWorker.js';
+import { runStoragePromotionWorkerLoop } from './storagePromotionWorker.js';
 import {
   configurePrometheusService,
   initPrometheusMetrics,
@@ -21,6 +22,9 @@ async function main() {
   // O fatiamento vem antes do embedding na vida do documento e sai do request da confirmação por
   // ser CPU — mesmo motivo, mesmo processo.
   await runChunkingWorkerLoop();
+  // A cópia do provisório para a chave definitiva saiu da confirmação; é I/O dentro do R2, leve o
+  // bastante para morar aqui junto.
+  await runStoragePromotionWorkerLoop();
 }
 
 main().catch((error) => {

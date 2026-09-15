@@ -1,5 +1,6 @@
-import type { IndexDescription } from 'mongodb';
+import type { CollationOptions, IndexDescription } from 'mongodb';
 import { REGISTRY_COLLECTIONS } from '../db/constants.js';
+import { TEXT_SORT_COLLATION } from '../utils/textCollation.js';
 import { getDb } from '../db/mongoClient.js';
 import {
   resolveSharedCollections,
@@ -74,7 +75,12 @@ export async function ensureIndexesForCollection(
       }
     }
 
-    const match = existing.find((idx) => JSON.stringify(idx.key) === keyStr);
+    // Mesma chave com outra collation é outro índice: a consulta com collation não usa o comum.
+    const collationOf = (value: { collation?: { locale?: string } }) =>
+      value.collation?.locale ?? 'simple';
+    const match = existing.find(
+      (idx) => JSON.stringify(idx.key) === keyStr && collationOf(idx) === collationOf(spec),
+    );
 
     if (match) {
       results.push({
@@ -90,8 +96,11 @@ export async function ensureIndexesForCollection(
       partialFilterExpression?: Record<string, unknown>;
       name?: string;
       expireAfterSeconds?: number;
+      collation?: CollationOptions;
     } = {};
     if (spec.unique) createOptions.unique = true;
+    // Como o TTL abaixo: declarada e não repassada, a collation some e o índice nasce comum.
+    if (spec.collation) createOptions.collation = spec.collation;
     if (spec.partialFilterExpression)
       createOptions.partialFilterExpression = spec.partialFilterExpression;
     if (spec.name) createOptions.name = spec.name;
@@ -206,6 +215,31 @@ export function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Ar
         { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
         { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
         { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
+        /* Ordenar a Biblioteca por nome ou categoria. Com `TEXT_SORT_COLLATION`, e só com ela:
+           a consulta ordenada por texto leva essa collation, e sem índice que a tenha o filtro
+           por `tenantId` deixa de usar índice e a listagem vira varredura. A variante com
+           `ownerUserId` atende o filtro "meus documentos" e a pessoa física. */
+        { key: { tenantId: 1, currentFileName: 1 }, collation: TEXT_SORT_COLLATION },
+        {
+          key: { tenantId: 1, ownerUserId: 1, currentFileName: 1 },
+          collation: TEXT_SORT_COLLATION,
+        },
+        { key: { tenantId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
+        { key: { tenantId: 1, ownerUserId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
+        /* Lixeira e desativados listam por tenant ordenando pela data, e a varredura de retenção
+           filtra por prazo vencido. Sem estes, as três leem todo documento do tenant. */
+        {
+          key: { tenantId: 1, deletedAt: -1 },
+          partialFilterExpression: { deletedAt: { $exists: true } },
+        },
+        {
+          key: { tenantId: 1, deactivatedAt: -1 },
+          partialFilterExpression: { deactivatedAt: { $exists: true } },
+        },
+        {
+          key: { tenantId: 1, trashExpiresAt: 1 },
+          partialFilterExpression: { trashExpiresAt: { $exists: true } },
+        },
       ],
     },
     {

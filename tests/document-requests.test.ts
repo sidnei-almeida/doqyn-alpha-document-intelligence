@@ -189,7 +189,7 @@ describe('requisitar documento — aviso e tela', () => {
     const list = read('src/features/notifications/components/NotificationList.tsx');
 
     // Enquanto ninguém envia não há arquivo, e o `documentId` ausente devolveria `null`.
-    assert.ok(list.includes("if (notification.type === 'document_requested') return '/pedidos'"));
+    assert.ok(list.includes("if (notification.type === 'document_requested') return '/requests'"));
   });
 
   it('um fato, um aviso', () => {
@@ -206,10 +206,10 @@ describe('requisitar documento — aviso e tela', () => {
     const routes = read('src/app/routes.tsx');
     const nav = read('src/lib/constants.ts');
 
-    // `/biblioteca/:collection` lista documentos, e um pedido só vira documento quando alguém
+    // `/library/:collection` lista documentos, e um pedido só vira documento quando alguém
     // envia — entrar lá como coleção obrigaria a mentir para `DocumentListItem`.
-    assert.ok(routes.includes("path: '/pedidos'"));
-    assert.ok(nav.includes("path: '/pedidos'"));
+    assert.ok(routes.includes("path: '/requests'"));
+    assert.ok(nav.includes("path: '/requests'"));
   });
 
   it('a pessoa é identificada pelo id do auth, não pelo da associação', () => {
@@ -267,7 +267,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
     const provider = read('src/features/upload/UploadQueueProvider.tsx');
     const client = read('src/features/document-send/services/confirmAnalysis.ts');
 
-    assert.ok(page.includes("label: 'Enviar documento'"));
+    assert.ok(page.includes("label: t('documentRequestsPage.actions.upload')"));
     assert.ok(types.includes('documentRequestId?: string'));
     assert.ok(provider.includes('documentRequestId: item.context?.documentRequestId'));
     // Vale para os dois caminhos: confirmação direta e envio para aprovação.
@@ -323,7 +323,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
     // A listagem principal não carrega concessões; só "Compartilhados comigo" carrega.
     assert.ok(list.includes("notification.type === 'document_request_fulfilled'"));
     assert.ok(page.includes('function fulfilledDocumentPath'));
-    assert.ok(page.includes('/biblioteca/compartilhados?documentId='));
+    assert.ok(page.includes('/library/shared?documentId='));
   });
 
   it('o prazo é ancorado em UTC, senão as duas telas discordam por um dia', () => {
@@ -347,7 +347,8 @@ describe('requisitar documento — o que a revisão apontou', () => {
     const dialog = read('src/features/audit/components/PendingApprovalReviewDialog.tsx');
 
     assert.ok(query.includes('function readSharePermissions'));
-    assert.ok(dialog.includes('O que será concedido'));
-    assert.ok(dialog.includes("item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'"));
+    assert.ok(dialog.includes('.oQueSeraConcedido'));
+    assert.ok(dialog.includes("t('pendingApprovalReviewDialog.grantViewDownload')"));
+    assert.ok(dialog.includes("t('pendingApprovalReviewDialog.grantViewOnly')"));
   });
 });

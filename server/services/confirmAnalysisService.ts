@@ -28,6 +28,7 @@ import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { logger } from '../utils/logger.js';
 import { getStorageProvider } from '../storage/index.js';
+import { enqueueStoragePromotionJob } from '../queues/storagePromotionQueue.js';
 import {
   enqueueScheduledDocumentPreview,
   scheduleDocumentPreviewForVersion,
@@ -51,6 +52,7 @@ import {
   mapVersionMetadata,
   persistConfirmedVersionFile,
   projectDocumentSearchMeta,
+  type StagingPromotionRequest,
 } from './confirm/confirmVersionShared.js';
 
 export { ConfirmAnalysisError, isConfirmAnalysisError };
@@ -141,6 +143,7 @@ export const confirmAnalysisSchema = z.object({
     pageCount: z.number().optional(),
     charCount: z.number(),
     truncated: z.boolean(),
+    detectedLanguage: z.enum(['pt', 'en', 'es', 'und']).optional(),
   }),
   classification: classificationSchema,
   extraction: extractionSchema,
@@ -417,10 +420,6 @@ export async function confirmAnalysisPersistence(input: {
     ? 'document.metadata.reviewed_confirmed'
     : 'document.metadata.confirmed';
 
-  const auditDescription = needsReview
-    ? 'Documento salvo após revisão manual dos metadados extraídos.'
-    : 'Documento criado a partir da análise automática confirmada pelo usuário.';
-
   let resolvedNames;
   try {
     resolvedNames = resolveStorageFileNames({
@@ -439,10 +438,33 @@ export async function confirmAnalysisPersistence(input: {
     throw error;
   }
 
+  /**
+   * O mesmo job não confirma duas vezes.
+   *
+   * Antes a segunda tentativa morria sozinha no storage, porque a primeira apagava o provisório.
+   * Com a cópia em segundo plano o provisório vive mais alguns minutos, e a repetição (duplo clique,
+   * rede que reenviou) criava documento e versão para só então esbarrar na chave do job — deixando
+   * os dois órfãos. A pergunta tem de vir antes de gravar qualquer coisa.
+   */
+  if (
+    data.jobId &&
+    (await input.ctx.collections.processingJobs.findOne({ _id: data.jobId } as Record<
+      string,
+      unknown
+    >))
+  ) {
+    throw new ConfirmAnalysisError(
+      'Esta análise já foi confirmada.',
+      'ANALYSIS_ALREADY_CONFIRMED',
+      409,
+    );
+  }
+
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;
   let confirmedPdfBuffer: Buffer | null = null;
+  let stagingPromotion: StagingPromotionRequest | null = null;
 
   try {
     const persisted = await persistConfirmedVersionFile({
@@ -460,6 +482,7 @@ export async function confirmAnalysisPersistence(input: {
     });
     versionStorage = persisted.storage;
     confirmedPdfBuffer = persisted.buffer;
+    stagingPromotion = persisted.promotion;
     persistedObjectKey = versionStorage.primary.objectKey;
     persistedBucketAlias = versionStorage.primary.bucketAlias;
   } catch (error) {
@@ -505,6 +528,9 @@ export async function confirmAnalysisPersistence(input: {
       className: docClass.name,
       title: buildDocumentTitle(docClass.name, versionMetadata),
       currentFileName: resolvedNames.finalFileName,
+      ...(data.textExtraction.detectedLanguage && data.textExtraction.detectedLanguage !== 'und'
+        ? { detectedLanguage: data.textExtraction.detectedLanguage }
+        : {}),
       status: 'active',
       processingStatus: needsReview ? 'processed_with_review' : 'processed',
       access: {
@@ -618,10 +644,11 @@ export async function confirmAnalysisPersistence(input: {
     await documentVersions.insertOne(version);
     await processingJobs.insertOne(processingJob);
 
-    if (confirmedPdfBuffer) {
+    if (confirmedPdfBuffer || stagingPromotion) {
       await scheduleChunkPersistenceAfterVersionConfirm({
         ctx: input.ctx,
         pdfBuffer: confirmedPdfBuffer,
+        primary: versionStorage.primary,
         documentId,
         versionId,
         versionLabel,
@@ -645,8 +672,33 @@ export async function confirmAnalysisPersistence(input: {
         requestId: input.requestId,
       });
     }
+
+    if (stagingPromotion) {
+      // Fora do caminho de quem espera: a versão já vale apontando para o provisório, e a cópia para
+      // a chave definitiva não pode segurar a resposta nem desfazer o documento se falhar.
+      await enqueueStoragePromotionJob({
+        tenantId,
+        ownerUserId,
+        documentId,
+        versionId,
+        bucket: stagingPromotion.bucket,
+        stagingKey: stagingPromotion.stagingKey,
+        destinationKey: stagingPromotion.destinationKey,
+        contentType: stagingPromotion.contentType,
+        requestId: input.requestId,
+      }).catch((error: unknown) => {
+        logger.warn('promoção do arquivo não enfileirada; a versão segue no provisório', {
+          requestId: input.requestId,
+          documentId,
+          versionId,
+          reason: error instanceof Error ? error.message : 'unknown',
+        });
+      });
+    }
   } catch (error) {
-    if (persistedObjectKey) {
+    // O provisório pertence ao job, não a esta tentativa: apagá-lo aqui tiraria o arquivo de outra
+    // confirmação do mesmo job que já tenha dado certo.
+    if (persistedObjectKey && !stagingPromotion) {
       await getStorageProvider()
         ?.deleteDocumentVersion(persistedObjectKey, tenantId, persistedBucketAlias)
         .catch(() => undefined);
@@ -701,7 +753,7 @@ export async function confirmAnalysisPersistence(input: {
   const auditEvents: DocumentAuditEventInput[] = [
     {
       action: 'document.review_confirmed',
-      description: auditDescription,
+      params: needsReview ? { context: 'manualReview' } : {},
       documentId,
       versionId,
       analysisJobId: jobId,
@@ -728,7 +780,6 @@ export async function confirmAnalysisPersistence(input: {
     },
     {
       action: 'document.version_created',
-      description: 'Nova versão do documento criada.',
       documentId,
       versionId,
       target: documentTarget,
@@ -751,7 +802,6 @@ export async function confirmAnalysisPersistence(input: {
   if (versionStorage.primary.status === 'stored') {
     auditEvents.push({
       action: 'document.storage_promoted',
-      description: 'Arquivo promovido ao storage definitivo.',
       documentId,
       versionId,
       target: documentTarget,
@@ -772,7 +822,6 @@ export async function confirmAnalysisPersistence(input: {
   if (previewResult.slot.status === 'ready') {
     auditEvents.push({
       action: 'document.preview_generated',
-      description: 'Preview do documento gerado com sucesso.',
       documentId,
       versionId,
       target: documentTarget,
@@ -789,7 +838,7 @@ export async function confirmAnalysisPersistence(input: {
   } else if (previewResult.slot.status === 'failed') {
     auditEvents.push({
       action: 'document.preview_failed',
-      description: 'Falha ao gerar preview do documento.',
+      params: { context: 'generation' },
       documentId,
       versionId,
       result: 'error',
@@ -866,7 +915,6 @@ export async function confirmAnalysisPersistence(input: {
         await createDocumentAuditLogs(auditCtx, [
           {
             action: 'document_request.fulfilled',
-            description: 'Requisição de documento atendida.',
             documentId,
             versionId,
             target: documentTarget,

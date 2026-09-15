@@ -6,67 +6,70 @@ import {
   OverviewPanelStatCell,
   OverviewPanelStatGrid,
 } from './OverviewPanelStat';
+import { useTranslation } from 'react-i18next';
 
 type OverviewGovernancePanelProps = {
   governance: NonNullable<DashboardOverviewResponse['governance']>;
 };
 
 export function OverviewGovernancePanel({ governance }: OverviewGovernancePanelProps) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   return (
     <OverviewPanelShell
-      title="Governança documental"
-      subtitle="Categorias, regras e acesso do ambiente"
+      title={t('overviewGovernancePanel.governancaDocumental')}
+      subtitle={t('overviewGovernancePanel.subtitle')}
       titleId="overview-governance-title"
-      actionLabel="Abrir mapa de regras"
+      actionLabel={t('overviewGovernancePanel.openRulesMap')}
       onAction={() => navigate('/rules')}
       data-testid="overview-governance"
     >
       <OverviewPanelStatGrid>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Categorias"
+            label={t('overviewGovernancePanel.categorias')}
             value={governance.documentCategories}
             onClick={() => navigate('/rules')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Grupos"
+            label={t('overviewGovernancePanel.grupos')}
             value={governance.documentGroups}
             onClick={() => navigate('/users')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Extração"
+            label={t('overviewGovernancePanel.extracao')}
             value={governance.activeExtractionRules}
-            hint="regras ativas"
+            hint={t('overviewGovernancePanel.hintRegrasAtivas')}
             onClick={() => navigate('/settings?section=upload-ia')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Acesso"
+            label={t('overviewGovernancePanel.acesso')}
             value={governance.activeAccessRules}
-            hint="regras ativas"
+            hint={t('overviewGovernancePanel.hintRegrasAtivas')}
             onClick={() => navigate('/rules')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Usuários"
+            label={t('overviewGovernancePanel.usuarios')}
             value={governance.usersActive}
-            hint="ativos"
+            hint={t('overviewGovernancePanel.hintAtivos')}
             onClick={() => navigate('/users')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Pendências"
+            label={t('overviewGovernancePanel.pendencias')}
             value={governance.usersPending}
-            hint="usuários aguardando"
+            hint={t('overviewGovernancePanel.usersWaiting')}
             onClick={() => navigate('/users')}
           />
         </OverviewPanelStatCell>

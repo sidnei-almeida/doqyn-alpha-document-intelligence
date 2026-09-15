@@ -41,7 +41,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         buildDocumentAuditContext(auth.ctx, auth.user),
         {
           action: 'document.filename_updated',
-          description: 'Nome do documento alterado manualmente.',
           documentId,
           versionId: result.versionId,
           target: { type: 'document', id: documentId, nameSnapshot: result.fileName },

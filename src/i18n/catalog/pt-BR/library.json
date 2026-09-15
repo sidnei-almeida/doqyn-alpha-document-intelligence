@@ -1,0 +1,436 @@
+{
+  "activeFilterChips": {
+    "busca": "Busca: {{query}}",
+    "emPasta": "Em: {{folderName}}",
+    "filtrosAtivos": "Filtros ativos",
+    "limparFiltros": "Limpar filtros",
+    "removerFiltro": "Remover filtro {{label}}",
+    "todaABiblioteca": "Toda a biblioteca"
+  },
+  "bulkSelectionToolbar": {
+    "baixar": "Baixar",
+    "excluir": "Excluir",
+    "limparSelecao": "Limpar seleção",
+    "mover": "Mover",
+    "recuperar": "Recuperar",
+    "restaurar": "Restaurar",
+    "visualizar": "Visualizar",
+    "tooltip": {
+      "foldersCantDelete": "Pastas e categorias não podem ser excluídas. Selecione apenas documentos.",
+      "noDeletePermission": "Você não tem permissão para excluir os documentos selecionados.",
+      "onlyDocumentsMove": "Selecione apenas documentos para mover.",
+      "trashCantMove": "Documentos na lixeira não podem ser movidos.",
+      "deactivatedCantMove": "Documentos desativados não podem ser movidos.",
+      "noMovePermission": "Você não tem permissão para mover os documentos selecionados."
+    },
+    "selected_one": "{{count}} selecionado",
+    "selected_other": "{{count}} selecionados"
+  },
+  "collections": {
+    "root": {
+      "label": "Biblioteca",
+      "description": "Todos os documentos e espaços deste ambiente.",
+      "emptyTitle": "Esta biblioteca ainda está vazia",
+      "emptyDescription": "Envie seu primeiro documento para o DOQYN analisar, classificar e preparar para revisão."
+    },
+    "compartilhados": {
+      "label": "Compartilhados comigo",
+      "description": "Documentos enviados por outras pessoas aos quais você tem acesso.",
+      "emptyTitle": "Nada compartilhado com você ainda",
+      "emptyDescription": "Quando alguém compartilhar um documento com você, ele aparecerá aqui."
+    },
+    "paraAssinar": {
+      "label": "Para assinar",
+      "description": "Documentos que aguardam sua assinatura eletrônica.",
+      "emptyTitle": "Nenhum documento pendente de assinatura.",
+      "emptyDescription": "Quando alguém solicitar sua assinatura, a solicitação aparecerá aqui."
+    },
+    "recentes": {
+      "label": "Recentes",
+      "description": "Os documentos atualizados mais recentemente neste ambiente.",
+      "emptyTitle": "Nenhuma atividade recente",
+      "emptyDescription": "Os documentos atualizados nos últimos dias aparecem aqui."
+    },
+    "favoritos": {
+      "label": "Favoritos",
+      "description": "Seus documentos marcados com estrela, para acesso rápido.",
+      "emptyTitle": "Nenhum documento favorito",
+      "emptyDescription": "Marque documentos com estrela para encontrá-los rapidamente."
+    },
+    "lixeira": {
+      "label": "Lixeira",
+      "description": "Restaure antes do prazo; depois vão para Desativados.",
+      "emptyTitle": "A lixeira está vazia",
+      "emptyDescription": "Documentos excluídos aparecem aqui durante o período de retenção."
+    },
+    "desativados": {
+      "label": "Desativados",
+      "description": "Documentos desativados após o prazo na lixeira. Somente administradores podem recuperar.",
+      "emptyTitle": "Nenhum documento desativado",
+      "emptyDescription": "Quando o prazo da lixeira termina, os documentos passam para cá sem exclusão física."
+    }
+  },
+  "contextInfoButton": {
+    "informacoes": "Informações",
+    "informacoes2": "Informações",
+    "informacoes3": "Informações"
+  },
+  "documentFavoriteBadge": {
+    "favorito": "Favorito",
+    "favorito2": "Favorito"
+  },
+  "documentMetadataDrawer": {
+    "fecharMetadados": "Fechar metadados",
+    "metadados": "Metadados",
+    "metadadosDoDocumento": "Metadados do documento"
+  },
+  "documentNameField": {
+    "asVersoesAnterioresContinuam": "As versões anteriores continuam com o nome que tinham.",
+    "nomeDoDocumento": "Nome do documento",
+    "nomeDoDocumento2": "Nome do documento",
+    "updated": "Nome atualizado.",
+    "saving": "Salvando…",
+    "rename": "Renomear"
+  },
+  "documentVersionHistoryPanel": {
+    "atual": "· atual",
+    "carregandoHistoricoDeVersoes": "Carregando histórico de versões...",
+    "current": "atual",
+    "naoFoiPossivelCarregar": "Não foi possível carregar o histórico.",
+    "tentarNovamente": "Tentar novamente",
+    "visualizarEstaVersao": "Visualizar esta versão",
+    "versionCount_one": "{{count}} versão",
+    "versionCount_other": "{{count}} versões"
+  },
+  "emptyFolderState": {
+    "ajusteABuscaOu": "Ajuste a busca ou os filtros para ampliar os resultados.",
+    "limparFiltros": "Limpar filtros",
+    "nenhumDocumentoParaOs": "Nenhum documento para os filtros atuais",
+    "voceTambemPodeArrastar": "Você também pode arrastar arquivos para esta janela.",
+    "title": "Esta pasta ainda está vazia",
+    "description": "Envie um documento para o DOQYN analisar e classificar.",
+    "upload": "Enviar documento"
+  },
+  "explorerContextMenu": {
+    "abrir": "Abrir",
+    "atualizar": "Atualizar",
+    "atualizarDocumento": "Atualizar documento",
+    "baixar": "Baixar",
+    "baixarPdfAssinado": "Baixar PDF assinado",
+    "compartilhar": "Compartilhar",
+    "enviarDocumento": "Enviar documento",
+    "enviarDocumentoNestaPasta": "Enviar documento nesta pasta",
+    "excluirCategoria": "Excluir categoria",
+    "menuDeContexto": "Menu de contexto",
+    "metadados": "Metadados",
+    "mover": "Mover",
+    "moverParaLixeira": "Mover para lixeira",
+    "novaCategoria": "Nova categoria",
+    "recuperar": "Recuperar",
+    "renomearCategoria": "Renomear categoria",
+    "restaurar": "Restaurar",
+    "solicitarAssinatura": "Solicitar assinatura",
+    "verAssinaturas": "Ver assinaturas",
+    "verDetalhes": "Ver detalhes",
+    "verInformacoes": "Ver informações",
+    "verRegras": "Ver regras",
+    "verRegrasDestaCategoria": "Ver regras desta categoria",
+    "verTracking": "Ver tracking",
+    "visualizar": "Visualizar",
+    "infoCurrentFolder": "Ver informações da pasta atual",
+    "downloadNeedsApproval": "Baixar este documento depende de aprovação do administrador.",
+    "shareReceived": "Você não pode compartilhar um documento recebido por compartilhamento.",
+    "shareNeedsApproval": "Compartilhar este documento depende de aprovação do administrador.",
+    "noSharePermission": "Você não tem permissão para compartilhar este documento.",
+    "noMovePermission": "Você não tem permissão para mover este documento.",
+    "inTrashCantMove": "Este documento está na Lixeira e não pode ser movido.",
+    "deactivatedCantMove": "Este documento está desativado e não pode ser movido.",
+    "archivedNoMetadata": "Documento arquivado não tem ficha editável.",
+    "editMetadataHint": "Conferir e corrigir os campos deste documento"
+  },
+  "explorerFileQuickActions": {
+    "baixar": "Baixar",
+    "baixar2": "Baixar",
+    "detalhes": "Detalhes",
+    "detalhes2": "Detalhes",
+    "maisOpcoes": "Mais opções",
+    "maisOpcoes2": "Mais opções",
+    "visualizar": "Visualizar",
+    "visualizar2": "Visualizar"
+  },
+  "explorerFilterChips": {
+    "filtrar": "Filtrar",
+    "filtrarPorPeriodo": "Filtrar por período",
+    "filtrarPorProprietario": "Filtrar por proprietário",
+    "filtrarPorStatus": "Filtrar por status",
+    "filtrarPorTipo": "Filtrar por tipo",
+    "filtrosDaBiblioteca": "Filtros da biblioteca",
+    "ordenar": "Ordenar",
+    "ordenarPor": "Ordenar por"
+  },
+  "explorerFolderCard": {
+    "informacoes": "Informações",
+    "open": "Abrir pasta {{name}}",
+    "info": "Informações de {{name}}"
+  },
+  "explorerFolderFiles": {
+    "acoes": "Ações",
+    "arquivosDaPasta": "Arquivos da pasta",
+    "carregandoDocumentos": "Carregando documentos",
+    "modificado": "Modificado",
+    "nome": "Nome",
+    "status": "Status"
+  },
+  "explorerFolderGrid": {
+    "crieCategoriasEm": "Crie categorias em",
+    "nenhumaPastaInteligenteConfigurada": "Nenhuma pasta inteligente configurada",
+    "paraOrganizarDocumentosPor": "para organizar documentos por classificação da IA.",
+    "pastasInteligentes": "Pastas inteligentes",
+    "pastasInteligentes2": "Pastas inteligentes",
+    "regras": "Regras"
+  },
+  "explorerRecentList": {
+    "recentes": "Recentes",
+    "verTodos": "Ver todos"
+  },
+  "explorerRootEmpty": {
+    "aBibliotecaComecaNo": "A biblioteca começa no primeiro documento",
+    "asPastasInteligentesSaem": "As pastas inteligentes saem das suas categorias. Ajuste em",
+    "enviePelaBarraLateral": "Envie pela barra lateral, ou arraste arquivos para esta janela. Cada um é lido, classificado\n        e guardado na pasta que a classificação indicar.",
+    "regras": "Regras"
+  },
+  "explorerRootHome": {
+    "semCategoria": "Sem categoria",
+    "noFolderMeta": "Sem pasta · {{date}}"
+  },
+  "fileTable": {
+    "acoes": "Ações",
+    "arquivosDaBiblioteca": "Arquivos da Biblioteca",
+    "atualizado": "Atualizado",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} itens",
+    "nome": "Nome",
+    "proprietario": "Proprietário",
+    "status": "Status",
+    "tags": "Tags",
+    "title": "Arquivos"
+  },
+  "filterFallback": {
+    "status": "Status",
+    "type": "Tipo",
+    "period": "Período",
+    "owner": "Proprietário"
+  },
+  "filterMenu": {
+    "filtrarPorStatus": "Filtrar por status"
+  },
+  "filterOption": {
+    "status": {
+      "all": "Todos os status",
+      "active": "Ativo",
+      "processed": "Processado",
+      "analyzing": "Em análise",
+      "pending_review": "Requer revisão",
+      "archived": "Arquivado"
+    },
+    "type": {
+      "all": "Todos os tipos",
+      "pdf": "PDF",
+      "image": "Imagem",
+      "other": "Outros"
+    },
+    "period": {
+      "all": "Qualquer data",
+      "today": "Hoje",
+      "7d": "Últimos 7 dias",
+      "30d": "Últimos 30 dias",
+      "month": "Este mês"
+    },
+    "owner": {
+      "all": "Todos",
+      "me": "Eu",
+      "others": "Outros usuários"
+    },
+    "sort": {
+      "updatedAtDesc": "Mais recentes",
+      "updatedAtAsc": "Mais antigos",
+      "nameAsc": "Nome A–Z",
+      "nameDesc": "Nome Z–A",
+      "category": "Categoria",
+      "status": "Status",
+      "owner": "Proprietário",
+      "fallback": "Ordenação"
+    }
+  },
+  "itemAction": {
+    "abrir": "Abrir",
+    "visualizar": "Visualizar",
+    "moverParaPasta": "Mover para pasta",
+    "compartilhar": "Compartilhar",
+    "solicitarAssinatura": "Solicitar assinatura",
+    "baixar": "Baixar",
+    "historicoDeVersoes": "Histórico de versões",
+    "moverParaLixeira": "Mover para lixeira"
+  },
+  "libraryBreadcrumbs": {
+    "biblioteca": "Biblioteca",
+    "localizacaoNaBiblioteca": "Localização na Biblioteca"
+  },
+  "libraryContentDropZone": {
+    "osArquivosEntramNa": "Os arquivos entram na fila de upload com análise e revisão.",
+    "solteParaEnviar": "Solte para enviar"
+  },
+  "libraryInfoPopover": {
+    "arquivos": "Arquivos",
+    "governanca": "Governança",
+    "pastaDeGovernanca": "Pasta de governança",
+    "pastas": "Pastas",
+    "tipo": "Tipo",
+    "verRegrasDestaCategoria": "Ver regras desta categoria",
+    "smartCategory": "Categoria inteligente",
+    "library": "Biblioteca"
+  },
+  "libraryPage": {
+    "carregandoBiblioteca": "Carregando biblioteca",
+    "envieUmDocumentoPara": "Envie um documento para o DOQYN analisar e classificar nesta categoria.",
+    "estaPastaAindaEsta": "Esta pasta ainda está vazia",
+    "naoFoiPossivelCarregar": "Não foi possível carregar os documentos agora.",
+    "nomeDaCategoria": "Nome da categoria",
+    "oNomeNovoVale": "O nome novo vale para a pasta e para todos os documentos que já estão dentro dela.",
+    "renomear": "Renomear",
+    "renomearCategoria": "Renomear categoria",
+    "searchResults": "Resultados da busca",
+    "folderFallback": "Pasta",
+    "folderFallbackLower": "pasta",
+    "title": "Biblioteca",
+    "searchDescription_one": "{{count}} documento encontrado para “{{query}}”",
+    "searchDescription_other": "{{count}} documentos encontrados para “{{query}}”",
+    "folderDescription": "Documentos classificados nesta categoria pela IA.",
+    "rootDescription": "Documentos e categorias deste ambiente",
+    "renamedTitle": "Categoria renomeada",
+    "renamedMessage": "Agora ela se chama {{name}}.",
+    "renameFailed": "Não foi possível renomear a categoria.",
+    "deletedTitle": "Categoria excluída",
+    "deletedMoved_one": "{{count}} documento foi para Sem categoria.",
+    "deletedMoved_other": "{{count}} documentos foram para Sem categoria.",
+    "deletedEmpty": "A categoria estava vazia.",
+    "deleteFailed": "Não foi possível excluir a categoria.",
+    "downloadFailed": "Não foi possível baixar o documento.",
+    "signedPdfUnavailable": "PDF assinado indisponível para este documento.",
+    "signedPdfFailed": "Falha ao baixar PDF assinado.",
+    "noDocumentsFound": "Nenhum documento encontrado",
+    "adjustFilters": "Tente ajustar os filtros ou buscar outro termo.",
+    "filesIn": "Arquivos em {{folder}}"
+  },
+  "moveDocumentModal": {
+    "atual": "Atual",
+    "buscarCategoria": "Buscar categoria…",
+    "buscarCategoria2": "Buscar categoria",
+    "cancelar": "Cancelar",
+    "categoriaAtual": "Categoria atual",
+    "nenhumaCategoriaDisponivel": "Nenhuma categoria disponível.",
+    "nenhumaCategoriaEncontrada": "Nenhuma categoria encontrada.",
+    "oDocumentoJaEsta": "O documento já está nesta categoria.",
+    "title_one": "Mover documento",
+    "title_other": "Mover {{count}} documentos",
+    "subtitleMany": "Os documentos selecionados serão reclassificados para a categoria escolhida.",
+    "subtitleOne": "Escolha uma nova categoria para este documento. O arquivo e o histórico serão preservados.",
+    "moveTo": "Mover para {{category}}",
+    "move": "Mover"
+  },
+  "newButtonMenu": {
+    "criarNovo": "Criar novo",
+    "enviarDocumento": "Enviar documento",
+    "novaCategoria": "Nova categoria",
+    "novo": "Novo",
+    "solicitarDocumento": "Solicitar documento",
+    "uploadDeArquivo": "Upload de arquivo",
+    "uploadDePasta": "Upload de pasta"
+  },
+  "optionalDetailsDrawer": {
+    "abrirValidador": "Abrir validador",
+    "arquivos": "Arquivos",
+    "assinatura": "Assinatura",
+    "atualizarDocumento": "Atualizar documento",
+    "baixar": "Baixar",
+    "baixarPdfAssinado": "Baixar PDF assinado",
+    "carregandoFicha": "Carregando ficha…",
+    "categoriaInteligente": "Categoria inteligente",
+    "editarMetadados": "Editar metadados",
+    "historicoDeVersoes": "Histórico de versões",
+    "tipo": "Tipo",
+    "tracking": "Tracking",
+    "transferirPropriedade": "Transferir propriedade",
+    "verAssinaturas": "Ver assinaturas",
+    "verRegrasDestaCategoria": "Ver regras desta categoria",
+    "versao": "Versão",
+    "visualizar": "Visualizar",
+    "fileDetails": "Detalhes do arquivo",
+    "folderDetails": "Detalhes da pasta",
+    "closeDetails": "Fechar painel de detalhes"
+  },
+  "ownerFilterMenu": {
+    "filtrarPorProprietario": "Filtrar por proprietário"
+  },
+  "periodFilterMenu": {
+    "filtrarPorDataDe": "Filtrar por data de modificação"
+  },
+  "recentEmptyState": {
+    "enviarDocumento": "Enviar documento",
+    "envieUmDocumentoPara": "Envie um documento para começar.",
+    "nenhumArquivoRecente": "Nenhum arquivo recente"
+  },
+  "searchScopeHint": {
+    "buscandoEm": "Buscando em",
+    "buscandoEmTodaA": "Buscando em toda a biblioteca",
+    "buscarEmTodaA": "Buscar em toda a Biblioteca"
+  },
+  "sortMenu": {
+    "ordenarPor": "Ordenar por"
+  },
+  "toast": {
+    "falhaRecuperarDocumento": "Não foi possível recuperar o documento.",
+    "falhaAtualizarFavoritos": "Não foi possível atualizar os favoritos. Tente novamente.",
+    "jaNestaCategoria": "Os documentos já estão nesta categoria.",
+    "falhaMoverLixeira": "Não foi possível mover para a lixeira.",
+    "falhaRestaurarDocumento": "Não foi possível restaurar o documento.",
+    "configuracoesLixeiraSalvas": "Configurações da lixeira atualizadas.",
+    "falhaSalvarConfiguracoes": "Não foi possível salvar as configurações.",
+    "recovered_one": "Documento recuperado.",
+    "recovered_other": "{{count}} documentos recuperados.",
+    "moved_one": "Documento movido para {{category}}.",
+    "moved_other": "{{count}} documentos movidos para {{category}}.",
+    "falhaMover": "Não foi possível mover o documento.",
+    "trashed_one": "Documento movido para a lixeira.",
+    "trashed_other": "{{count}} documentos movidos para a lixeira.",
+    "restored_one": "Documento restaurado.",
+    "restored_other": "{{count}} documentos restaurados."
+  },
+  "typeFilterMenu": {
+    "filtrarPorTipo": "Filtrar por tipo"
+  },
+  "favorites": {
+    "add": "Adicionar aos favoritos",
+    "remove": "Remover dos favoritos"
+  },
+  "item": {
+    "menu": "Menu de {{name}}",
+    "actions": "Ações de {{name}}"
+  },
+  "viewMode": {
+    "grid": "Visualização em grade",
+    "list": "Visualização em lista",
+    "shortGrid": "grade",
+    "shortList": "lista"
+  },
+  "viewModeToggle": {
+    "label": "{{current}}. Trocar para {{next}}.",
+    "tooltip": "{{current}}. Clique para {{next}}"
+  },
+  "explorerToolbarActions": {
+    "refresh": "Atualizar biblioteca"
+  },
+  "documentSignatureBadge": {
+    "view": "Ver assinaturas"
+  }
+}

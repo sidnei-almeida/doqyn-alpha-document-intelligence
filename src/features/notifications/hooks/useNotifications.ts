@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
@@ -45,7 +46,7 @@ export function useNotifications(options?: { status?: NotificationStatus; limit?
       status: 'read' | 'dismissed';
     }) => updateNotification(notificationId, status),
     onSuccess: invalidate,
-    onError: () => toast.error('Não foi possível atualizar a notificação. Tente novamente.'),
+    onError: () => toast.error(i18n.t('notifications:toast.falhaAtualizar')),
   });
 
   const markAllRead = useMutation({
@@ -53,14 +54,10 @@ export function useNotifications(options?: { status?: NotificationStatus; limit?
     onSuccess: (result) => {
       invalidate();
       if (result.updated > 0) {
-        toast.success(
-          result.updated === 1
-            ? '1 notificação marcada como lida.'
-            : `${result.updated} notificações marcadas como lidas.`,
-        );
+        toast.success(i18n.t('notifications:toast.markedRead', { count: result.updated }));
       }
     },
-    onError: () => toast.error('Não foi possível marcar as notificações como lidas.'),
+    onError: () => toast.error(i18n.t('notifications:toast.falhaMarcarLidas')),
   });
 
   return {

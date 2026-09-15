@@ -12,19 +12,18 @@ function readSrc(relativePath: string): string {
 }
 
 describe('sidebar DOQYN', () => {
-
   it('seção Administração usa headers discretos', () => {
     const section = readSrc('components/layout/SidebarSection.tsx');
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(section.includes('text-doqyn-subtle'));
-    assert.ok(sidebar.includes('Administração'));
+    assert.ok(sidebar.includes('.administracao'));
   });
 
   it('sidebar workspace: Biblioteca, + Novo, modo colapsável', () => {
     const source = readSrc('components/layout/Sidebar.tsx');
     const collapsed = readSrc('components/layout/useSidebarCollapsed.ts');
-    assert.ok(source.includes('Biblioteca'));
-    assert.ok(source.includes('/biblioteca'));
+    assert.ok(source.includes('.biblioteca'));
+    assert.ok(source.includes('/library'));
     assert.ok(source.includes('NewButtonMenu'));
     assert.ok(source.includes('useSidebarCollapsed'));
     // O botão de colapsar saiu para `SidebarEdgeToggle`, que vive na borda entre sidebar e
@@ -57,11 +56,11 @@ describe('sidebar DOQYN', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
     for (const label of [
-      'Compartilhados comigo',
-      'Para assinar',
-      'Recentes',
-      'Favoritos',
-      'Lixeira',
+      'nav.compartilhados',
+      'nav.assinaturas',
+      'nav.recentes',
+      'nav.favoritos',
+      'nav.lixeira',
     ]) {
       assert.ok(sidebar.includes(label) || readSrc('lib/constants.ts').includes(label));
     }
@@ -101,7 +100,7 @@ describe('header do usuário', () => {
     assert.equal(topbar.includes('SidebarUserPanel'), false);
     assert.ok(menu.includes('header-user-menu'));
     assert.ok(menu.includes('header-user-menu-dropdown'));
-    assert.ok(menu.includes('Sair'));
+    assert.ok(menu.includes('.sair'));
     // O tema saiu do menu do usuário e virou controle da própria barra: é preferência de
     // visualização, não ação de conta.
     assert.ok(topbar.includes('ThemeToggle'));

@@ -6,6 +6,8 @@ import {
   formatSessionOrigin,
   sanitizeTrackingMetadata,
 } from '../utils/trackingDisplay';
+import { useTranslation } from 'react-i18next';
+import { auditEventDescription, auditEventLabel } from '@/features/audit/utils/auditEventText';
 
 type TrackingEventLogDetailProps = {
   event: DocumentTrackingDetail | null;
@@ -52,20 +54,32 @@ export function TrackingEventLogDetail({
   onFilterByUser,
   onFilterByRequestId,
 }: TrackingEventLogDetailProps) {
+  const { t } = useTranslation(['tracking', 'auditEvents']);
+
   const navigate = useNavigate();
 
   if (loading) {
-    return <p className="px-3 py-4 text-caption text-doqyn-muted">Carregando detalhes…</p>;
+    return (
+      <p className="px-3 py-4 text-caption text-doqyn-muted">
+        {t('trackingEventLogDetail.carregandoDetalhes')}
+      </p>
+    );
   }
 
   if (!event) {
-    return <p className="px-3 py-4 text-caption text-doqyn-muted">Evento não encontrado.</p>;
+    return (
+      <p className="px-3 py-4 text-caption text-doqyn-muted">
+        {t('trackingEventLogDetail.eventoNaoEncontrado')}
+      </p>
+    );
   }
 
   const metadata = sanitizeTrackingMetadata(event.metadata);
   const securityContext = event.securityContext ?? event.security;
   const security = formatSecurityContextDisplay(securityContext, event.occurredAt);
   const rawSecurity = securityContext ? sanitizeTrackingMetadata(securityContext) : {};
+  const description = auditEventDescription(t, event);
+  const label = auditEventLabel(t, event.action, event.summary);
 
   return (
     <div
@@ -74,40 +88,69 @@ export function TrackingEventLogDetail({
       role="presentation"
     >
       <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
-        <DetailField label="Evento" value={event.id} />
-        <DetailField label="Ação" value={event.action} />
-        <DetailField label="Ator" value={event.actor.email ?? event.actor.userId} />
-        <DetailField label="Documento" value={event.document.documentId ?? '—'} />
-        {event.versionId ? <DetailField label="ID da versão" value={event.versionId} /> : null}
-        {event.requestId ? <DetailField label="Request" value={event.requestId} /> : null}
+        <DetailField label={t('trackingEventLogDetail.evento')} value={event.id} />
+        <DetailField label={t('trackingEventLogDetail.acao')} value={event.action} />
+        <DetailField
+          label={t('trackingEventLogDetail.ator')}
+          value={event.actor.email ?? event.actor.userId}
+        />
+        <DetailField
+          label={t('trackingEventLogDetail.documento')}
+          value={event.document.documentId ?? '—'}
+        />
+        {event.versionId ? (
+          <DetailField label={t('trackingEventLogDetail.idDaVersao')} value={event.versionId} />
+        ) : null}
+        {event.requestId ? (
+          <DetailField label={t('trackingEventLogDetail.request')} value={event.requestId} />
+        ) : null}
         {typeof event.durationMs === 'number' ? (
-          <DetailField label="Duração" value={`${event.durationMs} ms`} />
+          <DetailField
+            label={t('trackingEventLogDetail.duracao')}
+            value={`${event.durationMs} ms`}
+          />
         ) : null}
         {event.sessionHash ? (
-          <DetailField label="Sessão" value={formatSessionOrigin(event.sessionHash)} />
+          <DetailField
+            label={t('trackingEventLogDetail.sessao')}
+            value={formatSessionOrigin(event.sessionHash)}
+          />
         ) : null}
       </div>
 
-      {event.description && event.description !== event.summary ? (
-        <p className="text-caption text-doqyn-muted">{event.description}</p>
+      {description && description !== label ? (
+        <p className="text-caption text-doqyn-muted">{description}</p>
       ) : null}
 
       {security ? (
         <div>
-          <p className="register-label mb-1.5 text-doqyn-subtle">Contexto de acesso</p>
+          <p className="register-label mb-1.5 text-doqyn-subtle">
+            {t('trackingEventLogDetail.contextoDeAcesso')}
+          </p>
           <dl className="grid gap-x-8 gap-y-1 text-caption sm:grid-cols-2 xl:grid-cols-3">
             {[
-              ['Dispositivo', security.deviceLabel],
-              ['Tipo', security.deviceTypeLabel],
-              ['Local aproximado', security.locationLabel],
+              [t('trackingEventLogDetail.security.device'), security.deviceLabel],
+              [t('trackingEventLogDetail.security.type'), security.deviceTypeLabel],
+              [t('trackingEventLogDetail.security.location'), security.locationLabel],
               ['IP', security.ipLabel],
-              ['Horário', formatDateTime(event.occurredAt)],
-              security.isExternalGuest ? ['Origem', 'Convidado externo'] : null,
+              [t('trackingEventLogDetail.security.time'), formatDateTime(event.occurredAt)],
+              security.isExternalGuest
+                ? [
+                    t('trackingEventLogDetail.security.origin'),
+                    t('trackingEventLogDetail.security.externalGuest'),
+                  ]
+                : null,
               'permissionResult' in rawSecurity && rawSecurity.permissionResult != null
-                ? ['Permissão', String(rawSecurity.permissionResult)]
+                ? [
+                    t('trackingEventLogDetail.security.permission'),
+                    String(rawSecurity.permissionResult),
+                  ]
                 : null,
               'permissionReason' in rawSecurity && rawSecurity.permissionReason != null
-                ? ['Motivo', String(rawSecurity.permissionReason)]
+                ? [
+                    t('trackingEventLogDetail.security.reason'),
+                    String(rawSecurity.permissionReason),
+                  ]
                 : null,
             ]
               .filter((row): row is [string, string] => Array.isArray(row))
@@ -124,7 +167,7 @@ export function TrackingEventLogDetail({
       {event.changes?.length ? (
         <div>
           <p className="register-label mb-1.5 text-doqyn-subtle">
-            Alterações · {event.changes.length}
+            {t('trackingEventLogDetail.alteracoes')} {event.changes.length}
           </p>
           <div className="border-t border-doqyn-border-subtle">
             {event.changes.map((change) => (
@@ -134,11 +177,11 @@ export function TrackingEventLogDetail({
               >
                 <span className="font-mono text-doqyn-text">{change.field}</span>
                 <span className="truncate text-doqyn-muted">
-                  <span className="text-doqyn-subtle">antes: </span>
+                  <span className="text-doqyn-subtle">{t('trackingEventLogDetail.before')} </span>
                   {String(change.before ?? '—')}
                 </span>
                 <span className="truncate text-doqyn-muted">
-                  <span className="text-doqyn-subtle">depois: </span>
+                  <span className="text-doqyn-subtle">{t('trackingEventLogDetail.after')} </span>
                   {String(change.after ?? '—')}
                 </span>
               </div>
@@ -149,7 +192,9 @@ export function TrackingEventLogDetail({
 
       {Object.keys(metadata).length > 0 ? (
         <div>
-          <p className="register-label mb-1.5 text-doqyn-subtle">Metadados</p>
+          <p className="register-label mb-1.5 text-doqyn-subtle">
+            {t('trackingEventLogDetail.metadados')}
+          </p>
           <pre className="max-h-56 overflow-auto border-l-2 border-doqyn-border-subtle py-1 pl-3 font-mono text-micro leading-relaxed text-doqyn-muted">
             {JSON.stringify(metadata, null, 2)}
           </pre>
@@ -159,28 +204,28 @@ export function TrackingEventLogDetail({
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-doqyn-border-subtle pt-3">
         {onFilterByUser && (
           <LinkAction
-            label="Filtrar por este usuário"
+            label={t('trackingEventLogDetail.filtrarPorEsteUsuario')}
             onClick={() => onFilterByUser(event.actor.userId)}
           />
         )}
         {onFilterByRequestId && event.requestId && (
           <LinkAction
-            label="Filtrar por este request"
+            label={t('trackingEventLogDetail.filtrarPorEsteRequest')}
             onClick={() => onFilterByRequestId(event.requestId!)}
           />
         )}
         {event.document.documentId && (
           <>
             <LinkAction
-              label="Ver timeline do documento"
+              label={t('trackingEventLogDetail.verTimelineDoDocumento')}
               onClick={() =>
                 navigate(`/tracking?documentId=${encodeURIComponent(event.document.documentId!)}`)
               }
             />
             <LinkAction
-              label="Abrir documento"
+              label={t('trackingEventLogDetail.abrirDocumento')}
               onClick={() =>
-                navigate(`/biblioteca?preview=${encodeURIComponent(event.document.documentId!)}`)
+                navigate(`/library?preview=${encodeURIComponent(event.document.documentId!)}`)
               }
             />
           </>

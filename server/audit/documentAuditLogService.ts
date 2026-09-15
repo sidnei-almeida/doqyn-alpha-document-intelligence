@@ -12,7 +12,12 @@ import { escapeRegexLiteral } from '../utils/documentListQuery.js';
 import { assertCanAccessDocument } from '../tenancy/documentOwnership.js';
 import { reserveChainSlot, rollbackChainSlot } from './auditChain.js';
 import {
-  DOCUMENT_AUDIT_ACTION_LABELS,
+  findAuditActionsMatching,
+  renderAuditText,
+  SERVER_DEFAULT_LOCALE,
+  type AuditMessageParams,
+} from '../i18n/index.js';
+import {
   SYSTEM_DOCUMENT_AUDIT_ACTIONS,
   type DocumentAuditContext,
   type DocumentAuditEventInput,
@@ -70,6 +75,17 @@ function assertValidActor(ctx: DocumentAuditContext, action: string): void {
       400,
     );
   }
+}
+
+/** Só valor primitivo, e depois do mesmo saneamento do metadado: nome passa, CPF e e-mail não. */
+function sanitizeAuditParams(params?: AuditMessageParams): AuditMessageParams {
+  const clean = sanitizeAuditMetadata(params ?? {});
+  return Object.fromEntries(
+    Object.entries(clean).filter(
+      ([, value]) =>
+        typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean',
+    ),
+  ) as AuditMessageParams;
 }
 
 function buildActor(ctx: DocumentAuditContext) {
@@ -165,6 +181,19 @@ export async function createDocumentAuditLog(
     ...(versionLabel ? { versionLabel } : {}),
   });
 
+  /**
+   * Evento sem `description` é evento do catálogo: a frase sai de `auditEvents` no idioma de quem
+   * agiu, e `params` ficam gravados para relê-la em qualquer idioma. Com `description` pronta, nada
+   * de `params` — a tela não pode reescrever uma frase que não veio do catálogo.
+   */
+  const fromCatalog = event.description === undefined;
+  const params = fromCatalog ? sanitizeAuditParams(event.params) : undefined;
+  const description =
+    event.description ??
+    renderAuditText(ctx.actorLocale, action, 'description', params) ??
+    renderAuditText(ctx.actorLocale, action, 'label', params) ??
+    action;
+
   const id = `audit_${randomUUID()}`;
 
   // O carimbo da cadeia é reservado antes da inserção porque depende do hash do evento anterior.
@@ -173,7 +202,7 @@ export async function createDocumentAuditLog(
   const chain = await reserveChainSlot(ctx.tenantId, {
     id,
     action,
-    description: event.description,
+    description,
     actorUserId: ctx.actorUserId,
     documentId: event.documentId ?? null,
     versionId,
@@ -191,7 +220,8 @@ export async function createDocumentAuditLog(
       versionId,
       actor: buildActor(ctx),
       action,
-      description: event.description,
+      description,
+      ...(params ? { params } : {}),
       area: event.area ?? (event.documentId ? 'Documentos' : 'Sistema'),
       result,
       metadata,
@@ -403,7 +433,10 @@ export function mapDocumentTimelineRow(row: MongoAuditLog): DocumentTimelineItem
     result,
     severity: (metadata.severity as DocumentAuditSeverity) ?? 'info',
     occurredAt,
-    summary: summarizeAuditAction(action, DOCUMENT_AUDIT_ACTION_LABELS[action] ?? row.description),
+    summary:
+      renderAuditText(SERVER_DEFAULT_LOCALE, action, 'label') ??
+      summarizeAuditAction(action, row.description),
+    ...(row.params ? { params: row.params } : {}),
     actor: {
       ...mapActor(actor),
       role: optionalString(actor.role),
@@ -563,10 +596,10 @@ function mapTrackingRow(
     occurredAt,
     action: String(row.action),
     severity: (metadata.severity as DocumentAuditSeverity) ?? 'info',
-    summary: summarizeAuditAction(
-      String(row.action),
-      DOCUMENT_AUDIT_ACTION_LABELS[String(row.action)] ?? row.description,
-    ),
+    summary:
+      renderAuditText(SERVER_DEFAULT_LOCALE, String(row.action), 'label') ??
+      summarizeAuditAction(String(row.action), row.description),
+    ...(row.params ? { params: row.params } : {}),
     document: {
       documentId,
       name: resolvedName,
@@ -714,11 +747,13 @@ function buildTrackingQuery(input: {
 
   if (input.q?.trim()) {
     const regex = { $regex: escapeRegexLiteral(input.q), $options: 'i' };
+    const matchingActions = findAuditActionsMatching(input.q);
     query.$and = [
       ...(Array.isArray(query.$and) ? query.$and : []),
       {
         $or: [
           { description: regex },
+          ...(matchingActions.length ? [{ action: { $in: matchingActions } }] : []),
           { action: regex },
           { documentId: regex },
           { 'actor.name': regex },

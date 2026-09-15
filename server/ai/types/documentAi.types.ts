@@ -119,6 +119,8 @@ export type AnalyzePdfResponse = {
     ocrFallbackUsed?: boolean;
     ocrPagesProcessed?: number;
     ocrDurationMs?: number;
+    /** Idioma detectado no texto, sem modelo. `und` quando não dá para decidir. */
+    detectedLanguage?: import('../utils/detectDocumentLanguage.js').DocumentLanguage;
   };
   classification: ClassificationResult;
   extraction: MetadataExtractionResult | null;

@@ -76,7 +76,23 @@ describe('resolveStorageFileNames', () => {
     assert.equal(resolved.finalFileName.endsWith('.pdf'), true);
     assert.equal(resolved.finalFileName.includes('/'), false);
     assert.equal(resolved.finalFileName.includes('\\'), false);
-    assert.equal(resolved.finalFileName, 'tipoforca.pdf');
+    // O nome de exibição guarda o acento; a chave do objeto sai em ASCII.
+    assert.equal(resolved.finalFileName, 'tipoforça.pdf');
+    assert.equal(resolved.storageFileName, 'tipoforca.pdf');
+    assert.equal(resolved.previewStorageFileName, 'tipoforca_preview.pdf');
+  });
+
+  it('nome sem nada em ASCII fica na tela como veio e só o storage usa o fallback', () => {
+    const resolved = resolveStorageFileNames({
+      originalFileName: '合同.pdf',
+      aiSuggestedFileName: '',
+      namingMode: 'original',
+      documentId: 'doc_cjk_001',
+      versionLabel: 'v1',
+    });
+
+    assert.equal(resolved.finalFileName, '合同.pdf');
+    assert.equal(resolved.storageFileName, buildStorageFileNameFallback('doc_cjk_001', 'v1'));
   });
 
   it('remove CPF/CNPJ/e-mail do storageFileName', () => {

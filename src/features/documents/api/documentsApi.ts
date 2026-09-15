@@ -7,6 +7,7 @@ import type {
   DocumentVersionSummary,
 } from '@/types/document-library';
 import { authFetch } from '@/auth/apiAuth';
+import { categoryDisplayName, withCategoryDisplayName } from '../utils/categoryDisplay';
 import { parseDocumentApiError } from './documentsApi.errors';
 
 export { DocumentApiError } from './documentsApi.errors';
@@ -19,7 +20,11 @@ export {
 export async function listDocuments(filters?: DocumentListFilters): Promise<DocumentListItem[]> {
   const result = await api.documents.list(filters as Record<string, string> | undefined);
   const response = result as DocumentListResponse;
-  return response.items ?? response.documents ?? [];
+  const items = response.items ?? response.documents ?? [];
+  return items.map((item) => ({
+    ...item,
+    categoryName: categoryDisplayName(item.categoryName, { id: item.categoryId }),
+  }));
 }
 
 export async function getDocument(documentId: string): Promise<DocumentDetailResponse> {
@@ -31,7 +36,17 @@ export async function getDocument(documentId: string): Promise<DocumentDetailRes
   if (!response.ok) {
     throw await parseDocumentApiError(response);
   }
-  return response.json() as Promise<DocumentDetailResponse>;
+  const detail = (await response.json()) as DocumentDetailResponse;
+  if (!detail.document) return detail;
+  return {
+    ...detail,
+    document: {
+      ...detail.document,
+      categoryName: categoryDisplayName(detail.document.categoryName, {
+        id: detail.document.categoryId,
+      }),
+    },
+  };
 }
 
 export async function getDocumentPreviewBlob(
@@ -129,5 +144,5 @@ export async function fetchDocumentCategories(): Promise<
   const data = (await response.json()) as {
     categories?: Array<{ id: string; name: string; description?: string; slug?: string }>;
   };
-  return data.categories ?? [];
+  return (data.categories ?? []).map(withCategoryDisplayName);
 }

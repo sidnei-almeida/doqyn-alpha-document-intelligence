@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useOverlayLayer, useStableCallback } from '@/components/ui/overlayStack';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type ModalSize = 'sm' | 'md' | 'lg';
 
@@ -62,6 +63,8 @@ export function Modal({
   dismissOnOverlay = true,
   layer = 'modal',
 }: ModalProps) {
+  const { t } = useTranslation('components');
+
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -165,7 +168,7 @@ export function Modal({
             onClick={onClose}
             className="modal-panel__close"
             data-modal-close
-            aria-label="Fechar"
+            aria-label={t('modal.fechar')}
           >
             <Icon name="close" size={ICON_SIZE.sm} aria-hidden />
           </button>

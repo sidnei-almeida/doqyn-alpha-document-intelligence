@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useTranslation } from 'react-i18next';
 
 interface CategoryModalProps {
   open: boolean;
@@ -12,6 +13,8 @@ interface CategoryModalProps {
 const FORM_ID = 'nova-categoria';
 
 export function CategoryModal({ open, onClose, onCreate }: CategoryModalProps) {
+  const { t } = useTranslation('rules');
+
   const [name, setName] = useState('');
 
   useEffect(() => {
@@ -29,16 +32,16 @@ export function CategoryModal({ open, onClose, onCreate }: CategoryModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Nova categoria"
-      subtitle="Categoria é a pasta da Biblioteca vista pela governança."
+      title={t('categoryModal.novaCategoria')}
+      subtitle={t('categoryModal.subtitle')}
       dismissOnOverlay={false}
       footer={
         <>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            Cancelar
+            {t('categoryModal.cancelar')}
           </Button>
           <Button type="submit" form={FORM_ID} size="sm" disabled={!name.trim()}>
-            Criar categoria
+            {t('categoryModal.criarCategoria')}
           </Button>
         </>
       }
@@ -47,15 +50,13 @@ export function CategoryModal({ open, onClose, onCreate }: CategoryModalProps) {
         <Input
           id="category-name"
           variant="rule"
-          label="Nome da categoria"
-          placeholder="Contratos, Notas fiscais…"
+          label={t('categoryModal.nomeDaCategoria')}
+          placeholder={t('categoryModal.contratosNotasFiscais')}
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
         />
-        <p className="type-caption text-doqyn-subtle">
-          Depois de criada, você conecta os grupos que enxergam os documentos dela.
-        </p>
+        <p className="type-caption text-doqyn-subtle">{t('categoryModal.depoisDeCriadaVoce')}</p>
       </form>
     </Modal>
   );

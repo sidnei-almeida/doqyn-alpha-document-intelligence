@@ -1,6 +1,5 @@
 import type { WorkflowRequestContext } from '../types/workflowLog';
 
-
 let eventCounter = 0;
 
 export function summarizeWorkflowLogMessage(event: {
@@ -26,14 +25,6 @@ export function createRequestId(): string {
   return createWorkflowEventId();
 }
 
-export function formatWorkflowTimestamp(date = new Date()): string {
-  return date.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
 export function buildRequestHeaders(context?: WorkflowRequestContext): Record<string, string> {
   const headers: Record<string, string> = {};
   if (context?.requestId) headers['X-DOQYN-Request-Id'] = context.requestId;
@@ -42,6 +33,3 @@ export function buildRequestHeaders(context?: WorkflowRequestContext): Record<st
   if (context?.fileName) headers['X-DOQYN-File-Name'] = context.fileName;
   return headers;
 }
-
-
-

@@ -39,6 +39,15 @@ export type MeResponse = {
     avatarUpdatedAt?: string | null;
     avatarStatus?: 'active' | 'removed' | null;
     avatarUrl?: string;
+    /**
+     * Idioma e fuso escolhidos no perfil.
+     *
+     * A tela precisa deles para deixar de confiar no `localStorage`: até aqui a preferência
+     * vivia só no navegador, então trocar de máquina perdia a escolha e o e-mail continuava
+     * saindo no idioma antigo. Ao chegar a sessão, o que o servidor diz vence.
+     */
+    locale?: string;
+    timeZone?: string | null;
   };
   tenant: {
     tenantId: string;
@@ -78,6 +87,8 @@ export async function resolveMeResponse(user: AuthUser): Promise<MeResponse> {
       username: user.username,
       firstName: user.firstName ?? membership?.firstName,
       lastName: user.lastName ?? membership?.lastName,
+      locale: user.locale,
+      timeZone: user.timeZone ?? null,
     },
     tenant: {
       tenantId: tenant.tenantId,
@@ -137,6 +148,8 @@ export function resolveMeFromDoqynAuth(session: DoqynVerifiedSession): MeRespons
         avatarVersion: user.avatarVersion,
         avatarStatus: user.avatarStatus,
       }),
+      locale: user.locale,
+      timeZone: user.timeZone ?? null,
     },
     tenant: {
       tenantId: activeMembership.tenantId,

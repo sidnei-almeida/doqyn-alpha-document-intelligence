@@ -11,6 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return withAdminMongoApi(req, res, {
     endpoint: '/api/company-members/:id',
+    access: 'user_management',
     handler: async ({ companyId, requestId, params }) => {
       const id = params.id;
       if (!id) {

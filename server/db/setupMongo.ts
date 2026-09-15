@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { DEV_TENANT_ID, REGISTRY_COLLECTIONS } from './constants.js';
 import { getMongoDatabaseName } from './database.js';
 import { closeMongoConnection, getDb } from './mongoClient.js';
+import { TEXT_SORT_COLLATION } from '../utils/textCollation.js';
 import { ensureDevTenantSeed } from '../services/tenantsService.js';
 import { ensureSidneiDevTenantMember } from '../services/tenantMembersService.js';
 import {
@@ -114,16 +115,19 @@ async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {
       ]);
   }
 
-  await db
-    .collection(names.documents)
-    .createIndexes([
-      { key: { tenantId: 1, status: 1, updatedAt: -1 } },
-      { key: { tenantId: 1, ownerUserId: 1, updatedAt: -1 } },
-      { key: { tenantId: 1, classId: 1, updatedAt: -1 } },
-      { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
-      { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
-      { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
-    ]);
+  await db.collection(names.documents).createIndexes([
+    { key: { tenantId: 1, status: 1, updatedAt: -1 } },
+    { key: { tenantId: 1, ownerUserId: 1, updatedAt: -1 } },
+    { key: { tenantId: 1, classId: 1, updatedAt: -1 } },
+    { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
+    { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
+    { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
+    // Ordenação por texto: mesma collation da consulta (ver `tenantIndexes.ts`).
+    { key: { tenantId: 1, currentFileName: 1 }, collation: TEXT_SORT_COLLATION },
+    { key: { tenantId: 1, ownerUserId: 1, currentFileName: 1 }, collation: TEXT_SORT_COLLATION },
+    { key: { tenantId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
+    { key: { tenantId: 1, ownerUserId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
+  ]);
 
   await db
     .collection(names.documentVersions)

@@ -19,6 +19,19 @@ function assertEndpoint(endpoint: string, accountId?: string): string {
   return normalized;
 }
 
+/**
+ * Sem limite, o SDK espera o R2 indefinidamente: um PUT ou GET travado prende a requisição e o
+ * worker que o fez. `requestTimeout` conta inatividade do socket, não a duração total — um arquivo
+ * grande que segue transmitindo não é cortado.
+ */
+const R2_CONNECTION_TIMEOUT_MS = 5_000;
+const DEFAULT_R2_REQUEST_TIMEOUT_MS = 60_000;
+
+function getR2RequestTimeoutMs(): number {
+  const parsed = Number(process.env.R2_REQUEST_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_R2_REQUEST_TIMEOUT_MS;
+}
+
 function buildS3Client(
   config: R2Config,
   credentials: { accessKeyId: string; secretAccessKey: string },
@@ -31,6 +44,10 @@ function buildS3Client(
     endpoint,
     credentials,
     forcePathStyle: true,
+    requestHandler: {
+      connectionTimeout: R2_CONNECTION_TIMEOUT_MS,
+      requestTimeout: getR2RequestTimeoutMs(),
+    },
   });
 }
 

@@ -1,0 +1,63 @@
+{
+  "documentRequestsPage": {
+    "documentosQueVocePediu": "Documentos que você pediu a alguém, e os que pediram a você.",
+    "emptyReceivedDescription": "Quando alguém pedir um documento a você, ele aparece aqui.",
+    "emptyReceivedTitle": "Ninguém pediu nada a você",
+    "emptySentDescription": "Peça um documento a alguém e acompanhe por aqui.",
+    "emptySentTitle": "Você ainda não pediu nada",
+    "pedidos": "Pedidos",
+    "pedirDocumento": "Pedir documento",
+    "tabReceived": "Pediram a você",
+    "tabSent": "Você pediu",
+    "created": "Pedido enviado.",
+    "createFailed": "Não foi possível enviar o pedido.",
+    "cancelled": "Pedido cancelado.",
+    "cancelFailed": "Não foi possível cancelar o pedido.",
+    "columns": {
+      "title": "Pedido",
+      "requestedBy": "Quem pediu",
+      "requestedFrom": "De quem",
+      "category": "Categoria",
+      "dueAt": "Prazo",
+      "status": "Status"
+    },
+    "actions": {
+      "upload": "Enviar documento",
+      "open": "Abrir documento",
+      "cancel": "Cancelar pedido"
+    },
+    "foraDoAcervo": "fora do seu acervo"
+  },
+  "requestDocumentModal": {
+    "cancelar": "Cancelar",
+    "categoriaDeDestino": "Categoria de destino",
+    "comprovanteDeResidenciaAtualizado": "Comprovante de residência atualizado",
+    "contaDeLuzOu": "Conta de luz ou água dos últimos 90 dias.",
+    "deQuem": "De quem",
+    "detalhesOpcional": "Detalhes (opcional)",
+    "eAquiQueO": "É aqui que o documento vai cair. Quem enviar não muda essa escolha.",
+    "nomeDeUsuarioDe": "Nome de usuário de quem vai enviar",
+    "oQueVoceEsta": "O que você está pedindo",
+    "pedidoPara": "Pedido para",
+    "pedirUmDocumento": "Pedir um documento",
+    "prazoOpcional": "Prazo (opcional)",
+    "send": "Pedir",
+    "sending": "Enviando…",
+    "subtitleExternal": "O documento fica no acervo de quem enviar, e você recebe acesso de leitura depois de aceitar.",
+    "subtitleInternal": "Quem receber envia pelo fluxo de sempre, e o documento cai na categoria que você escolher.",
+    "scope": {
+      "internal": "Alguém da empresa",
+      "external": "De fora daqui"
+    },
+    "externalIdleHint": "Precisa ter conta DOQYN, e é pelo nome de usuário que se acha. O e-mail inteiro também resolve.",
+    "selectPerson": "Selecione uma pessoa",
+    "selectCategory": "Selecione uma categoria"
+  },
+  "status": {
+    "pending": "Aguardando",
+    "fulfilled": "Atendido",
+    "cancelled": "Cancelado",
+    "expired": "Vencido"
+  },
+  "actionFailed": "Não foi possível concluir a ação."
+}

@@ -3,9 +3,12 @@ import { formatDateTime } from '@/lib/utils';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { OverviewEmptyHint } from './OverviewEmptyHint';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { useTranslation } from 'react-i18next';
+import { auditEventLabel } from '@/features/audit/utils/auditEventText';
 
 type TrackingEvent = {
   id: string;
+  action: string;
   actorName?: string;
   label: string;
   documentName?: string;
@@ -17,13 +20,25 @@ type TrackingEvent = {
  * A bolinha desenhava uma linha do tempo que ninguém percorre — o que se lê
  * aqui é registro de acesso, e registro tem coluna de data em monoespaçado.
  */
-export function ActivityLogRow({ actorName, label, documentName, occurredAt }: TrackingEvent) {
+export function ActivityLogRow({
+  action,
+  actorName,
+  label,
+  documentName,
+  occurredAt,
+}: TrackingEvent) {
+  const { t } = useTranslation(['dashboard', 'auditEvents']);
+
   return (
     <article className="overview-row py-2.5 pl-4 pr-1">
       <div className="flex items-baseline justify-between gap-3">
         <p className="min-w-0 flex-1 text-label leading-snug text-doqyn-text">
-          <span className="font-medium">{actorName ?? 'Usuário'}</span>{' '}
-          <span className="text-doqyn-muted">{label.toLowerCase()}</span>
+          <span className="font-medium">
+            {actorName ?? t('overviewRecentActivityPanel.userFallback')}
+          </span>{' '}
+          <span className="text-doqyn-muted">
+            {auditEventLabel(t, action, label).toLowerCase()}
+          </span>
         </p>
         <time className="overview-timestamp shrink-0 whitespace-nowrap">
           {formatDateTime(occurredAt)}
@@ -39,14 +54,16 @@ export function ActivityLogRow({ actorName, label, documentName, occurredAt }: T
 }
 
 export function OverviewRecentActivityPanel({ events }: { events: TrackingEvent[] }) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   return (
     <OverviewPanelShell
-      title="Atividade recente"
-      subtitle="Visualizações, downloads e rastreio"
+      title={t('overviewRecentActivityPanel.atividadeRecente')}
+      subtitle={t('overviewRecentActivityPanel.subtitle')}
       titleId="overview-recent-activity-title"
-      actionLabel="Ver tracking"
+      actionLabel={t('overviewRecentActivityPanel.viewTracking')}
       onAction={() => navigate('/tracking')}
       bodyClassName="flex-1"
       data-testid="overview-recent-activity"
@@ -54,8 +71,8 @@ export function OverviewRecentActivityPanel({ events }: { events: TrackingEvent[
       {events.length === 0 ? (
         <OverviewEmptyHint
           icon="monitoring"
-          title="Nenhuma atividade no período"
-          description="Cada abertura, download e envio entra aqui assim que acontece."
+          title={t('overviewRecentActivityPanel.nenhumaAtividadeNoPeriodo')}
+          description={t('overviewRecentActivityPanel.cadaAberturaDownloadE')}
         />
       ) : (
         <div className="flex flex-col">

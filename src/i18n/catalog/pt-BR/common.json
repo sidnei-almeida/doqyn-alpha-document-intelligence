@@ -1,0 +1,220 @@
+{
+  "actions": {
+    "back": "Voltar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "next": "Avançar",
+    "retry": "Tentar de novo",
+    "save": "Salvar",
+    "search": "Buscar"
+  },
+  "authErrorAction": {
+    "verFormasDeAcesso": "Ver formas de acesso",
+    "confirmarEmail": "Confirmar e-mail"
+  },
+  "documentStatus": {
+    "active": "Ativo",
+    "analyzing": "Em análise",
+    "available": "Disponível",
+    "needsReview": "Requer revisão",
+    "pendingAnalysis": "Aguardando análise",
+    "pendingReview": "Aguardando revisão",
+    "processed": "Processado",
+    "reviewRequired": "Revisão necessária",
+    "updateProcessed": "Atualização processada",
+    "updated": "Atualizado"
+  },
+  "documents": {
+    "count_one": "{{count}} documento",
+    "count_other": "{{count}} documentos",
+    "empty": "Nenhum documento",
+    "noFolder": "Sem pasta"
+  },
+  "locale": {
+    "description": "Idioma da interface. Não muda o idioma dos seus documentos.",
+    "descriptionWithDrafts": "Idioma da interface. Inglês e espanhol estão em tradução e ainda não podem ser escolhidos.",
+    "enUS": "Inglês",
+    "es419": "Espanhol",
+    "inPreparation": "Em preparo",
+    "label": "Idioma",
+    "ptBR": "Português",
+    "saveFailed": "Não foi possível salvar o idioma. Ele voltou ao anterior; tente de novo."
+  },
+  "memberStatus": {
+    "active": "Ativo",
+    "blocked": "Bloqueado",
+    "invited": "Convidado",
+    "pending": "Pendente",
+    "rejected": "Rejeitado"
+  },
+  "nav": {
+    "assinaturas": "Para assinar",
+    "audit": "Auditoria",
+    "biblioteca": "Biblioteca",
+    "compartilhados": "Compartilhados comigo",
+    "contatos": "Contatos",
+    "dashboard": "Visão Geral",
+    "desativados": "Desativados",
+    "favoritos": "Favoritos",
+    "lixeira": "Lixeira",
+    "matriz": "Matriz",
+    "pedidos": "Pedidos",
+    "recentes": "Recentes",
+    "rules": "Regras",
+    "settings": "Configurações",
+    "tracking": "Tracking",
+    "users": "Usuários"
+  },
+  "processingStep": {
+    "analysisDescription": "Verificação e validação inicial",
+    "analysisLabel": "Análise do documento",
+    "metadataDescription": "Extração de informações relevantes",
+    "metadataLabel": "Classificação e metadados",
+    "readyDescription": "Documento pronto para consulta",
+    "readyLabel": "Disponível com rastreabilidade",
+    "uploadDescription": "Documento registrado com segurança",
+    "uploadLabel": "Upload recebido"
+  },
+  "state": {
+    "empty": "Nada por aqui",
+    "error": "Não foi possível carregar",
+    "loading": "Carregando…"
+  },
+  "taxId": {
+    "cnpjLabel": "CNPJ",
+    "cnpjPlaceholder": "00.000.000/0000-00",
+    "cpfLabel": "CPF",
+    "cpfPlaceholder": "000.000.000-00",
+    "genericLabel": "Documento fiscal",
+    "genericPlaceholder": "Documento de identificação fiscal",
+    "incomplete": "{{label}} incompleto.",
+    "invalid": "{{label}} inválido. Confira os números."
+  },
+  "tenantVocabulary": {
+    "scopeSectionLabelBusiness": "Organização",
+    "scopeSectionLabelIndividual": "Meu acervo"
+  },
+  "feedback": {
+    "genericFailure": "Não foi possível concluir a ação agora. Tente novamente.",
+    "requestFailed": "Erro na requisição"
+  },
+  "accessGate": {
+    "notLinked": {
+      "title": "Acesso pendente",
+      "message": "Seu usuário ainda não está vinculado a um cliente ativo no DOQYN. Peça um convite ao administrador da empresa."
+    },
+    "pending": {
+      "title": "Aguardando liberação",
+      "message": "Seu acesso a esta empresa ainda não foi liberado. Quem administra a empresa resolve isso."
+    },
+    "blocked": {
+      "title": "Acesso bloqueado",
+      "message": "Seu acesso a este ambiente foi bloqueado."
+    },
+    "rejected": {
+      "title": "Acesso recusado",
+      "message": "Seu acesso a este ambiente foi recusado. Voltar depende de um convite novo de quem administra a empresa."
+    },
+    "removed": {
+      "title": "Acesso removido",
+      "message": "Você não faz mais parte deste ambiente no DOQYN. Voltar depende de um convite novo de quem administra a empresa."
+    },
+    "noMembership": {
+      "title": "Sem acesso ativo",
+      "message": "Sua conta ainda não tem acesso ativo a nenhum ambiente no DOQYN."
+    },
+    "subtitle": "Acesso à plataforma",
+    "email": "E-mail",
+    "workspace": "Cliente",
+    "status": "Status",
+    "logout": "Sair",
+    "checking": "Verificando acesso…",
+    "authFailed": "Falha ao autenticar."
+  },
+  "signatureStatus": {
+    "pending": "Assinatura pendente",
+    "signed": "Assinado",
+    "declined": "Recusado",
+    "expired": "Expirado",
+    "cancelled": "Cancelado"
+  },
+  "signatureSummary": {
+    "withCount": "{{label}} · {{n}}",
+    "partial": "Parcial · {{n}}",
+    "signers": "Assinaram: {{names}}.",
+    "pending_one": "{{count}} pendente.",
+    "pending_other": "{{count}} pendentes.",
+    "clickForDetails": "Clique para ver detalhes.",
+    "none": "Nenhuma assinatura solicitada.",
+    "signedCount_one": "{{count}} assinatura: {{names}}.",
+    "signedCount_other": "{{count}} assinaturas: {{names}}.",
+    "pendingFor": "Assinatura pendente para {{name}}.",
+    "signedAt": "Assinado eletronicamente em {{date}}.",
+    "inProgress": "Assinatura em andamento.",
+    "fileBase": "documento",
+    "fileSigned": "{{base}}-assinado.pdf",
+    "fileSignedCode": "{{base}}-assinado-{{code}}.pdf"
+  },
+  "uploadQueue": {
+    "stillRunning": "A análise continua no servidor. O documento aparece na Biblioteca assim que terminar, e não precisa reenviar.",
+    "pollFailure": "Perdemos o contato com o servidor durante a análise. O documento pode ter sido processado. Confira na Biblioteca antes de reenviar.",
+    "groqDailyLimit": "Cota diária de tokens do modelo Groq esgotada. Aguarde o reset (~1h) ou altere GROQ_MODEL para openai/gpt-oss-20b.",
+    "contextLimit": "O documento é grande demais para o modelo atual. Reduza o tamanho do PDF ou ajuste PDF_ANALYSIS_MAX_INPUT_CHARS.",
+    "timeout": "A análise automática demorou demais e foi interrompida. Tente novamente.",
+    "rateLimit": "Limite temporário da Groq atingido. Aguarde alguns minutos e tente novamente.",
+    "failed": "A análise do documento falhou.",
+    "notCompleted": "A análise não foi concluída.",
+    "wait": {
+      "lessThanMinute": "menos de 1 min",
+      "minutes": "~{{count}} min",
+      "hours": "~{{count}} h",
+      "yourTurn": "Na vez · {{wait}}",
+      "ahead_one": "{{count}} documento na frente",
+      "ahead_other": "{{count}} documentos na frente",
+      "withEstimate": "{{position}} · {{wait}}"
+    },
+    "missingJobId": "Identificador da análise ausente. Refaça o upload do documento.",
+    "missingCategory": "Classificação ausente. Escolha uma categoria para salvar este documento.",
+    "validation": {
+      "tooManyFiles": "Selecione até {{count}} documentos por vez nesta versão.",
+      "fileTooLarge": "O arquivo excede o limite de {{size}}MB.",
+      "unsupportedFormat": "Envie PDF ou imagem (JPG, PNG ou WebP) nesta etapa."
+    }
+  },
+  "workflowError": {
+    "retrySuggestion": "Tente novamente. Se o problema persistir, contate o suporte.",
+    "rulesNotConfigured": "Configuração documental incompleta. Cadastre classes e regras antes de analisar documentos."
+  },
+  "uncategorized": "Sem categoria",
+  "toaster": {
+    "region": "Avisos"
+  },
+  "appErrorBoundary": {
+    "title": "Algo inesperado aconteceu",
+    "message": "Recarregue a página para continuar. Se o problema persistir, entre em contato com o suporte.",
+    "reload": "Recarregar"
+  },
+  "platformRole": {
+    "company_admin": {
+      "label": "Administrador da empresa",
+      "description": "Gerencia usuários, grupos e regras da empresa."
+    },
+    "individual_admin": {
+      "label": "Administrador da conta",
+      "description": "Gerencia acesso e documentos da conta individual."
+    },
+    "user": {
+      "label": "Usuário",
+      "description": "Acessa documentos e recursos liberados."
+    },
+    "unknownDescription": "Papel da plataforma."
+  },
+  "legacyAuthRole": {
+    "admin": "Administrador do sistema",
+    "manager": "Administrador da empresa",
+    "user": "Usuário",
+    "viewer": "Visualizador"
+  }
+}

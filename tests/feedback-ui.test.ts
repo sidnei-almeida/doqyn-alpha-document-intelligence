@@ -42,7 +42,8 @@ describe('login feedback', () => {
 
   it('mapeia NO_ACTIVE_MEMBERSHIP para alerta informativo', () => {
     assert.equal(getLoginAlertVariant('NO_ACTIVE_MEMBERSHIP'), 'info');
-    assert.match(getFriendlyAuthErrorMessage('NO_ACTIVE_MEMBERSHIP'), /nenhuma empresa/i);
+    // "ambiente", não "empresa": a mesma frase serve à conta pessoal (glossário do i18n).
+    assert.match(getFriendlyAuthErrorMessage('NO_ACTIVE_MEMBERSHIP'), /nenhum ambiente/i);
   });
 
   it('mapeia MEMBERSHIP_PENDING para alerta de aviso', () => {

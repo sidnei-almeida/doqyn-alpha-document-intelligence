@@ -6,6 +6,7 @@ import { TypeFilterMenu } from './TypeFilterMenu';
 import { ViewModeToggle } from './ViewModeToggle';
 import { WorkspaceRefreshButton } from '@/components/layout/WorkspaceRefreshButton';
 import type { LibraryRouteState } from '../types/library';
+import { useTranslation } from 'react-i18next';
 import type { LibraryCollectionFilterCapabilities } from '../utils/libraryCollectionFilterCapabilities';
 
 type ExplorerToolbarActionsProps = {
@@ -28,8 +29,10 @@ export function ExplorerToolbarActions({
   onRefresh,
   showFilters = false,
   filterCapabilities,
-  refreshLabel = 'Atualizar biblioteca',
+  refreshLabel: refreshLabelProp,
 }: ExplorerToolbarActionsProps) {
+  const { t } = useTranslation('library');
+  const refreshLabel = refreshLabelProp ?? t('explorerToolbarActions.refresh');
   const caps = filterCapabilities ?? {
     status: true,
     type: true,

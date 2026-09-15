@@ -19,6 +19,7 @@ import {
 import { GroupModal } from './components/GroupModal';
 import { useRules } from './hooks/useRules';
 import type { DocumentCategory } from '@/types/rules';
+import { useTranslation } from 'react-i18next';
 
 type RulesTab = 'acessos' | 'matriz';
 
@@ -30,6 +31,8 @@ type RulesTab = 'acessos' | 'matriz';
 const NEW_CATEGORY_PARAM = 'nova';
 
 export function RulesPage() {
+  const { t } = useTranslation('rules');
+
   const { user, hasAnyRole, tenant } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<RulesTab>('acessos');
@@ -80,7 +83,7 @@ export function RulesPage() {
     deleteCategory,
     saveExtractionRule,
     getRuleForClass,
-  } = useRules(user?.name ?? 'Usuário');
+  } = useRules();
 
   const simulatedMember = useMemo(
     () => members.find((member) => member.id === simulatedMemberId) ?? null,
@@ -90,7 +93,7 @@ export function RulesPage() {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-doqyn-muted">Carregando governança documental…</p>
+        <p className="text-sm text-doqyn-muted">{t('rulesPage.carregandoGovernancaDocumental')}</p>
       </div>
     );
   }
@@ -98,21 +101,19 @@ export function RulesPage() {
   if (error) {
     return (
       <PageShell
-        eyebrow="Governança"
-        title="Regras de acesso"
+        eyebrow={t('rulesPage.eyebrow')}
+        title={t('rulesPage.regrasDeAcesso')}
         description={
-          showGroups
-            ? 'Conecte grupos de pessoas às categorias de documentos.'
-            : 'Categorias e o que a IA extrai de cada uma.'
+          showGroups ? t('rulesPage.descriptionGroups') : t('rulesPage.descriptionCategories')
         }
       >
         <EmptyState
           stretch
-          title="Não foi possível carregar as regras agora."
-          description="Verifique sua conexão e tente novamente."
+          title={t('rulesPage.naoFoiPossivelCarregar')}
+          description={t('rulesPage.verifiqueSuaConexaoE')}
           action={
             <Button type="button" onClick={() => void reload()}>
-              Tentar novamente
+              {t('rulesPage.tentarNovamente')}
             </Button>
           }
         />
@@ -122,12 +123,10 @@ export function RulesPage() {
 
   return (
     <PageShell
-      eyebrow="Governança"
-      title="Regras de acesso"
+      eyebrow={t('rulesPage.eyebrow')}
+      title={t('rulesPage.regrasDeAcesso2')}
       description={
-        showGroups
-          ? 'Quem não está num grupo conectado não vê os documentos da categoria.'
-          : 'Categorias e o que a IA extrai de cada uma.'
+        showGroups ? t('rulesPage.descriptionGroupsReady') : t('rulesPage.descriptionCategories')
       }
       actions={
         isAdmin ? (
@@ -145,12 +144,12 @@ export function RulesPage() {
                   size="sm"
                   onClick={() => setGroupModalOpen(true)}
                 >
-                  Novo grupo
+                  {t('rulesPage.novoGrupo')}
                 </Button>
               </>
             ) : null}
             <Button type="button" size="sm" onClick={() => setCategoryModalOpen(true)}>
-              Nova categoria
+              {t('rulesPage.novaCategoria')}
             </Button>
           </div>
         ) : undefined
@@ -169,8 +168,8 @@ export function RulesPage() {
       {showGroups ? (
         <Tabs
           tabs={[
-            { id: 'acessos', label: 'Acessos' },
-            { id: 'matriz', label: 'Matriz' },
+            { id: 'acessos', label: t('rulesPage.tabAccess') },
+            { id: 'matriz', label: t('rulesPage.tabMatrix') },
           ]}
           activeTab={activeTab}
           onChange={(id) => setActiveTab(id as RulesTab)}
@@ -182,16 +181,12 @@ export function RulesPage() {
         (categories.length === 0 ? (
           <EmptyState
             stretch
-            title="Nenhuma categoria de documentos ainda."
-            description={
-              showGroups
-                ? 'Crie uma categoria para começar a organizar o acesso por grupos.'
-                : 'Crie uma categoria para dizer à IA o que extrair de cada documento.'
-            }
+            title={t('rulesPage.nenhumaCategoriaDeDocumentos')}
+            description={showGroups ? t('rulesPage.emptyGroups') : t('rulesPage.emptyCategories')}
             action={
               isAdmin ? (
                 <Button type="button" onClick={() => setCategoryModalOpen(true)}>
-                  Nova categoria
+                  {t('rulesPage.novaCategoria2')}
                 </Button>
               ) : undefined
             }

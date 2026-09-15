@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { resolveRequestLocale } from '../../../../server/i18n/index.js';
 import { getShareOgMetadata } from '../../../../server/og/ogPortalMetadata.js';
 import { renderOgPortalHtml } from '../../../../server/og/renderOgPortalHtml.js';
 import { resolvePublicAppOrigin } from '../../../../server/utils/publicAppUrl.js';
@@ -23,10 +24,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const origin = resolvePublicAppOrigin(req);
-  const metadata = await getShareOgMetadata(token, origin);
+  const metadata = await getShareOgMetadata(token, origin, resolveRequestLocale(req));
   const html = renderOgPortalHtml(metadata);
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  // O cache é público e o texto muda com o idioma pedido: sem `Vary`, o primeiro idioma a chegar
+  // seria servido a todos os outros.
+  res.setHeader('Vary', 'Accept-Language');
   // `public`: a página não fala mais do documento, então não há o que proteger de cache
   // intermediário — e é isso que permite ao robô guardar o resultado em vez de repetir a busca.
   res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');

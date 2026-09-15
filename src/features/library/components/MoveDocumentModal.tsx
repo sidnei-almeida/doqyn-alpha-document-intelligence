@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DocumentListItem } from '@/types/document-library';
 import { EmptyHint } from '@/components/ui/EmptyHint';
+import { useTranslation } from 'react-i18next';
 
 export type MoveDocumentCategoryOption = {
   id: string;
@@ -31,6 +32,8 @@ export function MoveDocumentModal({
   onClose,
   onConfirm,
 }: MoveDocumentModalProps) {
+  const { t } = useTranslation('library');
+
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -79,7 +82,7 @@ export function MoveDocumentModal({
 
   if (!open) return null;
 
-  const title = documents.length > 1 ? `Mover ${documents.length} documentos` : 'Mover documento';
+  const title = t('moveDocumentModal.title', { count: documents.length });
 
   const canSubmit =
     Boolean(selectedId) && !isSubmitting && !isSameAsCurrent && activeCategories.length > 0;
@@ -91,21 +94,23 @@ export function MoveDocumentModal({
       title={title}
       subtitle={
         documents.length > 1
-          ? 'Os documentos selecionados serão reclassificados para a categoria escolhida.'
-          : 'Escolha uma nova categoria para este documento. O arquivo e o histórico serão preservados.'
+          ? t('moveDocumentModal.subtitleMany')
+          : t('moveDocumentModal.subtitleOne')
       }
       size="sm"
       footer={
         <>
           <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
-            Cancelar
+            {t('moveDocumentModal.cancelar')}
           </Button>
           <Button
             type="button"
             onClick={() => selectedId && onConfirm(selectedId)}
             disabled={!canSubmit}
           >
-            {selectedCategory ? `Mover para ${selectedCategory.name}` : 'Mover'}
+            {selectedCategory
+              ? t('moveDocumentModal.moveTo', { category: selectedCategory.name })
+              : t('moveDocumentModal.move')}
           </Button>
         </>
       }
@@ -113,27 +118,29 @@ export function MoveDocumentModal({
       <div className="space-y-4" data-testid="move-document-modal">
         {singleDoc && currentCategoryName && (
           <div className="rounded-lg border border-doqyn-border-subtle bg-doqyn-card px-3 py-2.5">
-            <p className="text-eyebrow uppercase text-doqyn-subtle">Categoria atual</p>
+            <p className="text-eyebrow uppercase text-doqyn-subtle">
+              {t('moveDocumentModal.categoriaAtual')}
+            </p>
             <p className="mt-0.5 text-label text-doqyn-text">{currentCategoryName}</p>
           </div>
         )}
 
         {activeCategories.length === 0 ? (
-          <EmptyHint bare>Nenhuma categoria disponível.</EmptyHint>
+          <EmptyHint bare>{t('moveDocumentModal.nenhumaCategoriaDisponivel')}</EmptyHint>
         ) : (
           <>
             {activeCategories.length > 6 && (
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar categoria…"
-                aria-label="Buscar categoria"
+                placeholder={t('moveDocumentModal.buscarCategoria')}
+                aria-label={t('moveDocumentModal.buscarCategoria2')}
               />
             )}
 
             <div className="max-h-64 space-y-1 overflow-y-auto pr-0.5">
               {filteredCategories.length === 0 ? (
-                <EmptyHint bare>Nenhuma categoria encontrada.</EmptyHint>
+                <EmptyHint bare>{t('moveDocumentModal.nenhumaCategoriaEncontrada')}</EmptyHint>
               ) : (
                 filteredCategories.map((category) => {
                   const isCurrent = category.id === currentCategoryId;
@@ -168,7 +175,7 @@ export function MoveDocumentModal({
                       </span>
                       {isCurrent ? (
                         <span className="shrink-0 rounded-full bg-doqyn-card px-2 py-0.5 text-micro font-medium text-doqyn-subtle">
-                          Atual
+                          {t('moveDocumentModal.atual')}
                         </span>
                       ) : null}
                     </button>
@@ -179,7 +186,7 @@ export function MoveDocumentModal({
 
             {isSameAsCurrent && (
               <p className="text-caption text-doqyn-warning">
-                O documento já está nesta categoria.
+                {t('moveDocumentModal.oDocumentoJaEsta')}
               </p>
             )}
           </>

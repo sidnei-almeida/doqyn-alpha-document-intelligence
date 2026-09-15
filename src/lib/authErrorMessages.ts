@@ -1,89 +1,128 @@
+/**
+ * A frase que a pessoa lê quando uma chamada de API falha.
+ *
+ * O mapa que morava aqui — 45 frases escritas à mão, código a código — foi para
+ * `src/i18n/catalog/pt-BR/errors.json`, junto com as outras 228 extraídas das chamadas de
+ * `ServiceError` do servidor. Não era um mapa pior que o catálogo; era o mesmo mapa em um
+ * lugar onde só o português cabia. As frases são exatamente aquelas, palavra por palavra.
+ *
+ * O que sobrou aqui é a lógica que um catálogo não expressa: quais códigos preferem a mensagem
+ * do servidor, qual erro carrega um motivo digitado por outra pessoa, e que ação oferecer.
+ */
+import { i18n, initI18n } from '@/i18n';
+import ptErrors from '@/i18n/catalog/pt-BR/errors.json';
+import ptCommon from '@/i18n/catalog/pt-BR/common.json';
+
 export type ApiErrorDetails = Record<string, unknown>;
 
-const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
-  USER_DISABLED: 'Esta conta foi desativada. Entre em contato com o administrador.',
-  EMAIL_NOT_VERIFIED:
-    'Confirme seu e-mail para entrar. Enviamos um código de 6 dígitos para o endereço do cadastro.',
-  EMAIL_VERIFICATION_INVALID_CODE: 'Código incorreto. Confira os seis dígitos do e-mail.',
-  EMAIL_VERIFICATION_TOO_MANY_ATTEMPTS:
-    'Este código foi bloqueado por excesso de tentativas. Peça um novo.',
-  EMAIL_VERIFICATION_EXPIRED: 'Este código expirou. Peça um novo.',
-  EMAIL_VERIFICATION_ALREADY_USED: 'Esta confirmação já foi utilizada.',
-  EMAIL_VERIFICATION_NOT_FOUND: 'Nenhum código pendente. Peça um novo.',
-  EMAIL_VERIFICATION_RESEND_TOO_SOON: 'Aguarde um instante antes de pedir outro código.',
-  EMAIL_VERIFICATION_TICKET_INVALID:
-    'Esta confirmação expirou. Entre com e-mail e senha para receber um código novo.',
-  EMAIL_ALREADY_VERIFIED: 'Este e-mail já está confirmado.',
-  EMAIL_CHANGE_INVALID_CODE: 'Código incorreto. Confira os seis dígitos do e-mail.',
-  EMAIL_CHANGE_TOO_MANY_ATTEMPTS:
-    'Este código foi bloqueado por excesso de tentativas. Peça um novo.',
-  EMAIL_CHANGE_RESEND_TOO_SOON: 'Aguarde um instante antes de pedir outro código.',
-  EMAIL_CHANGE_NOT_FOUND: 'Nenhuma troca de e-mail pendente.',
-  EMAIL_CHANGE_EXPIRED: 'Este link de troca expirou. Peça a alteração novamente.',
-  EMAIL_CHANGE_ALREADY_USED: 'Esta troca de e-mail já foi confirmada.',
-  PASSWORD_CHANGE_REQUIRED: 'Você precisa alterar sua senha antes de continuar.',
-  // Espelho de `server/utils/membershipAccessErrors.ts`: estas disparam antes de haver tenant
-  // resolvido, então não há tipo a consultar e "empresa" era um chute que errava em toda conta
-  // pessoal.
-  NO_ACTIVE_MEMBERSHIP: 'Sua conta ainda não tem acesso ativo a nenhum ambiente no DOQYN.',
-  NO_ACTIVE_TENANT: 'Selecione um ambiente para continuar.',
-  TENANT_REQUIRED: 'Esta ação exige um ambiente ativo.',
-  TENANT_NOT_FOUND: 'Ambiente não encontrado ou indisponível para sua conta.',
-  TENANT_INACTIVE: 'Este ambiente não está ativo no DOQYN.',
-  TENANT_PROVISIONING_FAILED:
-    'Este ambiente ainda não está pronto. Tente novamente em alguns minutos ou contate o suporte.',
-  MEMBERSHIP_PENDING: 'Sua solicitação de acesso ainda está aguardando aprovação.',
-  MEMBERSHIP_BLOCKED: 'Seu acesso a este ambiente foi bloqueado.',
-  MEMBERSHIP_REJECTED: 'Sua solicitação de acesso a este ambiente foi rejeitada.',
-  MEMBERSHIP_REMOVED: 'Você não faz mais parte deste ambiente no DOQYN.',
-  MEMBERSHIP_NOT_ACTIVE: 'Seu vínculo com este ambiente não está ativo.',
-  SESSION_EXPIRED: 'Sua sessão expirou. Faça login novamente.',
-  INVALID_SESSION: 'Sua sessão expirou. Faça login novamente.',
-  AUTH_REQUIRED: 'Faça login para continuar.',
-  NO_SESSION: 'Faça login para continuar.',
-  FORBIDDEN: 'Você não tem permissão para acessar esta área.',
-  DOQYN_ADMIN_REQUIRED: 'Esta ação é restrita a administradores da plataforma.',
-  COMPANY_ADMIN_REQUIRED: 'Esta ação é restrita a administradores da empresa.',
-  VALIDATION_ERROR: 'Revise os campos informados e tente novamente.',
-  TERMS_ACCEPTANCE_REQUIRED: 'É necessário aceitar os Termos e Condições de Uso para continuar.',
-  TERMS_VERSION_INVALID: 'A versão dos Termos e Condições enviada não é válida.',
-  AUTH_SERVICE_UNAVAILABLE: 'Não foi possível validar sua sessão agora. Tente novamente.',
-  RATE_LIMIT: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-  USER_NOT_ACTIVE: 'Esta conta não está ativa.',
-  OAUTH_EMAIL_NOT_VERIFIED:
-    'O provedor não confirmou que este e-mail é seu, então não podemos vincular a conta existente. Entre com e-mail e senha ou peça ao administrador para liberar o acesso.',
-  OAUTH_CALLBACK_FAILED: 'Não foi possível concluir o login social. Tente novamente.',
-  OAUTH_PROVIDER_DISABLED: 'Este provedor de login não está disponível no momento.',
-};
+/**
+ * Códigos genéricos por construção, em que a mensagem do servidor é a informação.
+ *
+ * `VALIDATION_ERROR` cobre quinze frases diferentes — "E-mail inválido", "Papel inválido",
+ * "Nome do membro é obrigatório" — e o código não distingue nenhuma delas. Para esses três a
+ * frase do servidor vem primeiro e o catálogo é a rede: "Revise os campos informados e tente
+ * novamente." é o que sobra quando o servidor não disse qual campo.
+ *
+ * Só `NOT_FOUND` não tem frase própria no catálogo — "não encontrado" sem dizer o quê não
+ * informa nada. Os outros dois herdaram frases genéricas que já existiam e funcionam.
+ *
+ * São 45 pontos de chamada que deveriam ter código próprio. Dívida declarada, não solução —
+ * `npm run i18n:check` conta quantos são, para que o número não cresça em silêncio.
+ */
+const PASSTHROUGH_CODES = new Set(['VALIDATION_ERROR', 'NOT_FOUND', 'FORBIDDEN']);
+
+const FALLBACK_COMMON = ptCommon as { feedback: { genericFailure: string } };
+
+/**
+ * Última rede, quando nem o código nem o servidor disseram nada.
+ *
+ * Função, e não constante: a constante congelava a frase no idioma do momento em que o módulo
+ * carregou — sempre português, porque o módulo carrega antes de a sessão dizer o idioma.
+ */
+export function genericFailureMessage(): string {
+  initI18n();
+  const key = 'common:feedback.genericFailure';
+  if (i18n.isInitialized && i18n.exists(key)) {
+    const phrase = i18n.t(key);
+    if (typeof phrase === 'string' && phrase !== key) return phrase;
+  }
+  return FALLBACK_COMMON.feedback.genericFailure;
+}
+
+/**
+ * Garante que o i18n existe antes de perguntar ao catálogo.
+ *
+ * Quem monta a árvore React chama `initI18n` pelo provider, mas esta função também é chamada de
+ * fora dele — de um teste, de um script, de um `catch` que roda antes do primeiro render. Numa
+ * instância não inicializada, `i18n.exists` devolve `false` para tudo, e toda mensagem de erro
+ * virava a frase genérica. `initI18n` é idempotente, então chamar aqui não custa nada.
+ */
+const FALLBACK_ERRORS = ptErrors as Record<string, string>;
+
+/**
+ * A frase do catálogo, com o `pt-BR` embutido como rede.
+ *
+ * O caminho normal é o i18next, que resolve no idioma ativo. Mas ele não está disponível em
+ * todo lugar de onde esta função é chamada: um teste em Node, um script, ou um `catch` que
+ * dispara antes do primeiro render encontram a instância ainda não inicializada — e, com um
+ * backend registrado, a inicialização do i18next é adiada para o próximo tick, então `t()`
+ * chamado cedo demais devolve `undefined`.
+ *
+ * Ler o JSON embutido nesse caso não é duplicação: é o mesmo arquivo que o i18next carrega
+ * como recurso estático. O que muda é só não depender do momento.
+ */
+function catalogPhrase(code: string): string | null {
+  initI18n();
+  const key = `errors:${code}`;
+  if (i18n.isInitialized && i18n.exists(key)) {
+    const phrase = i18n.t(key);
+    if (typeof phrase === 'string' && phrase !== key) return phrase;
+  }
+  return FALLBACK_ERRORS[code] ?? null;
+}
 
 export function getFriendlyAuthErrorMessage(
   code: string,
   fallbackMessage?: string,
   details?: ApiErrorDetails,
 ): string {
+  /* Motivo de rejeição é texto escrito por um administrador sobre este caso específico.
+     Nenhum catálogo o contém, e substituí-lo por uma frase genérica apagaria a única
+     explicação que a pessoa tem. */
   if (code === 'MEMBERSHIP_REJECTED' && typeof details?.rejectionReason === 'string') {
     const reason = details.rejectionReason.trim();
     if (reason) {
-      return `Sua solicitação de acesso foi rejeitada. Motivo informado: ${reason}`;
+      return i18n.t('errors:MEMBERSHIP_REJECTED_WITH_REASON', { reason });
     }
   }
 
-  return (
-    AUTH_ERROR_MESSAGES[code] ??
-    fallbackMessage ??
-    'Não foi possível concluir a ação agora. Tente novamente.'
-  );
+  const phrase = catalogPhrase(code);
+  const server = fallbackMessage?.trim();
+
+  if (PASSTHROUGH_CODES.has(code)) {
+    return server || phrase || genericFailureMessage();
+  }
+
+  return phrase ?? server ?? genericFailureMessage();
 }
 
+/**
+ * As duas ações moram em `common`, e não em `auth`.
+ *
+ * O banner de erro de sessão aparece em qualquer tela, inclusive antes de o catálogo `auth` ter
+ * sido pedido — e `common` é o único que já vem no bundle. Um rótulo de botão que às vezes sai
+ * como chave crua seria pior do que qualquer economia de bytes.
+ */
 export function getAuthErrorActions(code: string): Array<{ label: string; href: string }> {
+  initI18n();
+
   switch (code) {
     case 'NO_ACTIVE_MEMBERSHIP':
-      // `/acesso` apresenta os caminhos que a pessoa percorre sozinha, inclusive a conta
+      // `/access` apresenta os caminhos que a pessoa percorre sozinha, inclusive a conta
       // pessoal. Entrar numa empresa que já existe não está lá: depende de convite.
-      return [{ label: 'Ver formas de acesso', href: '/acesso' }];
+      return [{ label: i18n.t('common:authErrorAction.verFormasDeAcesso'), href: '/access' }];
     case 'EMAIL_NOT_VERIFIED':
-      return [{ label: 'Confirmar e-mail', href: '/confirmar-cadastro' }];
+      return [{ label: i18n.t('common:authErrorAction.confirmarEmail'), href: '/verify-email' }];
     case 'MEMBERSHIP_REJECTED':
     case 'MEMBERSHIP_REMOVED':
       // Sem ação: voltar depende de um convite novo, que sai das mãos de quem administra a

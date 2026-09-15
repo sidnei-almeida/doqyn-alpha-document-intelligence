@@ -28,10 +28,10 @@ describe('painel de detalhes da Biblioteca', () => {
     // o drawer o renderiza e acrescenta os seus próprios.
     const shared = readSrc('features/documents/components/DocumentDetailsShared.tsx');
     assert.ok(drawer().includes('DocumentDetailsShared'), 'drawer usa o componente compartilhado');
-    for (const field of ['Categoria', 'Proprietário', 'Atualizado']) {
+    for (const field of ['.categoria', '.proprietario', '.atualizado']) {
       assert.ok(shared.includes(field), `campo ${field} presente no compartilhado`);
     }
-    assert.ok(drawer().includes('Versão'), 'campo Versão presente no drawer');
+    assert.ok(drawer().includes('.versao'), 'campo Versão presente no drawer');
   });
 
   it('popover de contexto com link para Regras quando há categoria', () => {
@@ -54,7 +54,7 @@ describe('painel de detalhes da Biblioteca', () => {
     assert.ok(shell.includes('max-w-xl'));
     assert.ok(source.includes('library-details-drawer'));
     assert.ok(source.includes('WorkspaceSideDrawer'));
-    assert.ok(source.includes('Fechar painel de detalhes'));
+    assert.ok(source.includes('.closeDetails'));
     assert.equal(source.includes('lg:flex'), false);
     assert.equal(source.includes('library-details-panel'), false);
     assert.ok(shell.includes('fixed inset-0'));

@@ -19,17 +19,18 @@ import { isUploadInProgress, uploadStatusProgress } from './utils/uploadStatusPr
 import { useUploadQueueContext } from './uploadQueueContext';
 import { UploadScanThumb } from './components/UploadScanThumb';
 import { UploadScanStack } from './components/UploadScanStack';
+import { useTranslation } from 'react-i18next';
 
-const STATUS_LABELS: Record<UploadQueueItemStatus, string> = {
-  queued: 'Na fila',
-  analyzing: 'Analisando com IA…',
-  review: 'Aguardando revisão',
-  confirming: 'Salvando na Biblioteca…',
-  awaiting_approval: 'Aguardando aprovação do admin',
-  ai_paused: 'IA indisponível. Tente novamente',
-  still_running: 'Análise em andamento no servidor',
-  done: 'Salvo na Biblioteca',
-  error: 'Erro',
+const STATUS_KEYS: Record<UploadQueueItemStatus, string> = {
+  queued: 'uploadQueueDrawer.status.queued',
+  analyzing: 'uploadQueueDrawer.status.analyzing',
+  review: 'uploadQueueDrawer.status.review',
+  confirming: 'uploadQueueDrawer.status.confirming',
+  awaiting_approval: 'uploadQueueDrawer.status.awaitingApproval',
+  ai_paused: 'uploadQueueDrawer.status.aiPaused',
+  still_running: 'uploadQueueDrawer.status.stillRunning',
+  done: 'uploadQueueDrawer.status.done',
+  error: 'uploadQueueDrawer.status.error',
 };
 
 function QueueRow({
@@ -39,6 +40,8 @@ function QueueRow({
   item: UploadQueueItem;
   autoCountdown: number | null;
 }) {
+  const { t } = useTranslation('upload');
+
   const { openReview, retryItem, removeItem, cancelAutoConfirm } = useUploadQueueContext();
 
   const subtitle = useMemo(() => {
@@ -55,24 +58,34 @@ function QueueRow({
       const classe = (
         item.savedCategoryName ?? item.analysis?.raw.classification.className
       )?.trim();
+      const size = formatFileSize(item.fileSize);
       return classe
-        ? `Salvo em ${classe} · ${formatFileSize(item.fileSize)}`
-        : `Salvo na Biblioteca · ${formatFileSize(item.fileSize)}`;
+        ? t('uploadQueueDrawer.savedIn', { category: classe, size })
+        : t('uploadQueueDrawer.savedLibrary', { size });
     }
     if (item.status === 'awaiting_approval') {
-      return `Enviado para aprovação · ${formatFileSize(item.fileSize)}`;
+      return t('uploadQueueDrawer.sentForApproval', { size: formatFileSize(item.fileSize) });
     }
     if (autoCountdown !== null) {
-      return `Salvando automaticamente em ${autoCountdown}s · ${formatFileSize(item.fileSize)}`;
+      return t('uploadQueueDrawer.autoSaving', {
+        seconds: autoCountdown,
+        size: formatFileSize(item.fileSize),
+      });
     }
     // Onde ele está na fila vale mais que "Analisando com IA…", que é igual para quem está sendo
     // processado agora e para quem é o número 400.
     const waitLabel = formatQueueWaitLabel(item.queueStatus);
     if (waitLabel && (item.status === 'analyzing' || item.status === 'queued')) {
-      return `${waitLabel} · ${formatFileSize(item.fileSize)}`;
+      return t('uploadQueueDrawer.withSize', {
+        label: waitLabel,
+        size: formatFileSize(item.fileSize),
+      });
     }
-    return `${STATUS_LABELS[item.status]} · ${formatFileSize(item.fileSize)}`;
-  }, [item, autoCountdown]);
+    return t('uploadQueueDrawer.withSize', {
+      label: t(STATUS_KEYS[item.status]),
+      size: formatFileSize(item.fileSize),
+    });
+  }, [item, autoCountdown, t]);
 
   const showProgress = isUploadInProgress(item.status);
   const progress = uploadStatusProgress(item.status);
@@ -107,7 +120,7 @@ function QueueRow({
               aria-valuenow={progress}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={`Progresso de ${item.fileName}`}
+              aria-label={t('uploadQueueDrawer.itemProgress', { fileName: item.fileName })}
             >
               <div
                 className="h-full rounded-full transition-all duration-300"
@@ -123,7 +136,7 @@ function QueueRow({
           onClick={() => cancelAutoConfirm(item.id)}
           className="shrink-0 rounded-[4px] px-2 py-1 text-micro font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
         >
-          Pausar
+          {t('uploadQueueDrawer.pausar')}
         </button>
       )}
       {item.status === 'review' && autoCountdown === null && (
@@ -132,7 +145,7 @@ function QueueRow({
           onClick={() => openReview(item.id)}
           className="shrink-0 rounded-[4px] px-2 py-1 text-caption font-medium text-doqyn-info hover:bg-doqyn-surface-hover"
         >
-          Revisar
+          {t('uploadQueueDrawer.revisar')}
         </button>
       )}
       {/* `still_running` também oferece reenvio: é decisão de quem está na tela, não automática. */}
@@ -143,7 +156,7 @@ function QueueRow({
           type="button"
           onClick={() => retryItem(item.id)}
           className="shrink-0 rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-          aria-label="Tentar novamente"
+          aria-label={t('uploadQueueDrawer.tentarNovamente')}
         >
           <Icon name="replay" size={ICON_SIZE.sm} />
         </button>
@@ -157,7 +170,7 @@ function QueueRow({
           type="button"
           onClick={() => removeItem(item.id)}
           className="shrink-0 rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-          aria-label="Remover da fila"
+          aria-label={t('uploadQueueDrawer.removerDaFila')}
         >
           <Icon name="close" size={ICON_SIZE.sm} />
         </button>
@@ -183,6 +196,8 @@ const DISMISS_ANIMATION_MS = 260;
 
 /** Fila de uploads com progresso do lote e countdown de auto-confirmação. */
 export function UploadQueueDrawer() {
+  const { t } = useTranslation('upload');
+
   const { items, pendingCount, clearFinished, autoConfirmCountdown, reviewSettings } =
     useUploadQueueContext();
   const [collapsed, setCollapsed] = useState(false);
@@ -226,21 +241,24 @@ export function UploadQueueDrawer() {
 
   const headline = (() => {
     if (pendingCount > 0 && reviewCount > 0) {
-      return `${reviewCount} ${reviewCount === 1 ? 'arquivo aguardando revisão' : 'arquivos aguardando revisão'}`;
+      return t('uploadQueueDrawer.headline.review', { count: reviewCount });
     }
     if (pendingCount > 0) {
-      return `${pendingCount} ${pendingCount === 1 ? 'arquivo em processamento' : 'arquivos em processamento'}`;
+      return t('uploadQueueDrawer.headline.processing', { count: pendingCount });
     }
     if (savedCount > 0 && approvalCount > 0) {
-      return `${savedCount - approvalCount} salvos · ${approvalCount} aguardando aprovação`;
+      return t('uploadQueueDrawer.headline.savedAndApproval', {
+        saved: savedCount - approvalCount,
+        approval: approvalCount,
+      });
     }
     if (savedCount > 0) {
-      return `${savedCount} ${savedCount === 1 ? 'documento processado' : 'documentos processados'}`;
+      return t('uploadQueueDrawer.headline.processed', { count: savedCount });
     }
     if (errorCount > 0) {
-      return `${errorCount} ${errorCount === 1 ? 'upload com erro' : 'uploads com erro'}`;
+      return t('uploadQueueDrawer.headline.errors', { count: errorCount });
     }
-    return 'Fila de upload';
+    return t('uploadQueueDrawer.filaDeUpload');
   })();
 
   return (
@@ -249,7 +267,7 @@ export function UploadQueueDrawer() {
         'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-surface shadow-modal',
         leaving && 'queue-drawer-leave',
       )}
-      aria-label="Fila de upload"
+      aria-label={t('uploadQueueDrawer.filaDeUpload')}
       data-testid="upload-queue-drawer"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -265,11 +283,11 @@ export function UploadQueueDrawer() {
             <p className="truncate text-label font-semibold text-doqyn-text">{headline}</p>
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
-            <Tooltip label="Preferências de upload">
+            <Tooltip label={t('uploadQueueDrawer.preferenciasDeUpload')}>
               <Link
                 to="/settings?section=upload-ia"
                 className="rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-                aria-label="Preferências de upload"
+                aria-label={t('uploadQueueDrawer.preferenciasDeUpload2')}
               >
                 <Icon name="settings" size={ICON_SIZE.sm} />
               </Link>
@@ -280,14 +298,16 @@ export function UploadQueueDrawer() {
                 onClick={() => setLeaving(true)}
                 className="rounded-[4px] px-2 py-1 text-micro text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
               >
-                Limpar
+                {t('uploadQueueDrawer.limpar')}
               </button>
             )}
             <button
               type="button"
               onClick={() => setCollapsed((value) => !value)}
               className="rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-              aria-label={collapsed ? 'Expandir fila' : 'Recolher fila'}
+              aria-label={t(
+                collapsed ? 'uploadQueueDrawer.expandQueue' : 'uploadQueueDrawer.collapseQueue',
+              )}
             >
               <Icon
                 name={collapsed ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
@@ -300,10 +320,17 @@ export function UploadQueueDrawer() {
           <div className="mt-2.5">
             <div className="mb-1 flex justify-between text-micro text-doqyn-subtle">
               <span>
-                {submittedProgressCount}/{totalCount} processados
+                {t('uploadQueueDrawer.processedOf', {
+                  done: submittedProgressCount,
+                  total: totalCount,
+                })}
               </span>
               {reviewSettings.autoReviewEnabled && (
-                <span>Auto · {reviewSettings.autoAcceptDelaySeconds}s</span>
+                <span>
+                  {t('uploadQueueDrawer.autoAcceptIn', {
+                    seconds: reviewSettings.autoAcceptDelaySeconds,
+                  })}
+                </span>
               )}
             </div>
             <div className="h-1 overflow-hidden rounded-full bg-doqyn-card">

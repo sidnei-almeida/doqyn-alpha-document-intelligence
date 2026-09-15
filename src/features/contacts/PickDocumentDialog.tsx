@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { formatDateTime } from '@/lib/utils';
 import type { DocumentListItem } from '@/types/document-library';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Qual documento, antes de para quem.
@@ -28,6 +29,8 @@ export function PickDocumentDialog({
   onClose: () => void;
   onPick: (document: DocumentListItem) => void;
 }) {
+  const { t } = useTranslation('contacts');
+
   const [query, setQuery] = useState('');
 
   const documents = useDocuments(
@@ -48,29 +51,32 @@ export function PickDocumentDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title={verb === 'compartilhar' ? 'Compartilhar qual documento?' : 'Assinar qual documento?'}
-      subtitle={
+      title={t(
+        verb === 'compartilhar' ? 'pickDocumentDialog.shareWhich' : 'pickDocumentDialog.signWhich',
+      )}
+      subtitle={t(
         verb === 'compartilhar'
-          ? `Escolha o documento que vai para ${recipientName}.`
-          : `Escolha o documento que ${recipientName} vai assinar.`
-      }
+          ? 'pickDocumentDialog.shareSubtitle'
+          : 'pickDocumentDialog.signSubtitle',
+        { name: recipientName },
+      )}
       size="md"
     >
       <div className="flex flex-col gap-3">
         <Input
           variant="rule"
-          label="Buscar documento"
+          label={t('pickDocumentDialog.buscarDocumento')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Nome do arquivo"
+          placeholder={t('pickDocumentDialog.nomeDoArquivo')}
           autoComplete="off"
         />
 
         {documents.isLoading ? (
-          <p className="type-caption py-2 text-doqyn-muted">Carregando…</p>
+          <p className="type-caption py-2 text-doqyn-muted">{t('pickDocumentDialog.carregando')}</p>
         ) : results.length === 0 ? (
           <p className="type-caption py-2 text-doqyn-muted">
-            {query ? 'Nenhum documento com esse nome.' : 'Você ainda não tem documentos.'}
+            {t(query ? 'pickDocumentDialog.noMatch' : 'pickDocumentDialog.noDocuments')}
           </p>
         ) : (
           // Altura travada com rolagem própria: cem documentos não podem esticar o modal para

@@ -21,7 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const signatureRequestId = resolveId(req);
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
@@ -33,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.signature_request_cancelled',
-        description: 'Solicitação de assinatura revogada.',
         documentId: result.documentId,
         metadata: sanitizeAuditMetadata({
           signatureRequestId: result.signatureRequestId,

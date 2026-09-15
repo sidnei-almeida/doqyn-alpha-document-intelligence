@@ -1,0 +1,222 @@
+{
+  "actionFallback": {
+    "accessPrefix": "Access: ",
+    "explorerPrefix": "Explorer: "
+  },
+  "actionLabel": {
+    "document": {
+      "upload_started": "Upload started",
+      "upload_completed": "Upload completed",
+      "analysis_started": "Analysis started",
+      "analysis_completed": "Analysis completed",
+      "review_confirmed": "Review confirmed",
+      "preview_viewed": "Preview viewed",
+      "preview_denied": "Preview denied",
+      "preview_failed": "Preview failed",
+      "viewer_opened": "Viewer opened",
+      "viewer_closed": "Viewer closed",
+      "print_attempt_blocked": "Printing blocked",
+      "download_attempted": "Download attempted",
+      "downloaded": "Download completed",
+      "download_denied": "Download denied",
+      "download_failed": "Download failed",
+      "metadata_updated": "Metadata updated",
+      "moved": "Document moved to another category",
+      "share_created": "Share created",
+      "share_revoked": "Share revoked",
+      "external_share_created": "External share created",
+      "external_share_invite_opened": "External invitation opened",
+      "external_share_accepted": "External invitation accepted",
+      "external_share_viewed": "External document viewed",
+      "external_share_downloaded": "External download completed",
+      "external_share_revoked": "External share revoked",
+      "external_share_expired": "External share expired",
+      "external_share_denied": "External access denied",
+      "signature_request_created": "Signature request created",
+      "signature_internal_assigned": "Signature assigned to an internal user",
+      "signature_internal_opened": "Internal signing opened",
+      "signature_external_invite_created": "External signature invitation created",
+      "signature_external_opened": "External signing opened",
+      "signature_link_opened": "Signature link opened",
+      "signature_preview_viewed": "Signing preview viewed",
+      "signature_viewed": "Document for signing viewed",
+      "signature_consent_checked": "Signature consent recorded",
+      "signature_completed": "Electronic signature completed",
+      "signature_declined": "Signature declined",
+      "signature_request_cancelled": "Signature request revoked",
+      "signature_downloaded": "Signed PDF downloaded",
+      "signed_pdf_generated": "Signed PDF generated",
+      "signature_verification_opened": "Signature validation opened",
+      "shared_viewed": "Shared document viewed",
+      "shared_downloaded": "Shared document downloaded",
+      "share_denied": "Share denied",
+      "version_created": "New version created",
+      "trash_moved": "Moved to trash",
+      "trash_restored": "Restored from trash",
+      "deactivated": "Deactivated after trash",
+      "reactivated": "Reactivated",
+      "permanent_deleted": "Permanently deleted",
+      "trash_purge_failed": "Storage purge failed"
+    },
+    "access": {
+      "document_denied": "Access denied"
+    },
+    "file_explorer": {
+      "folder_opened": "Folder opened",
+      "search_performed": "Search performed",
+      "filter_applied": "Filter applied",
+      "details_opened": "Details opened"
+    }
+  },
+  "deviceType": {
+    "mobile": "Mobile",
+    "tablet": "Tablet",
+    "desktop": "Desktop",
+    "unknown": "Unknown"
+  },
+  "filterOption": {
+    "category": {
+      "all": "All",
+      "upload": "Upload",
+      "analysis": "Analysis",
+      "edit": "Editing",
+      "download": "Download",
+      "preview": "Preview",
+      "access": "Access",
+      "error": "Errors"
+    },
+    "severity": {
+      "all": "All",
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error",
+      "critical": "Critical"
+    },
+    "status": {
+      "all": "All",
+      "success": "Success",
+      "failed": "Failure",
+      "denied": "Denied",
+      "pending": "Pending"
+    },
+    "actionGroup": {
+      "all": "All",
+      "lifecycle": "Lifecycle",
+      "preview": "Preview",
+      "download": "Download",
+      "access": "Access",
+      "storage": "Storage",
+      "explorer": "Explorer",
+      "governance": "Governance"
+    }
+  },
+  "securityContext": {
+    "browserOnOs": "{{browser}} on {{os}}",
+    "localNetwork": "Local network"
+  },
+  "severityLabel": {
+    "debug": "Debug",
+    "info": "Info",
+    "warning": "Warning",
+    "error": "Error",
+    "critical": "Critical"
+  },
+  "statusLabel": {
+    "success": "Success",
+    "failed": "Failure",
+    "denied": "Denied",
+    "pending": "Pending"
+  },
+  "trackingDocumentCell": {
+    "abrirDocumento": "Open document"
+  },
+  "trackingEventLogDetail": {
+    "abrirDocumento": "Open document",
+    "acao": "Action",
+    "after": "after:",
+    "alteracoes": "Changes ·",
+    "ator": "Actor",
+    "before": "before:",
+    "carregandoDetalhes": "Loading details…",
+    "contextoDeAcesso": "Access context",
+    "documento": "Document",
+    "duracao": "Duration",
+    "evento": "Event",
+    "eventoNaoEncontrado": "Event not found.",
+    "filtrarPorEsteRequest": "Filter by this request",
+    "filtrarPorEsteUsuario": "Filter by this user",
+    "idDaVersao": "Version ID",
+    "metadados": "Metadata",
+    "request": "Request",
+    "sessao": "Session",
+    "verTimelineDoDocumento": "View the document timeline",
+    "security": {
+      "device": "Device",
+      "type": "Type",
+      "location": "Approximate location",
+      "time": "Time",
+      "origin": "Origin",
+      "externalGuest": "External guest",
+      "permission": "Permission",
+      "reason": "Reason"
+    }
+  },
+  "trackingEventsTable": {
+    "nenhumEventoDocumentalEncontrado": "No document event found for the selected filters.",
+    "emptyDescription": "Adjust the filters or widen the period to see more activity.",
+    "sparseMessage": "No other events for the current filters",
+    "sparseDescription": "Try widening the period or removing filters to see more records.",
+    "columns": {
+      "occurredAt": "Date/time",
+      "action": "Action",
+      "document": "Document",
+      "actor": "User",
+      "origin": "Origin",
+      "session": "Session",
+      "request": "Request",
+      "duration": "Duration",
+      "status": "Result",
+      "severity": "Severity"
+    },
+    "changesCount_one": "{{count}} change",
+    "changesCount_other": "{{count}} changes"
+  },
+  "trackingFilters": {
+    "acao": "Action",
+    "ate": "To",
+    "buscar": "Search",
+    "categoria": "Category",
+    "de": "From",
+    "documento": "Document",
+    "documentoUsuarioAcao": "Document, user, action...",
+    "grupo": "Group",
+    "idDoDocumento": "Document ID",
+    "requestId": "Request ID",
+    "resultado": "Result",
+    "severidade": "Severity",
+    "usuarioId": "User (ID)"
+  },
+  "trackingPage": {
+    "carregandoEventos": "Loading events…",
+    "investigueQuemAcessouVisualizou": "Investigate who accessed, viewed, downloaded or changed documents, with full traceability and sanitized data.",
+    "limparFiltros": "Clear filters",
+    "trackingDocumental": "Document tracking",
+    "eyebrow": "Traceability",
+    "loadError": "Couldn't load document tracking.",
+    "loadingMore": "Loading...",
+    "loadMore": "Load more"
+  },
+  "trackingRoute": {
+    "verificandoPermissoes": "Checking permissions..."
+  },
+  "trackingSummaryStrip": {
+    "resumoDoTracking": "Tracking summary",
+    "totalEvents": "Events",
+    "previews": "Previews",
+    "downloads": "Downloads",
+    "accessDenied": "Access denied",
+    "errors": "Errors",
+    "uniqueDocuments": "Documents",
+    "uniqueActors": "Active users"
+  }
+}

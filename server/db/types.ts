@@ -466,8 +466,17 @@ export type MongoNotification = {
    * do membro mais a decisão.
    */
   eventKey: string;
+  /**
+   * Texto pronto, no idioma padrão do servidor. É o que o e-mail usa e o que a tela mostra quando
+   * a notificação não tem `params` (gravada antes do catálogo).
+   */
   title: string;
   body?: string;
+  /**
+   * Os valores que montam título e corpo pelo catálogo `notifications:inApp.<type>` — a tela relê
+   * no idioma de quem abre. Ver `shared/notificationText.ts`.
+   */
+  params?: Record<string, string | number | boolean>;
   documentId?: string;
   documentName?: string;
   categoryId?: string;
@@ -666,6 +675,11 @@ export type MongoDocument = {
   className: string;
   title: string;
   currentFileName: string;
+  /**
+   * Idioma do texto do documento, detectado na análise (não é o idioma da interface). Serve para
+   * marcar conteúdo com `lang` e para a extração ler data na convenção certa. Ausente: desconhecido.
+   */
+  detectedLanguage?: 'pt' | 'en' | 'es';
   status: 'active' | 'archived';
   lifecycleStatus?: DocumentLifecycleStatus;
   processingStatus: 'processed' | 'requires_review' | 'processed_with_review' | 'pending';
@@ -853,7 +867,18 @@ export type MongoAuditLog = {
     | 'document.metadata.reviewed_confirmed'
     | 'document.review.required'
     | string;
+  /**
+   * A frase no idioma de quem agiu, no momento do evento — o registro literal, e o que a cadeia de
+   * integridade assina. Não foi renomeada para `descriptionSnapshot`: o hash v3 lê este campo, e
+   * trocá-lo de nome invalidaria a verificação de todo evento já gravado.
+   */
   description: string;
+  /**
+   * Os valores da frase, para relê-la em outro idioma. Só existe em evento gravado pelo catálogo
+   * `auditEvents`; evento antigo não tem, e a tela mostra a `description`. Fica fora do hash: a
+   * frase assinada é a gravada, e isto é o que permite apresentá-la.
+   */
+  params?: Record<string, string | number | boolean>;
   area?: string;
   result?: 'success' | 'warning' | 'error' | 'info' | string;
   metadata: Record<string, unknown>;
@@ -1170,6 +1195,8 @@ export type MongoExternalDocumentShareGrant = {
   inviteTokenHash: string;
   /** Cópia reversível do token, para o dono poder copiar o link de novo. Ver linkTokenCipher. */
   inviteTokenEncrypted?: string | null;
+  /** Idioma escolhido por quem compartilhou; vai no link como `?lang=`. Ausente = navegador. */
+  recipientLocale?: string | null;
   inviteExpiresAt: Date;
   acceptedAt?: Date | null;
   lastAccessAt?: Date | null;
@@ -1245,6 +1272,8 @@ export type MongoDocumentSignatureRequest = {
   signatureTokenHash?: string | null;
   /** Cópia reversível do token do portal, para recopiar o link. Ver linkTokenCipher. */
   signatureTokenEncrypted?: string | null;
+  /** Idioma escolhido por quem pediu; vai no link do portal como `?lang=`. Ausente = navegador. */
+  recipientLocale?: string | null;
   expiresAt?: Date | null;
   message?: string | null;
   createdAt: Date;
@@ -1252,6 +1281,8 @@ export type MongoDocumentSignatureRequest = {
   completedAt?: Date | null;
   cancelledAt?: Date | null;
   cancelledBy?: string | null;
+  /** Trava de assinatura em curso, com prazo. Ver `withSignatureSigningLock`. */
+  signingLockedUntil?: Date | null;
 };
 
 export type DocumentSignatureStatus = 'signed' | 'revoked' | 'invalidated';
@@ -1274,6 +1305,8 @@ export type MongoDocumentSignature = {
   status: DocumentSignatureStatus;
   signedAt: Date;
   consentText: string;
+  /** Idioma em que `consentText` foi lido e aceito. Ausente nas assinaturas anteriores: pt-BR. */
+  consentLocale?: string;
   authMethod: 'logged_in_session' | 'external_share_token' | 'signature_token' | 'manual_dev';
   securityContext?: Record<string, unknown>;
   originalDocumentHashSha256: string;

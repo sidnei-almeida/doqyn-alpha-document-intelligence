@@ -7,9 +7,13 @@ import type {
 import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope.js';
 import {
   deleteAnalysisStaging,
+  getStorageProvider,
   isStorageConfigured,
   loadAnalysisStaging,
 } from '../../storage/index.js';
+import { R2StorageProvider } from '../../storage/r2/r2StorageProvider.js';
+import { isStoragePromotionQueueEnabled } from '../../queues/storagePromotionQueue.js';
+import { loadAnalysisJobPayload } from '../analysis/analysisJobService.js';
 import { storeUploadedDocumentFile } from '../documentFileService.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
@@ -57,7 +61,15 @@ export function buildStoragePlaceholders(): MongoDocumentVersion['storage'] {
   };
 }
 
-export async function persistConfirmedVersionFile(input: {
+/** Cópia do provisório para a chave definitiva, que a confirmação deixa para a fila. */
+export type StagingPromotionRequest = {
+  bucket: string;
+  stagingKey: string;
+  destinationKey: string;
+  contentType: string;
+};
+
+type PersistConfirmedVersionFileInput = {
   tenantId: string;
   ownerUserId: string;
   documentId: string;
@@ -69,11 +81,102 @@ export async function persistConfirmedVersionFile(input: {
   storageFileName: string;
   storageScope: TenantStorageScope;
   mimeType?: string;
-}): Promise<{ storage: MongoDocumentVersion['storage']; buffer: Buffer | null }> {
+};
+
+type PersistConfirmedVersionFileResult = {
+  storage: MongoDocumentVersion['storage'];
+  buffer: Buffer | null;
+  /** Presente quando a versão nasceu apontando para o provisório e a cópia foi para a fila. */
+  promotion: StagingPromotionRequest | null;
+};
+
+/**
+ * A versão nasce apontando para o provisório, sem baixar nada.
+ *
+ * O provisório é um objeto válido no mesmo bucket dos documentos, e todo leitor — download, preview,
+ * fatiamento, assinatura — já abre qualquer chave desse bucket. Então a confirmação grava esse
+ * endereço como `stored` e sai; `storagePromotionWorker` copia para a chave definitiva depois.
+ *
+ * Sem download, a conferência de integridade que ele fazia passa a ser contra o job: o worker validou
+ * o hash do provisório quando analisou, e o hash que chega na confirmação precisa ser aquele. Job que
+ * não existe (análise síncrona) devolve `null` e a confirmação segue o caminho antigo.
+ */
+async function planStagingBackedVersionFile(
+  provider: R2StorageProvider,
+  input: PersistConfirmedVersionFileInput & { jobId: string },
+  mimeType: string,
+): Promise<PersistConfirmedVersionFileResult | null> {
+  const job = await loadAnalysisJobPayload(input.jobId);
+  if (!job) return null;
+  if (job.fileHash !== input.fileHash) {
+    throw new ConfirmAnalysisError(
+      'Integridade do arquivo não confere. Refaça a análise.',
+      'STAGING_HASH_MISMATCH',
+      400,
+    );
+  }
+
+  let plan;
+  try {
+    plan = await provider.planStagingPromotion({
+      tenantId: input.tenantId,
+      jobId: input.jobId,
+      documentId: input.documentId,
+      versionId: input.versionId,
+      storageFileName: input.storageFileName,
+      mimeType,
+      originalFileName: input.originalFileName,
+      storageScope: input.storageScope,
+    });
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      throw new ConfirmAnalysisError(error.message, error.code, error.statusCode);
+    }
+    throw error;
+  }
+
+  if (plan.sizeBytes !== input.fileSizeBytes) {
+    throw new ConfirmAnalysisError(
+      'Tamanho do arquivo não confere. Refaça a análise.',
+      'STAGING_SIZE_MISMATCH',
+      400,
+    );
+  }
+
+  return {
+    storage: {
+      primary: {
+        provider: 'cloudflare_r2',
+        status: 'stored',
+        objectKey: plan.stagingKey,
+        bucketAlias: plan.bucket,
+        storedAt: new Date(),
+      },
+      backup: {
+        provider: 'aws_s3',
+        status: 'pending',
+        objectKey: null,
+        bucketAlias: null,
+        storedAt: null,
+      },
+    },
+    buffer: null,
+    promotion: {
+      bucket: plan.bucket,
+      stagingKey: plan.stagingKey,
+      destinationKey: plan.destinationKey,
+      contentType: mimeType,
+    },
+  };
+}
+
+export async function persistConfirmedVersionFile(
+  input: PersistConfirmedVersionFileInput,
+): Promise<PersistConfirmedVersionFileResult> {
   const mimeType = input.mimeType?.trim() || 'application/pdf';
 
   if (!isStorageConfigured()) {
-    return { storage: buildStoragePlaceholders(), buffer: null };
+    return { storage: buildStoragePlaceholders(), buffer: null, promotion: null };
   }
 
   if (!input.jobId?.trim()) {
@@ -82,6 +185,16 @@ export async function persistConfirmedVersionFile(input: {
       'STAGING_JOB_REQUIRED',
       400,
     );
+  }
+
+  const provider = getStorageProvider();
+  if (isStoragePromotionQueueEnabled() && provider instanceof R2StorageProvider) {
+    const planned = await planStagingBackedVersionFile(
+      provider,
+      { ...input, jobId: input.jobId },
+      mimeType,
+    );
+    if (planned) return planned;
   }
 
   const buffer = await loadAnalysisStaging({
@@ -127,7 +240,7 @@ export async function persistConfirmedVersionFile(input: {
     storageScope: input.storageScope,
   });
 
-  return { storage, buffer };
+  return { storage, buffer, promotion: null };
 }
 
 export function mapVersionMetadata(

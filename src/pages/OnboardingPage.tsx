@@ -1,10 +1,13 @@
 import { AccessChoicePage } from '@/features/access-choice/AccessChoicePage';
+import { useTranslation } from 'react-i18next';
 
 export function OnboardingPage() {
+  const { t } = useTranslation('pages');
+
   return (
     <AccessChoicePage
-      title="Como você quer começar no DOQYN?"
-      description="Sua conta foi autenticada. Falta escolher como o seu acesso será configurado."
+      title={t('onboardingPage.comoVoceQuerComecar')}
+      description={t('onboardingPage.suaContaFoiAutenticada')}
     />
   );
 }

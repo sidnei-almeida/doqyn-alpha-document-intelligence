@@ -1,3 +1,4 @@
+import { i18n } from '../src/i18n';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
@@ -5,9 +6,10 @@ import {
   formatDocument,
   formatDocumentForReview,
   formatPhone,
-  PASSWORD_REVIEW_LABEL,
+  PASSWORD_REVIEW_LABEL_KEY,
   safeDisplayValue,
 } from '../src/lib/reviewDisplay';
+import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 describe('reviewDisplay', () => {
   it('safeDisplayValue retorna traço para vazio', () => {
@@ -34,8 +36,11 @@ describe('reviewDisplay', () => {
     assert.equal(formatBooleanConsent(false, 'Sim', 'Não'), 'Não');
   });
 
-  it('PASSWORD_REVIEW_LABEL não expõe senha', () => {
-    assert.match(PASSWORD_REVIEW_LABEL, /não exibida/i);
-    assert.equal(PASSWORD_REVIEW_LABEL.includes('senha-segura'), false);
+  it('PASSWORD_REVIEW_LABEL_KEY não expõe senha', () => {
+    initI18nForTests();
+    // A frase saiu do código para o catálogo; verificá-la por lá prova a chave e o texto.
+    const label = i18n.t(PASSWORD_REVIEW_LABEL_KEY);
+    assert.match(label, /não exibida/i);
+    assert.equal(label.includes('senha-segura'), false);
   });
 });

@@ -1,0 +1,51 @@
+{
+  "deleteCategory": {
+    "title": "Delete category?",
+    "description": "The \"{{categoryName}}\" category and its rules will be removed. Every document in it moves to Uncategorized, and no document is deleted.",
+    "confirmLabel": "Delete category"
+  },
+  "deleteGroup": {
+    "title": "Delete group?",
+    "description_one": "The \"{{groupName}}\" group will be removed. 1 member will lose the permissions tied to this group, and the linked categories will be updated.",
+    "description_other": "The \"{{groupName}}\" group will be removed. {{count}} members will lose the permissions tied to this group, and the linked categories will be updated.",
+    "confirmLabel": "Delete group"
+  },
+  "deleteWord": "DELETE",
+  "moveToTrash": {
+    "title": "Move to trash?",
+    "description_one": "This document will be moved to the trash. You can restore it during the retention period; after that it will be deactivated.",
+    "description_other": "{{count}} documents will be moved to the trash. You can restore them during the retention period; after that they will be deactivated.",
+    "confirmLabel": "Move to trash"
+  },
+  "rejectApproval": {
+    "title": "Decline the request?",
+    "description": "{{name}} will not have access to the company. This cannot be undone automatically: a new invitation will have to be sent.",
+    "confirmLabel": "Decline"
+  },
+  "removeFromGroup": {
+    "title": "Remove member from the group?",
+    "description": "{{memberName}} will lose access to the categories granted to the {{groupName}} group. This can be undone by dragging the member back.",
+    "confirmLabel": "Remove from group"
+  },
+  "removeGroupFromCategory": {
+    "title": "Remove the group's access?",
+    "description": "Every member of the {{groupName}} group will lose access to the {{categoryName}} category.",
+    "confirmLabel": "Remove access"
+  },
+  "removeMember": {
+    "title": "Remove member from the company?",
+    "description": "{{name}} will lose all access to documents and groups immediately. This is irreversible without a new invitation.",
+    "confirmLabel": "Remove member"
+  },
+  "revokeSignatureRequest": {
+    "title": "Revoke the request?",
+    "description": "The signature invitation for {{signerName}} will be cancelled and the link will stop working.",
+    "confirmLabel": "Revoke",
+    "unnamedSigner": "the signer"
+  },
+  "suspendMember": {
+    "title": "Suspend access?",
+    "description": "{{name}} will not be able to access documents until an administrator restores the access.",
+    "confirmLabel": "Suspend"
+  }
+}

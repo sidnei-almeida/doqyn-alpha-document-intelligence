@@ -12,22 +12,22 @@ function readSrc(relativePath: string): string {
 }
 
 describe('navegação da Biblioteca', () => {
-  it('/biblioteca é rota registrada com LibraryRoute', () => {
+  it('/library é rota registrada com LibraryRoute', () => {
     const routes = readSrc('app/routes.tsx');
-    assert.ok(routes.includes("path: '/biblioteca'"));
+    assert.ok(routes.includes("path: '/library'"));
     assert.ok(routes.includes('LibraryRoute'));
   });
 
-  it('/documents redireciona para /biblioteca', () => {
+  it('/documents redireciona para /library', () => {
     const routes = readSrc('app/routes.tsx');
     assert.ok(routes.includes("path: '/documents'"));
-    assert.match(routes, /\/documents'[^}]*Navigate to="\/biblioteca"/);
+    assert.match(routes, /\/documents'[^}]*Navigate to="\/library"/);
   });
 
-  it('rota raiz e fallback apontam para /biblioteca, não /upload', () => {
+  it('rota raiz e fallback apontam para /library, não /upload', () => {
     const routes = readSrc('app/routes.tsx');
-    assert.match(routes, /path: '\/'[^}]*\/biblioteca/);
-    assert.match(routes, /path: '\*'[^}]*\/biblioteca/);
+    assert.match(routes, /path: '\/'[^}]*\/library/);
+    assert.match(routes, /path: '\*'[^}]*\/library/);
     assert.equal(routes.includes('Navigate to="/upload"'), false);
   });
 
@@ -39,7 +39,7 @@ describe('navegação da Biblioteca', () => {
 
   it('nav primária tem Biblioteca e não tem Envio de Documentos nem /documents', () => {
     const constants = readSrc('lib/constants.ts');
-    assert.match(constants, /NAV_ITEMS_PRIMARY[\s\S]*?\/biblioteca/);
+    assert.match(constants, /NAV_ITEMS_PRIMARY[\s\S]*?\/library/);
     const primaryBlock = constants.slice(
       constants.indexOf('NAV_ITEMS_PRIMARY'),
       constants.indexOf('NAV_ITEMS_ADMIN'),
@@ -52,18 +52,18 @@ describe('navegação da Biblioteca', () => {
     const constants = readSrc('lib/constants.ts');
     const adminBlock = constants.slice(constants.indexOf('NAV_ITEMS_ADMIN'));
     assert.ok(adminBlock.includes('/dashboard'));
-    assert.ok(adminBlock.includes('Visão Geral'));
+    assert.ok(adminBlock.includes('nav.dashboard'));
   });
 
-  it('login autenticado e guards de rota levam a /biblioteca', () => {
+  it('login autenticado e guards de rota levam a /library', () => {
     const protectedRoute = readSrc('features/auth/ProtectedRoute.tsx');
     const trackingRoute = readSrc('features/tracking/TrackingRoute.tsx');
     const usersRoute = readSrc('features/users/UserManagementRoute.tsx');
     const rulesRoute = readSrc('features/rules/RulesRoute.tsx');
-    assert.ok(protectedRoute.includes('Navigate to="/biblioteca"'));
-    assert.ok(trackingRoute.includes('Navigate to="/biblioteca"'));
-    assert.ok(usersRoute.includes('Navigate to="/biblioteca"'));
-    assert.ok(rulesRoute.includes('Navigate to="/biblioteca"'));
+    assert.ok(protectedRoute.includes('Navigate to="/library"'));
+    assert.ok(trackingRoute.includes('Navigate to="/library"'));
+    assert.ok(usersRoute.includes('Navigate to="/library"'));
+    assert.ok(rulesRoute.includes('Navigate to="/library"'));
     assert.ok(rulesRoute.includes('canAccessRulesPage'));
     assert.equal(protectedRoute.includes('/upload'), false);
   });

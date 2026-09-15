@@ -4,6 +4,7 @@ import type { MongoTenant, TenantStatus, TenantType } from '../db/types.js';
 import { getDb } from '../db/mongoClient.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { slugifyName } from '../utils/slugify.js';
+import { compareNames } from '../utils/textCollation.js';
 import { invalidateTenantRegistryCache } from '../tenancy/tenantRegistryCache.js';
 import {
   buildBusinessCollectionPrefix,
@@ -103,11 +104,11 @@ export async function ensureDevCompanySeed(): Promise<void> {
 
 export async function listActiveTenants(): Promise<MongoTenant[]> {
   const db = await getDb();
-  return db
+  const tenants = await db
     .collection<MongoTenant>(REGISTRY_COLLECTIONS.tenants)
     .find({ status: 'active' })
-    .sort({ displayName: 1 })
     .toArray();
+  return tenants.sort((a, b) => compareNames(a.displayName, b.displayName));
 }
 
 function buildTenantId(tenantType: TenantType): string {

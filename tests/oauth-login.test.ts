@@ -15,8 +15,8 @@ function readSrc(relativePath: string): string {
 describe('OAuth login frontend', () => {
   it('LoginPage mostra botões Google e Microsoft', () => {
     const source = readSrc('pages/Login.tsx');
-    assert.ok(source.includes('Continuar com Google'));
-    assert.ok(source.includes('Continuar com Microsoft'));
+    assert.ok(source.includes('.continuarComGoogle'));
+    assert.ok(source.includes('.continuarComMicrosoft'));
     // O portão é a lista que o auth-service devolve: botão que aparece tem credencial atrás.
     assert.ok(source.includes('enabledProviders.length > 0'));
   });
@@ -30,7 +30,7 @@ describe('OAuth login frontend', () => {
     const source = readSrc('pages/OAuthCallbackPage.tsx');
     assert.ok(source.includes('refreshUser'));
     assert.ok(source.includes('/onboarding'));
-    assert.ok(source.includes('/biblioteca'));
+    assert.ok(source.includes('/library'));
     assert.equal(source.includes("'/upload'"), false);
   });
 
@@ -38,8 +38,8 @@ describe('OAuth login frontend', () => {
     const source = readSrc('pages/OnboardingPage.tsx');
     const access = readSrc('features/access-choice/AccessChoicePage.tsx');
     assert.ok(source.includes('OnboardingPage'));
-    assert.ok(access.includes('/criar-acesso-cpf'));
-    assert.ok(access.includes('/criar-empresa'));
+    assert.ok(access.includes('/signup/individual'));
+    assert.ok(access.includes('/signup/company'));
     // Entrar numa empresa que já existe depende de convite, não de um pedido em fila.
     assert.equal(access.includes('/solicitar-acesso'), false);
   });

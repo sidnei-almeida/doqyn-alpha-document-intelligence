@@ -93,7 +93,7 @@ describe('auth error messages', () => {
     // os dois links de empresa não ofereciam.
     const actions = getAuthErrorActions('NO_ACTIVE_MEMBERSHIP');
     assert.equal(actions.length, 1);
-    assert.equal(actions[0]?.href, '/acesso');
+    assert.equal(actions[0]?.href, '/access');
   });
 });
 

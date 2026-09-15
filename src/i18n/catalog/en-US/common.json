@@ -1,0 +1,220 @@
+{
+  "actions": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "next": "Next",
+    "retry": "Try again",
+    "save": "Save",
+    "search": "Search"
+  },
+  "authErrorAction": {
+    "verFormasDeAcesso": "See ways to get access",
+    "confirmarEmail": "Confirm email"
+  },
+  "documentStatus": {
+    "active": "Active",
+    "analyzing": "Analyzing",
+    "available": "Available",
+    "needsReview": "Needs review",
+    "pendingAnalysis": "Awaiting analysis",
+    "pendingReview": "Awaiting review",
+    "processed": "Processed",
+    "reviewRequired": "Review required",
+    "updateProcessed": "Update processed",
+    "updated": "Updated"
+  },
+  "documents": {
+    "count_one": "{{count}} document",
+    "count_other": "{{count}} documents",
+    "empty": "No documents",
+    "noFolder": "No folder"
+  },
+  "locale": {
+    "description": "Interface language. It does not change the language of your documents.",
+    "descriptionWithDrafts": "Interface language. English and Spanish are still being translated and cannot be selected yet.",
+    "enUS": "English",
+    "es419": "Spanish",
+    "inPreparation": "In preparation",
+    "label": "Language",
+    "ptBR": "Portuguese",
+    "saveFailed": "Could not save the language. It was reverted; try again."
+  },
+  "memberStatus": {
+    "active": "Active",
+    "blocked": "Blocked",
+    "invited": "Invited",
+    "pending": "Pending",
+    "rejected": "Rejected"
+  },
+  "nav": {
+    "assinaturas": "To sign",
+    "audit": "Audit",
+    "biblioteca": "Library",
+    "compartilhados": "Shared with me",
+    "contatos": "Contacts",
+    "dashboard": "Overview",
+    "desativados": "Deactivated",
+    "favoritos": "Favorites",
+    "lixeira": "Trash",
+    "matriz": "Access matrix",
+    "pedidos": "Requests",
+    "recentes": "Recent",
+    "rules": "Rules",
+    "settings": "Settings",
+    "tracking": "Tracking",
+    "users": "Users"
+  },
+  "processingStep": {
+    "analysisDescription": "Initial checks and validation",
+    "analysisLabel": "Document analysis",
+    "metadataDescription": "Extraction of the relevant information",
+    "metadataLabel": "Classification and metadata",
+    "readyDescription": "Document ready to consult",
+    "readyLabel": "Available with full traceability",
+    "uploadDescription": "Document securely recorded",
+    "uploadLabel": "Upload received"
+  },
+  "state": {
+    "empty": "Nothing here",
+    "error": "Could not load",
+    "loading": "Loading…"
+  },
+  "taxId": {
+    "cnpjLabel": "CNPJ",
+    "cnpjPlaceholder": "00.000.000/0000-00",
+    "cpfLabel": "CPF",
+    "cpfPlaceholder": "000.000.000-00",
+    "genericLabel": "Tax ID",
+    "genericPlaceholder": "Tax identification number",
+    "incomplete": "{{label}} is incomplete.",
+    "invalid": "{{label}} is invalid. Check the number."
+  },
+  "tenantVocabulary": {
+    "scopeSectionLabelBusiness": "Organization",
+    "scopeSectionLabelIndividual": "My collection"
+  },
+  "feedback": {
+    "genericFailure": "We couldn't complete that right now. Please try again.",
+    "requestFailed": "Request failed"
+  },
+  "accessGate": {
+    "notLinked": {
+      "title": "Access pending",
+      "message": "Your user isn't linked to an active DOQYN workspace yet. Ask your company administrator for an invitation."
+    },
+    "pending": {
+      "title": "Awaiting approval",
+      "message": "Your access to this company hasn't been approved yet. The company administrator can take care of it."
+    },
+    "blocked": {
+      "title": "Access blocked",
+      "message": "Your access to this workspace has been blocked."
+    },
+    "rejected": {
+      "title": "Access declined",
+      "message": "Your access to this workspace was declined. Getting back in takes a new invitation from the company administrator."
+    },
+    "removed": {
+      "title": "Access removed",
+      "message": "You're no longer part of this DOQYN workspace. Getting back in takes a new invitation from the company administrator."
+    },
+    "noMembership": {
+      "title": "No active access",
+      "message": "Your account doesn't have active access to any DOQYN workspace yet."
+    },
+    "subtitle": "Platform access",
+    "email": "Email",
+    "workspace": "Workspace",
+    "status": "Status",
+    "logout": "Sign out",
+    "checking": "Checking access…",
+    "authFailed": "Authentication failed."
+  },
+  "signatureStatus": {
+    "pending": "Signature pending",
+    "signed": "Signed",
+    "declined": "Declined",
+    "expired": "Expired",
+    "cancelled": "Cancelled"
+  },
+  "signatureSummary": {
+    "withCount": "{{label}} · {{n}}",
+    "partial": "Partial · {{n}}",
+    "signers": "Signed by: {{names}}.",
+    "pending_one": "{{count}} pending.",
+    "pending_other": "{{count}} pending.",
+    "clickForDetails": "Click for details.",
+    "none": "No signature requested.",
+    "signedCount_one": "{{count}} signature: {{names}}.",
+    "signedCount_other": "{{count}} signatures: {{names}}.",
+    "pendingFor": "Signature pending for {{name}}.",
+    "signedAt": "Electronically signed on {{date}}.",
+    "inProgress": "Signature in progress.",
+    "fileBase": "document",
+    "fileSigned": "{{base}}-signed.pdf",
+    "fileSignedCode": "{{base}}-signed-{{code}}.pdf"
+  },
+  "uploadQueue": {
+    "stillRunning": "The analysis continues on the server. The document shows up in the Library when it's done, with no need to upload it again.",
+    "pollFailure": "We lost contact with the server during the analysis. The document may have been processed. Check the Library before uploading again.",
+    "groqDailyLimit": "The Groq model's daily token quota is exhausted. Wait for the reset (~1h) or change GROQ_MODEL to openai/gpt-oss-20b.",
+    "contextLimit": "The document is too large for the current model. Reduce the PDF size or adjust PDF_ANALYSIS_MAX_INPUT_CHARS.",
+    "timeout": "The automatic analysis took too long and was stopped. Try again.",
+    "rateLimit": "Temporary Groq limit reached. Wait a few minutes and try again.",
+    "failed": "The document analysis failed.",
+    "notCompleted": "The analysis wasn't completed.",
+    "wait": {
+      "lessThanMinute": "less than 1 min",
+      "minutes": "~{{count}} min",
+      "hours": "~{{count}} h",
+      "yourTurn": "Your turn · {{wait}}",
+      "ahead_one": "{{count}} document ahead",
+      "ahead_other": "{{count}} documents ahead",
+      "withEstimate": "{{position}} · {{wait}}"
+    },
+    "missingJobId": "Analysis identifier missing. Upload the document again.",
+    "missingCategory": "Classification missing. Choose a category to save this document.",
+    "validation": {
+      "tooManyFiles": "Select up to {{count}} documents at a time in this version.",
+      "fileTooLarge": "The file exceeds the {{size}}MB limit.",
+      "unsupportedFormat": "Upload a PDF or an image (JPG, PNG or WebP) at this step."
+    }
+  },
+  "workflowError": {
+    "retrySuggestion": "Try again. If the problem persists, contact support.",
+    "rulesNotConfigured": "Document setup is incomplete. Register classes and rules before analyzing documents."
+  },
+  "uncategorized": "Uncategorized",
+  "toaster": {
+    "region": "Notifications"
+  },
+  "appErrorBoundary": {
+    "title": "Something unexpected happened",
+    "message": "Reload the page to continue. If the problem persists, contact support.",
+    "reload": "Reload"
+  },
+  "platformRole": {
+    "company_admin": {
+      "label": "Company administrator",
+      "description": "Manages the company's users, groups and rules."
+    },
+    "individual_admin": {
+      "label": "Account administrator",
+      "description": "Manages access and documents for the individual account."
+    },
+    "user": {
+      "label": "User",
+      "description": "Accesses the documents and features they are granted."
+    },
+    "unknownDescription": "Platform role."
+  },
+  "legacyAuthRole": {
+    "admin": "System administrator",
+    "manager": "Company administrator",
+    "user": "User",
+    "viewer": "Viewer"
+  }
+}

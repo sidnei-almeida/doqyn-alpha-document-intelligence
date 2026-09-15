@@ -9,6 +9,7 @@ import {
   TRACKING_SEVERITY_OPTIONS,
   TRACKING_STATUS_OPTIONS,
 } from '../utils/trackingDisplay';
+import { useTranslation } from 'react-i18next';
 
 type TrackingFiltersProps = {
   filters: DocumentTrackingFilters;
@@ -25,14 +26,16 @@ export function TrackingFilters({
   showClear = false,
   summary,
 }: TrackingFiltersProps) {
+  const { t } = useTranslation('tracking');
+
   return (
     <FilterBar onClear={onClear} showClear={showClear} summary={summary}>
       <FilterBarField span={2}>
         <Input
           variant="rule"
           id="tracking-search"
-          label="Buscar"
-          placeholder="Documento, usuário, ação..."
+          label={t('trackingFilters.buscar')}
+          placeholder={t('trackingFilters.documentoUsuarioAcao')}
           value={filters.q ?? ''}
           onChange={(event) => onChange({ ...filters, q: event.target.value })}
         />
@@ -41,8 +44,8 @@ export function TrackingFilters({
         <Input
           variant="rule"
           id="tracking-document"
-          label="Documento"
-          placeholder="ID do documento"
+          label={t('trackingFilters.documento')}
+          placeholder={t('trackingFilters.idDoDocumento')}
           value={filters.documentId ?? ''}
           onChange={(event) => onChange({ ...filters, documentId: event.target.value })}
         />
@@ -51,12 +54,12 @@ export function TrackingFilters({
         <Select
           variant="rule"
           id="tracking-category"
-          label="Categoria"
+          label={t('trackingFilters.categoria')}
           value={filters.category ?? 'all'}
           onChange={(event) => onChange({ ...filters, category: event.target.value })}
           options={TRACKING_CATEGORY_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>
@@ -64,12 +67,12 @@ export function TrackingFilters({
         <Select
           variant="rule"
           id="tracking-action-group"
-          label="Grupo"
+          label={t('trackingFilters.grupo')}
           value={filters.actionGroup ?? ''}
           onChange={(event) => onChange({ ...filters, actionGroup: event.target.value })}
           options={TRACKING_ACTION_GROUP_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>
@@ -77,12 +80,12 @@ export function TrackingFilters({
         <Select
           variant="rule"
           id="tracking-status"
-          label="Resultado"
+          label={t('trackingFilters.resultado')}
           value={filters.status ?? ''}
           onChange={(event) => onChange({ ...filters, status: event.target.value })}
           options={TRACKING_STATUS_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>
@@ -90,12 +93,12 @@ export function TrackingFilters({
         <Select
           variant="rule"
           id="tracking-severity"
-          label="Severidade"
+          label={t('trackingFilters.severidade')}
           value={filters.severity ?? ''}
           onChange={(event) => onChange({ ...filters, severity: event.target.value })}
           options={TRACKING_SEVERITY_OPTIONS.map((option) => ({
             value: option.value,
-            label: option.label,
+            label: t(option.labelKey),
           }))}
         />
       </FilterBarField>
@@ -103,7 +106,7 @@ export function TrackingFilters({
         <DateInput
           variant="rule"
           id="tracking-from"
-          label="De"
+          label={t('trackingFilters.de')}
           value={filters.from ?? ''}
           onChange={(event) => onChange({ ...filters, from: event.target.value })}
         />
@@ -112,7 +115,7 @@ export function TrackingFilters({
         <DateInput
           variant="rule"
           id="tracking-to"
-          label="Até"
+          label={t('trackingFilters.ate')}
           value={filters.to ?? ''}
           onChange={(event) => onChange({ ...filters, to: event.target.value })}
         />
@@ -121,7 +124,7 @@ export function TrackingFilters({
         <Input
           variant="rule"
           id="tracking-action"
-          label="Ação"
+          label={t('trackingFilters.acao')}
           placeholder="document.downloaded"
           value={filters.action ?? ''}
           onChange={(event) => onChange({ ...filters, action: event.target.value })}
@@ -131,7 +134,7 @@ export function TrackingFilters({
         <Input
           variant="rule"
           id="tracking-request-id"
-          label="Request ID"
+          label={t('trackingFilters.requestId')}
           placeholder="req_..."
           value={filters.requestId ?? ''}
           onChange={(event) => onChange({ ...filters, requestId: event.target.value })}
@@ -141,7 +144,7 @@ export function TrackingFilters({
         <Input
           variant="rule"
           id="tracking-actor"
-          label="Usuário (ID)"
+          label={t('trackingFilters.usuarioId')}
           placeholder="userId"
           value={filters.actorUserId ?? ''}
           onChange={(event) => onChange({ ...filters, actorUserId: event.target.value })}

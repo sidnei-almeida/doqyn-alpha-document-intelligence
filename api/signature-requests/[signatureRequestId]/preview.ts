@@ -9,7 +9,10 @@ import { emitTrackingEvent } from '../../../server/services/tracking/trackingSer
 import { requireDocumentAuthContext } from '../../../server/tenancy/documentRequestContext.js';
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../../server/utils/sanitizeAuditMetadata.js';
-import { setPreviewAssetCacheHeaders, setPreviewManifestCacheHeaders } from '../../../server/utils/previewCacheHeaders.js';
+import {
+  setPreviewAssetCacheHeaders,
+  setPreviewManifestCacheHeaders,
+} from '../../../server/utils/previewCacheHeaders.js';
 
 function resolveId(req: VercelRequest): string | undefined {
   const value = req.query.signatureRequestId;
@@ -33,7 +36,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const signatureRequestId = resolveId(req);
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   const pathname = typeof req.url === 'string' ? new URL(req.url, 'http://localhost').pathname : '';
@@ -51,7 +56,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signature_preview_viewed',
-          description: 'Preview do documento para assinatura interna visualizado.',
           documentId: manifest.documentId,
           versionId: manifest.versionId,
           metadata: sanitizeAuditMetadata({
@@ -110,12 +114,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         signatureRequestId,
         size,
       });
-      setPreviewAssetCacheHeaders(res, `"sign-internal:${signatureRequestId}:image:${size ?? 'medium'}"`);
+      setPreviewAssetCacheHeaders(
+        res,
+        `"sign-internal:${signatureRequestId}:image:${size ?? 'medium'}"`,
+      );
       res.setHeader('Content-Type', file.mimeType);
       return res.status(200).send(file.buffer);
     }
 
-    return res.status(404).json({ message: 'Recurso de preview não encontrado.', code: 'PREVIEW_NOT_FOUND' });
+    return res
+      .status(404)
+      .json({ message: 'Recurso de preview não encontrado.', code: 'PREVIEW_NOT_FOUND' });
   } catch (error) {
     if (isServiceError(error)) {
       return res.status(error.statusCode).json({ message: error.message, code: error.code });

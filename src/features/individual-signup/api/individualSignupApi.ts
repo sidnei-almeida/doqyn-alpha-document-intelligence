@@ -1,4 +1,6 @@
 import { getAuthBasePath } from '@/auth/authConfig';
+import { parseApiError } from '@/lib/apiErrors';
+import { i18n } from '@/i18n';
 
 export type IndividualSignupInput = {
   firstName: string;
@@ -13,6 +15,8 @@ export type IndividualSignupInput = {
   taxId: string;
   acceptedTerms: boolean;
   acceptedTermsVersion: string;
+  /** Idioma em que os termos foram lidos. Ver `acceptedTermsLocale` em `src/legal/terms.ts`. */
+  acceptedTermsLocale?: string;
   /**
    * Ausentes quando o cadastro parte de uma sessão que já existe (login social sem espaço de
    * trabalho): nesse caso a identidade vem da sessão e não há senha a definir.
@@ -49,7 +53,7 @@ export async function submitIndividualSignup(
   };
 
   if (!response.ok) {
-    throw new Error(data.message ?? 'Não foi possível criar seu acesso.');
+    throw await parseApiError(response, i18n.t('auth:individualSignupPage.apiFailed'), data);
   }
 
   return data;

@@ -103,10 +103,10 @@ describe('pipeline Groq — remoção de no_ai', () => {
   });
 
   it('guardrails de custo — limites PDF configuráveis', () => {
-    // Defaults dimensionados para a janela de 131k tokens do llama-4-scout.
+    // ~300 páginas densas: o modelo só lê os trechos selecionados, o resto vira busca.
     // No plano gratuito da Groq (6k TPM), baixe via env ou a análise dá 429.
-    assert.equal(getPdfAnalysisMaxInputChars(), 300_000);
-    assert.equal(getPdfAnalysisMaxPages(), 100);
+    assert.equal(getPdfAnalysisMaxInputChars(), 1_000_000);
+    assert.equal(getPdfAnalysisMaxPages(), 300);
     assert.equal(getExtractionMaxChunks(), 40);
 
     const extractor = readServer('ai/services/pdfTextExtractor.ts');

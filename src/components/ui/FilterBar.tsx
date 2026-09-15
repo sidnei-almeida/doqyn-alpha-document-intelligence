@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type FilterBarProps = {
   children: ReactNode;
@@ -24,6 +25,8 @@ export function FilterBar({
   showClear = false,
   summary,
 }: FilterBarProps) {
+  const { t } = useTranslation('components');
+
   return (
     <div className={cn('shrink-0', className)}>
       <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -37,7 +40,7 @@ export function FilterBar({
               onClick={onClear}
               className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
             >
-              Limpar filtros
+              {t('filterBar.limparFiltros')}
             </button>
           ) : (
             <span />

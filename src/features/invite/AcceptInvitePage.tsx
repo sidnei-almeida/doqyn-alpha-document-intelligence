@@ -9,17 +9,16 @@ import { ReviewBeforeSubmitDialog } from '@/components/ui/ReviewBeforeSubmitDial
 import { TermsAcceptanceCheckbox } from '@/components/ui/TermsAcceptanceCheckbox';
 import { WhatsappInput } from '@/components/ui/WhatsappInput';
 import { ApiError } from '@/lib/apiErrors';
+import { useAuth } from '@/features/auth/useAuth';
 import { inviteApi, type InvitePreview } from './api/inviteApi';
 import {
-  ACCEPT_INVITE_REVIEW_COPY,
+  ACCEPT_INVITE_REVIEW_COPY_KEYS,
   buildAcceptInvitePayload,
   buildAcceptInviteReviewSections,
   validateAcceptInviteForm,
   type AcceptInviteFormValues,
 } from './inviteAcceptReview';
-
-const CONSENT_TEXT =
-  'Aceito receber notificações operacionais do DOQYN por e-mail e WhatsApp relacionadas a documentos, aprovações, assinaturas, atualizações de acesso e comunicações necessárias ao uso da plataforma.';
+import { useTranslation } from 'react-i18next';
 
 type PageState =
   | { kind: 'loading' }
@@ -52,8 +51,11 @@ function FormSection({
 }
 
 export function AcceptInvitePage() {
+  const { t } = useTranslation('auth');
+
   const { token = '' } = useParams();
   const navigate = useNavigate();
+  const { user, logout, refreshUser } = useAuth();
   const [pageState, setPageState] = useState<PageState>({ kind: 'loading' });
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -77,8 +79,8 @@ export function AcceptInvitePage() {
       if (!token) {
         setPageState({
           kind: 'error',
-          title: 'Convite inválido',
-          message: 'O link de convite está incompleto.',
+          title: t('acceptInvitePage.invalidTitle'),
+          message: t('acceptInvitePage.incompleteLink'),
         });
         return;
       }
@@ -94,9 +96,11 @@ export function AcceptInvitePage() {
         const code = error instanceof ApiError ? error.code : undefined;
         setPageState({
           kind: 'error',
-          title: mapInviteErrorTitle(code),
+          title: t(inviteErrorTitleKey(code)),
           message:
-            error instanceof ApiError ? error.friendlyMessage : 'Convite inválido ou indisponível.',
+            error instanceof ApiError
+              ? error.friendlyMessage
+              : t('acceptInvitePage.unavailableMessage'),
           code,
         });
       }
@@ -106,7 +110,7 @@ export function AcceptInvitePage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   const formValues = useMemo<AcceptInviteFormValues>(
     () => ({
@@ -151,8 +155,8 @@ export function AcceptInvitePage() {
   }, [pageState]);
 
   const reviewSections = useMemo(
-    () => (reviewOptions ? buildAcceptInviteReviewSections(formValues, reviewOptions) : []),
-    [formValues, reviewOptions],
+    () => (reviewOptions ? buildAcceptInviteReviewSections(formValues, reviewOptions, t) : []),
+    [formValues, reviewOptions, t],
   );
 
   function handleSubmit(event: React.FormEvent) {
@@ -170,7 +174,7 @@ export function AcceptInvitePage() {
       if (validation.field === 'informationDeclaration') {
         setDeclarationError(validation.error ?? null);
       }
-      toast.error(validation.error ?? 'Revise os campos do formulário.');
+      toast.error(validation.error ?? t('signup.reviewFields'));
       return;
     }
 
@@ -187,25 +191,86 @@ export function AcceptInvitePage() {
         buildAcceptInvitePayload(formValues, reviewOptions),
       );
       setReviewOpen(false);
-      setPageState({ kind: 'success', message: result.message });
-      toast.success(result.message);
+      // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+      const message = t('acceptInvitePage.accepted');
+      setPageState({ kind: 'success', message });
+      toast.success(message);
       if (result.sessionEstablished) {
-        navigate('/', { replace: true });
+        // A área logada decide pelo usuário carregado no provedor. Sem recarregar a sessão aqui,
+        // quem acabou de entrar seria mandado ao login com o cookie já válido.
+        await refreshUser();
+        navigate('/library', { replace: true });
       }
     } catch (error) {
       const message =
-        error instanceof ApiError ? error.friendlyMessage : 'Não foi possível aceitar o convite.';
+        error instanceof ApiError ? error.friendlyMessage : t('acceptInvitePage.acceptFailed');
       toast.error(message);
     } finally {
       setSubmitting(false);
     }
   }
 
+  // Volta ao convite depois de entrar: o login lê `state.from`, e o OAuth leva o mesmo destino.
+  const returnToInvite = { from: { pathname: `/invite/${token}` } };
+
+  async function switchAccount() {
+    await logout();
+    navigate('/login', { replace: true, state: returnToInvite });
+  }
+
+  /**
+   * Conta que já existe só aceita convite logada nela — o token prova que o link foi aberto, não
+   * de quem é a conta. Sem sessão, a página pede para entrar; logado em outra conta, pede para
+   * trocar. O servidor recusa do mesmo jeito; isto é para a pessoa não preencher um formulário à toa.
+   */
+  const loginGate: 'login' | 'wrong_account' | null = (() => {
+    if (pageState.kind !== 'ready' || !pageState.invite.requiresLogin) return null;
+    if (!user?.email) return 'login';
+    const invited = pageState.invite.email.trim().toLowerCase();
+    return user.email.trim().toLowerCase() === invited ? null : 'wrong_account';
+  })();
+
   return (
     <>
+      {pageState.kind === 'ready' && loginGate === 'login' && (
+        <>
+          <AuthHeading
+            title={t('acceptInvitePage.loginRequiredTitle')}
+            description={t('acceptInvitePage.loginRequiredMessage', {
+              email: pageState.invite.email,
+              tenant: pageState.invite.tenantDisplayName,
+            })}
+          />
+          <Button
+            className="w-full"
+            onClick={() => navigate('/login', { state: returnToInvite })}
+          >
+            {t('acceptInvitePage.loginToAccept')}
+          </Button>
+        </>
+      )}
+
+      {pageState.kind === 'ready' && loginGate === 'wrong_account' && (
+        <>
+          <AuthHeading
+            title={t('acceptInvitePage.wrongAccountTitle')}
+            description={t('acceptInvitePage.wrongAccountMessage', {
+              current: user?.email ?? '',
+              invited: pageState.invite.email,
+            })}
+          />
+          <Button className="w-full" onClick={() => void switchAccount()}>
+            {t('acceptInvitePage.switchAccount')}
+          </Button>
+        </>
+      )}
+
       {pageState.kind === 'loading' && (
         <>
-          <AuthHeading title="Convite" description="Conferindo se este convite ainda vale…" />
+          <AuthHeading
+            title={t('acceptInvitePage.convite')}
+            description={t('acceptInvitePage.conferindoSeEsteConvite')}
+          />
         </>
       )}
 
@@ -219,7 +284,7 @@ export function AcceptInvitePage() {
               to="/login"
               className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
             >
-              Ir para o login
+              {t('acceptInvitePage.irParaOLogin')}
             </Link>
           </AuthFooterLink>
         </>
@@ -227,59 +292,75 @@ export function AcceptInvitePage() {
 
       {pageState.kind === 'success' && (
         <>
-          <AuthHeading title="Convite aceito" description={pageState.message} />
+          <AuthHeading
+            title={t('acceptInvitePage.conviteAceito')}
+            description={pageState.message}
+          />
           <Button className="w-full" onClick={() => navigate('/login', { replace: true })}>
-            Ir para o login
+            {t('acceptInvitePage.irParaOLogin2')}
           </Button>
         </>
       )}
 
-      {pageState.kind === 'ready' && (
+      {pageState.kind === 'ready' && loginGate === null && (
         <>
           <AuthHeading
-            title={`Você foi convidado para ${pageState.invite.tenantDisplayName}`}
-            description="Complete seu cadastro e entre. A empresa vem do convite, então não há CNPJ a informar."
+            title={t('acceptInvitePage.invitedTo', { tenant: pageState.invite.tenantDisplayName })}
+            description={t('acceptInvitePage.completeSeuCadastroE')}
           />
 
           <form className="space-y-8" onSubmit={handleSubmit}>
             <FormSection
-              title="Empresa"
-              description="Dados da empresa que convidou você. Não é necessário informar o CNPJ novamente."
+              title={t('acceptInvitePage.empresa')}
+              description={t('acceptInvitePage.dadosDaEmpresaQue')}
             >
-              <Input label="Empresa" value={pageState.invite.tenantDisplayName} readOnly disabled />
+              <Input
+                label={t('acceptInvitePage.empresa2')}
+                value={pageState.invite.tenantDisplayName}
+                readOnly
+                disabled
+              />
               {pageState.invite.tenantTaxIdMasked ? (
                 <Input label="CNPJ" value={pageState.invite.tenantTaxIdMasked} readOnly disabled />
               ) : null}
-              <Input label="E-mail do convite" value={pageState.invite.email} readOnly disabled />
+              <Input
+                label={t('acceptInvitePage.eMailDoConvite')}
+                value={pageState.invite.email}
+                readOnly
+                disabled
+              />
             </FormSection>
 
             <div className="h-px bg-doqyn-border-subtle" />
 
             <FormSection
-              title="Seus dados"
-              description="Informações de contato e contexto do seu acesso."
+              title={t('acceptInvitePage.seusDados')}
+              description={t('acceptInvitePage.informacoesDeContatoE')}
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Nome"
-                  value={firstName}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  autoComplete="given-name"
-                  required
-                />
-                <Input
-                  label="Sobrenome"
-                  value={lastName}
-                  onChange={(event) => setLastName(event.target.value)}
-                  autoComplete="family-name"
-                  required
-                />
-              </div>
+              {/* Nome só para conta nova. Conta existente aceita logada, e o nome é dela. */}
+              {pageState.invite.requiresAccountCreation ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label={t('acceptInvitePage.nome')}
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    autoComplete="given-name"
+                    required
+                  />
+                  <Input
+                    label={t('acceptInvitePage.sobrenome')}
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    autoComplete="family-name"
+                    required
+                  />
+                </div>
+              ) : null}
 
               {pageState.invite.requiresPassword ? (
                 <>
                   <Input
-                    label="Senha de acesso"
+                    label={t('acceptInvitePage.senhaDeAcesso')}
                     type="password"
                     revealable
                     value={password}
@@ -289,7 +370,7 @@ export function AcceptInvitePage() {
                     minLength={8}
                   />
                   <Input
-                    label="Confirmar senha"
+                    label={t('acceptInvitePage.confirmarSenha')}
                     type="password"
                     revealable
                     value={confirmPassword}
@@ -301,33 +382,37 @@ export function AcceptInvitePage() {
                 </>
               ) : (
                 <p className="border-l-2 border-doqyn-accent-active/40 pl-3 text-sm text-doqyn-muted">
-                  Sua conta já existe no DOQYN. Ao continuar, o acesso à empresa será vinculado ao
-                  seu usuário atual. Use a senha que você já utiliza no login.
+                  {t('acceptInvitePage.suaContaJaExiste')}
                 </p>
               )}
 
               {pageState.invite.requiresWhatsapp ? (
-                <WhatsappInput label="WhatsApp" value={whatsapp} onChange={setWhatsapp} required />
+                <WhatsappInput
+                  label={t('acceptInvitePage.whatsapp')}
+                  value={whatsapp}
+                  onChange={setWhatsapp}
+                  required
+                />
               ) : null}
 
               <Input
-                label="Cargo ou função"
+                label={t('acceptInvitePage.cargoOuFuncao')}
                 value={jobTitle}
                 onChange={(event) => setJobTitle(event.target.value)}
-                placeholder="Ex.: Analista Financeiro"
+                placeholder={t('acceptInvitePage.exAnalistaFinanceiro')}
                 required
               />
 
               <div>
                 <Input
-                  label="Setor informado"
+                  label={t('acceptInvitePage.setorInformado')}
                   value={departmentText}
                   onChange={(event) => setDepartmentText(event.target.value)}
-                  placeholder="Ex.: Financeiro, Jurídico, RH"
+                  placeholder={t('acceptInvitePage.exFinanceiroJuridicoRh')}
                   required
                 />
                 <p className="mt-1.5 text-xs text-doqyn-subtle">
-                  Informação declarada. O administrador definirá seus grupos reais de acesso.
+                  {t('acceptInvitePage.informacaoDeclaradaOAdministrador')}
                 </p>
               </div>
             </FormSection>
@@ -357,8 +442,7 @@ export function AcceptInvitePage() {
                 wrapperClassName="border-0 bg-transparent px-0 py-1"
                 label={
                   <span className="text-sm leading-relaxed text-doqyn-muted">
-                    Declaro que as informações fornecidas são verdadeiras e que aceito o convite
-                    para acessar a empresa informada.
+                    {t('acceptInvitePage.declaroQueAsInformacoes')}
                   </span>
                 }
                 description={
@@ -374,7 +458,9 @@ export function AcceptInvitePage() {
                 required
                 wrapperClassName="border-0 bg-transparent px-0 py-1"
                 label={
-                  <span className="text-sm leading-relaxed text-doqyn-muted">{CONSENT_TEXT}</span>
+                  <span className="text-sm leading-relaxed text-doqyn-muted">
+                    {t('acceptInvitePage.consentText')}
+                  </span>
                 }
               />
             </div>
@@ -382,23 +468,24 @@ export function AcceptInvitePage() {
             <div className="flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
               <Link
                 to="/login"
+                state={returnToInvite}
                 className="text-center text-sm text-doqyn-muted transition-colors hover:text-doqyn-text sm:text-left"
               >
-                Já tenho conta
+                {t('acceptInvitePage.jaTenhoConta')}
               </Link>
               <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
-                Revisar e aceitar
+                {t('acceptInvitePage.revisarEAceitar')}
               </Button>
             </div>
           </form>
 
           <ReviewBeforeSubmitDialog
             open={reviewOpen}
-            title={ACCEPT_INVITE_REVIEW_COPY.title}
-            description={ACCEPT_INVITE_REVIEW_COPY.description}
+            title={t(ACCEPT_INVITE_REVIEW_COPY_KEYS.title)}
+            description={t(ACCEPT_INVITE_REVIEW_COPY_KEYS.description)}
             sections={reviewSections}
             submitting={submitting}
-            confirmLabel={ACCEPT_INVITE_REVIEW_COPY.confirmLabel}
+            confirmLabel={t(ACCEPT_INVITE_REVIEW_COPY_KEYS.confirmLabel)}
             onCancel={() => {
               if (!submitting) setReviewOpen(false);
             }}
@@ -413,17 +500,17 @@ export function AcceptInvitePage() {
   );
 }
 
-function mapInviteErrorTitle(code?: string): string {
+function inviteErrorTitleKey(code?: string): string {
   switch (code) {
     case 'INVITE_EXPIRED':
-      return 'Convite expirado';
+      return 'acceptInvitePage.errorTitle.expired';
     case 'INVITE_REVOKED':
-      return 'Convite revogado';
+      return 'acceptInvitePage.errorTitle.revoked';
     case 'INVITE_ALREADY_USED':
-      return 'Convite já utilizado';
+      return 'acceptInvitePage.errorTitle.used';
     case 'MEMBER_ALREADY_EXISTS':
-      return 'Acesso já existente';
+      return 'acceptInvitePage.errorTitle.memberExists';
     default:
-      return 'Convite indisponível';
+      return 'acceptInvitePage.errorTitle.unavailable';
   }
 }

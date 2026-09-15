@@ -1,4 +1,5 @@
 import type { MongoDocumentShareGrant } from '../../db/types.js';
+import { compactNotificationParams } from '../../../shared/notificationText.js';
 import { logger } from '../../utils/logger.js';
 import { emitNotifications } from './notificationService.js';
 import { findActiveTenantIdsForUser } from '../tenantMemberRepository.js';
@@ -52,8 +53,11 @@ export async function notifyInboundShareReceived(grant: MongoDocumentShareGrant)
         type: 'inbound_share_received',
         recipients: [grant.sharedWithUserId],
         eventKey: `${grant._id}:${tenantId}`,
-        title: `${offer.originTenantName} quer compartilhar um documento`,
-        body: `${offer.documentName} · ${offer.sharedByName}`,
+        params: compactNotificationParams({
+          originTenantName: offer.originTenantName,
+          documentName: offer.documentName,
+          sharedByName: offer.sharedByName,
+        }),
         actorUserId: grant.sharedByUserId,
         actorName: offer.sharedByName,
       }),
@@ -85,11 +89,10 @@ export async function notifyInboundShareDecided(
       recipients: [grant.sharedByUserId],
       // A decisão é uma só; reprocessar não duplica o aviso.
       eventKey: `${grant._id}:${decision}`,
-      title:
-        decision === 'accepted'
-          ? `${recipientName} aceitou o documento`
-          : `${recipientName} recusou o documento`,
-      body: offer.documentName,
+      params: compactNotificationParams({
+        recipientName,
+        documentName: offer.documentName,
+      }),
       documentId: grant.documentId,
       actorUserId: grant.sharedWithUserId,
       actorName: recipientName,

@@ -1,0 +1,43 @@
+{
+  "notification": {
+    "eyebrow": {
+      "document_expiring": "Vencimiento",
+      "document_created": "Documento nuevo",
+      "document_updated": "Documento actualizado",
+      "signature_required": "Firma",
+      "document_shared": "Documento compartido",
+      "access_approved": "Acceso concedido",
+      "access_rejected": "Acceso rechazado",
+      "approval_requested": "Aprobación pendiente",
+      "approval_decided": "Aprobación resuelta",
+      "document_requested": "Documento solicitado",
+      "document_request_fulfilled": "Solicitud atendida",
+      "inbound_share_received": "Recibido de afuera",
+      "inbound_share_accepted": "Recepción aceptada",
+      "inbound_share_declined": "Recepción rechazada",
+      "member_joined": "Se unió a la empresa"
+    },
+    "eyebrowFallback": "Aviso",
+    "action": {
+      "signature_required": "Abrir para firmar",
+      "member_joined": "Ver en Usuarios",
+      "approval_requested": "Revisar solicitud",
+      "document_requested": "Ver lo solicitado",
+      "document_expiring": "Abrir documento"
+    },
+    "actionFallback": "Abrir en DOQYN",
+    "row": {
+      "document": "Documento",
+      "category": "Categoría",
+      "actor": "Por"
+    },
+    "expiry": {
+      "validUntil": "Válido hasta el {{date}}",
+      "expiredOn": "Venció el {{date}}"
+    },
+    "preferencesHint": "¿Prefieres no recibir avisos por correo? Ajusta tus preferencias de notificación en la app.",
+    "footNote": "Recibiste este correo porque sigues este documento en DOQYN, o porque el aviso está dirigido a tu cuenta.",
+    "footNoteAccount": "Recibiste este correo porque el aviso está dirigido a tu cuenta de DOQYN.",
+    "uncategorized": "Sin categoría"
+  }
+}

@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { FileTypeIcon } from '@/components/ui/FileTypeIcon';
 import type { DocumentPreviewStatus } from '@/types/document-library';
 import { useDocumentThumbnail } from './useDocumentThumbnail';
+import { useTranslation } from 'react-i18next';
 
 export type DocumentThumbnailSize = 'card' | 'row' | 'large';
 
@@ -40,6 +41,8 @@ export function DocumentThumbnail({
   className,
   iconClassName,
 }: DocumentThumbnailProps) {
+  const { t } = useTranslation('documents');
+
   const previewBlocked =
     canPreview === false || previewStatus === 'failed' || previewStatus === 'skipped';
 
@@ -89,14 +92,14 @@ export function DocumentThumbnail({
           <span className="skeleton-line h-full w-full animate-pulse bg-doqyn-surface-hover/50" />
           {showProcessing && size !== 'row' && (
             <span className="absolute bottom-2 px-2 text-center text-[10px] text-doqyn-subtle">
-              Preparando visualização
+              {t('documentThumbnail.preparandoVisualizacao')}
             </span>
           )}
         </div>
       )}
 
       {previewBlocked && size !== 'row' && (
-        <span className="sr-only">Visualização não disponível</span>
+        <span className="sr-only">{t('documentThumbnail.visualizacaoNaoDisponivel')}</span>
       )}
     </div>
   );

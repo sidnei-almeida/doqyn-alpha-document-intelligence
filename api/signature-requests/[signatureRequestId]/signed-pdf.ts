@@ -6,6 +6,7 @@ import {
 } from '../../../server/services/signatures/documentSignatureService.js';
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../../server/tenancy/documentRequestContext.js';
+import { buildContentDisposition } from '../../../server/utils/contentDisposition.js';
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../../server/utils/sanitizeAuditMetadata.js';
 
@@ -24,7 +25,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const signatureRequestId = resolveId(req);
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   try {
@@ -39,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.signature_downloaded',
-        description: 'PDF assinado baixado por usuário interno.',
+        params: { context: 'internal' },
         documentId: file.request.documentId,
         versionId: file.request.versionId,
         metadata: sanitizeAuditMetadata(
@@ -54,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+    res.setHeader('Content-Disposition', buildContentDisposition('attachment', file.fileName));
     return res.status(200).send(file.buffer);
   } catch (error) {
     if (isServiceError(error)) {

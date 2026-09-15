@@ -1,10 +1,15 @@
 import { randomUUID } from 'node:crypto';
+import {
+  UNCATEGORIZED_CATEGORY_NAME,
+  UNCATEGORIZED_CATEGORY_SLUG,
+} from '../../shared/systemCategory.js';
 import type { MongoDocumentCategory } from '../db/types.js';
 import { ensureDefaultExtractionRule } from './documentDefaultExtractionRule.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { getDb } from '../db/mongoClient.js';
 import { SHARED_APP_COLLECTIONS } from '../db/constants.js';
 import { slugifyName } from '../utils/slugify.js';
+import { compareNames } from '../utils/textCollation.js';
 import { isDocumentGroupId } from '../utils/entityIds.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
@@ -50,12 +55,17 @@ export function serializeDocumentCategory(category: MongoDocumentCategory) {
 
 export async function listDocumentCategories(tenantId: string, opts?: ServiceOpts) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  const categories = await collections.documentCategories
+  const categories = (await collections.documentCategories
     .find(scope)
-    .sort({ sortOrder: 1, name: 1 })
-    .toArray();
+    .toArray()) as MongoDocumentCategory[];
 
-  return (categories as MongoDocumentCategory[]).map(serializeDocumentCategory);
+  // `sortOrder` ausente vem primeiro, como o Mongo fazia ao ordenar `null` antes de número.
+  const order = (category: MongoDocumentCategory) => category.sortOrder ?? Number.NEGATIVE_INFINITY;
+  return categories
+    .sort((a, b) =>
+      order(a) !== order(b) ? (order(a) < order(b) ? -1 : 1) : compareNames(a.name, b.name),
+    )
+    .map(serializeDocumentCategory);
 }
 
 export async function createDocumentCategory(
@@ -411,9 +421,8 @@ export async function countGroupsWithAccessToCategory(
   });
 }
 
-/** Slug da pasta onde cai o documento que a IA não soube classificar. */
-export const UNCATEGORIZED_CATEGORY_SLUG = 'sem-categoria';
-export const UNCATEGORIZED_CATEGORY_NAME = 'Sem categoria';
+// Slug e nome da pasta de sistema moram em `shared/systemCategory.ts`: o front os reconhece para
+// mostrar o nome no idioma de quem lê.
 
 /**
  * Garante a categoria "Sem categoria" do tenant e devolve o id dela.

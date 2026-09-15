@@ -1,6 +1,10 @@
 import { DEV_TENANT_ID, REGISTRY_COLLECTIONS } from '../../server/db/constants.js';
 import { getDb } from '../../server/db/mongoClient.js';
 import type { MongoTenant } from '../../server/db/types.js';
+import {
+  resolveGovernanceSeedLocale,
+  type GovernanceSeedLocale,
+} from '../../server/db/seed/documentGovernanceSeed.js';
 import { ensureDevTenantSeed } from '../../server/services/tenantsService.js';
 import { provisionTenantEnvironment } from '../../server/services/tenantProvisionService.js';
 import { buildBusinessCollectionPrefix, hashTaxId, maskTaxId } from '../../server/tenancy/taxId.js';
@@ -16,6 +20,7 @@ export type ProvisionDemoTenantsResult = {
   devOperatorEmails: string[];
   provisionedTenants: string[];
   governanceSeededTenants: string[];
+  locale: GovernanceSeedLocale;
 };
 
 async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
@@ -56,9 +61,9 @@ async function upsertTenantRegistry(company: DemoSeedManifestCompany) {
   );
 }
 
-async function seedGovernanceForTenant(tenantId: string) {
+async function seedGovernanceForTenant(tenantId: string, locale: GovernanceSeedLocale) {
   const db = await getDb();
-  const seed = buildGovernanceSeedForTenant(tenantId);
+  const seed = buildGovernanceSeedForTenant(tenantId, locale);
   const shared = resolveSharedCollections();
 
   const categoriesCollection = shared.documentCategories!;
@@ -77,27 +82,33 @@ async function seedGovernanceForTenant(tenantId: string) {
   }
 
   for (const group of seed.groups) {
-    await db.collection(groupsCollection).updateOne(
-      { _id: group._id, tenantId: group.tenantId } as Record<string, unknown>,
-      { $set: group },
-      { upsert: true },
-    );
+    await db
+      .collection(groupsCollection)
+      .updateOne(
+        { _id: group._id, tenantId: group.tenantId } as Record<string, unknown>,
+        { $set: group },
+        { upsert: true },
+      );
   }
 
   for (const rule of seed.accessRules) {
-    await db.collection(rulesCollection).updateOne(
-      { _id: rule._id, tenantId: rule.tenantId } as Record<string, unknown>,
-      { $set: rule },
-      { upsert: true },
-    );
+    await db
+      .collection(rulesCollection)
+      .updateOne(
+        { _id: rule._id, tenantId: rule.tenantId } as Record<string, unknown>,
+        { $set: rule },
+        { upsert: true },
+      );
   }
 
   for (const extractionRule of seed.extractionRules) {
-    await db.collection(extractionCollection).updateOne(
-      { _id: extractionRule._id, tenantId: extractionRule.tenantId } as Record<string, unknown>,
-      { $set: extractionRule },
-      { upsert: true },
-    );
+    await db
+      .collection(extractionCollection)
+      .updateOne(
+        { _id: extractionRule._id, tenantId: extractionRule.tenantId } as Record<string, unknown>,
+        { $set: extractionRule },
+        { upsert: true },
+      );
   }
 }
 
@@ -108,7 +119,10 @@ async function registerDemoTenantStorage(
   return storage.bucketName;
 }
 
-async function provisionDevTenant(manifest: DemoSeedManifest): Promise<string> {
+async function provisionDevTenant(
+  manifest: DemoSeedManifest,
+  locale: GovernanceSeedLocale,
+): Promise<string> {
   const tenant = await ensureDevTenantSeed();
 
   await provisionTenantEnvironment({
@@ -120,7 +134,7 @@ async function provisionDevTenant(manifest: DemoSeedManifest): Promise<string> {
     createdByMembershipId: manifest.globalAdmin.membershipId,
   });
 
-  await seedGovernanceForTenant(DEV_TENANT_ID);
+  await seedGovernanceForTenant(DEV_TENANT_ID, locale);
   await registerDemoTenantStorage({
     tenantId: DEV_TENANT_ID,
     displayName: tenant.displayName,
@@ -133,7 +147,10 @@ async function provisionDevTenant(manifest: DemoSeedManifest): Promise<string> {
 export async function provisionDemoTenants(
   manifest: DemoSeedManifest,
 ): Promise<ProvisionDemoTenantsResult> {
-  const devTenantId = await provisionDevTenant(manifest);
+  // O idioma vem do manifesto que o auth escreveu: uma fonte só, para a governança não nascer em
+  // português enquanto perfis e grupos do auth nasceram em inglês.
+  const locale = resolveGovernanceSeedLocale(manifest.locale);
+  const devTenantId = await provisionDevTenant(manifest, locale);
   const devOperatorEmails = await syncDevTenantMembers(manifest);
 
   const provisionedTenants: string[] = [devTenantId];
@@ -150,7 +167,7 @@ export async function provisionDemoTenants(
     });
 
     await upsertTenantRegistry(company);
-    await seedGovernanceForTenant(company.tenantId);
+    await seedGovernanceForTenant(company.tenantId, locale);
     await registerDemoTenantStorage({
       tenantId: company.tenantId,
       displayName: company.displayName,
@@ -167,5 +184,6 @@ export async function provisionDemoTenants(
     devOperatorEmails,
     provisionedTenants,
     governanceSeededTenants,
+    locale,
   };
 }

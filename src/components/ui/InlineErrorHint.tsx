@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type InlineErrorHintProps = {
   message?: string;
@@ -13,12 +14,9 @@ type InlineErrorHintProps = {
 /**
  * Erro inline minimalista para seções e listas — flat, sem card pesado.
  */
-export function InlineErrorHint({
-  message = 'Não foi possível carregar os dados.',
-  onRetry,
-  retryLabel = 'Tentar novamente',
-  className,
-}: InlineErrorHintProps) {
+export function InlineErrorHint({ message, onRetry, retryLabel, className }: InlineErrorHintProps) {
+  const { t } = useTranslation('components');
+
   return (
     <div
       role="alert"
@@ -33,11 +31,11 @@ export function InlineErrorHint({
           size={ICON_SIZE.sm}
           className="mt-0.5 shrink-0 text-[var(--feedback-error-text)]"
         />
-        <p className="text-sm text-doqyn-text">{message}</p>
+        <p className="text-sm text-doqyn-text">{message ?? t('inlineErrorHint.message')}</p>
       </div>
       {onRetry ? (
         <Button type="button" size="sm" variant="secondary" onClick={onRetry}>
-          {retryLabel}
+          {retryLabel ?? t('common:actions.retry')}
         </Button>
       ) : null}
     </div>

@@ -94,6 +94,15 @@ export function isValidPartyName(value: string): boolean {
     return true;
   }
 
+  // Sufixo societário estrangeiro — teste separado, para nome brasileiro não mudar de resultado.
+  if (
+    /\b(?:LLP|CORP|CORPORATION|LTD|LIMITED|PLC|GMBH|S\.L|S\.R\.L|SRL|S\.A\.S|C\.V)\b\.?/i.test(
+      trimmed,
+    )
+  ) {
+    return true;
+  }
+
   // Nome de pessoa: 2–5 palavras com inicial maiúscula.
   if (
     /^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç.'-]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç.'-]+){0,4}$/.test(

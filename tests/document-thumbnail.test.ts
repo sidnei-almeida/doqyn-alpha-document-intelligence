@@ -60,7 +60,7 @@ describe('DocumentThumbnail — preview em cards da Biblioteca', () => {
     const thumb = readSrc('features/documents/preview/DocumentThumbnail.tsx');
     assert.ok(thumb.includes("state === 'loading'"));
     assert.ok(thumb.includes("state === 'processing'"));
-    assert.ok(thumb.includes('Preparando visualização'));
+    assert.ok(thumb.includes('.preparandoVisualizacao'));
   });
 
   it('viewer usePreviewAsset revoga objectURL no cleanup', () => {

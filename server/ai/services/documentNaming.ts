@@ -5,10 +5,11 @@ import type {
   RetrievedChunk,
 } from '../types/documentAi.types.js';
 import { isConfidentialityClassRule } from '../utils/documentClassHeuristics.js';
-import { limitFileNameLength, sanitizeFileNameSegment } from '../utils/sanitizeFileName.js';
+import { limitFileNameLength } from '../utils/sanitizeFileName.js';
 import {
   ensureDocumentExtension,
   extensionFromFileName,
+  sanitizeDisplayFileNameSegment,
   stripSensitiveIdentifiersFromFileName as stripSensitiveIdentifiersFromFileNameCore,
 } from '../../../shared/storageFileName.js';
 import { normalizeDate } from './documentValidators.js';
@@ -28,6 +29,13 @@ const CATEGORY_SLUG_PREFIXES = [
   'recursos-humanos',
   'rh',
 ];
+
+/**
+ * Sufixo societário de fora do Brasil. Teste à parte do brasileiro, e não uma alternativa a mais na
+ * mesma expressão, para que nome português não mude de resultado por causa de sufixo que ele não usa.
+ */
+const FOREIGN_COMPANY_SUFFIX =
+  /\b(?:LLP|CORP|CORPORATION|LTD|LIMITED|PLC|GMBH|S\.L|S\.R\.L|SRL|S\.A\.S|C\.V)\b\.?/i;
 
 const GENERIC_TITLE_PATTERNS = [
   /acordo\s+de\s+confidencialidade/i,
@@ -70,6 +78,7 @@ function looksLikeProperName(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length < 3) return false;
   if (/\b(LTDA|LTDA\.|S\.A\.|SA|ME|EPP|EIRELI|INC|LLC)\b/i.test(trimmed)) return true;
+  if (FOREIGN_COMPANY_SUFFIX.test(trimmed)) return true;
   if (
     /^[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+(\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]+)+$/.test(trimmed)
   ) {
@@ -135,7 +144,7 @@ function formatFieldValueForName(key: string, field: ExtractedMetadataField | un
     return 'Documento';
   }
 
-  return sanitizeFileNameSegment(value, 'Documento');
+  return sanitizeDisplayFileNameSegment(value, 'Documento');
 }
 
 /**
@@ -195,13 +204,37 @@ function normalizeVersion(version: string): string {
   return cleaned ? cleaned.replace('.', '_') : '1';
 }
 
-function stripCategorySlugPrefix(name: string): string {
+/**
+ * Tira do começo do nome o prefixo que é só a pasta.
+ *
+ * A lista fixa conhece as pastas do seed em português; a classe do tenant pode se chamar "Legal" ou
+ * "Contratos Internacionales". O slug do nome da própria classe entra junto, e é o que cobre o resto.
+ */
+function stripCategorySlugPrefix(name: string, className?: string): string {
   let result = name;
+  // O nome guarda acento (`JURÍDICO_...`) e a lista não: compara sem acento, corta no original.
   for (const slug of CATEGORY_SLUG_PREFIXES) {
-    const pattern = new RegExp(`^${slug}_`, 'i');
-    result = result.replace(pattern, '');
+    const match = foldAccentsAligned(result).match(new RegExp(`^${slug}_`, 'i'));
+    if (match) result = result.slice(match[0].length);
+  }
+  const classSlug = className ? sanitizeDisplayFileNameSegment(className, '') : '';
+  if (
+    classSlug &&
+    foldAccentsAligned(result)
+      .toLowerCase()
+      .startsWith(`${foldAccentsAligned(classSlug).toLowerCase()}_`)
+  ) {
+    result = result.slice(classSlug.length + 1);
   }
   return result;
+}
+
+/**
+ * Tira o acento letra a letra, sem mudar o tamanho da string: o índice achado na versão sem acento
+ * vale para cortar a original.
+ */
+function foldAccentsAligned(value: string): string {
+  return Array.from(value, (char) => char.normalize('NFD').replace(/[̀-ͯ]/g, '') || char).join('');
 }
 
 function partySegment(
@@ -212,7 +245,7 @@ function partySegment(
   const raw = getFieldDisplayValue(key, field);
   if (!raw || !isValidPartyName(raw)) return null;
 
-  const formatted = sanitizeFileNameSegment(normalizePartyValue(raw), 'Documento');
+  const formatted = sanitizeDisplayFileNameSegment(normalizePartyValue(raw), 'Documento');
   if (!formatted || formatted === 'Documento') return null;
   if (isGenericTitleValue(raw, className)) return null;
   return formatted;
@@ -228,6 +261,13 @@ const BARE_TYPE_TOKENS = new Set([
   'proposta',
   'politica',
   'acordo',
+  'contract',
+  'agreement',
+  'document',
+  'invoice',
+  'acuerdo',
+  'convenio',
+  'factura',
 ]);
 
 const TEMPLATE_CONNECTOR_SEGMENTS = new Set(['e']);
@@ -242,7 +282,7 @@ function meaningfulNameSegments(name: string): string[] {
         segment !== 'sem_data' &&
         segment !== 'Documento' &&
         !TEMPLATE_CONNECTOR_SEGMENTS.has(segment.toLowerCase()) &&
-        !BARE_TYPE_TOKENS.has(segment.toLowerCase()) &&
+        !BARE_TYPE_TOKENS.has(foldAccentsAligned(segment).toLowerCase()) &&
         !/^v\d+([._]\d+)?$/i.test(segment) &&
         !/^\d{1,4}([._]\d{1,4})?$/.test(segment),
     );
@@ -261,7 +301,7 @@ function sanitizeOriginalStem(originalFileName: string, className: string): stri
     return null;
   }
   if (isGenericTitleValue(stem, className)) return null;
-  const sanitized = sanitizeFileNameSegment(stem, '');
+  const sanitized = sanitizeDisplayFileNameSegment(stem, '');
   if (!sanitized || isGenericTitleValue(sanitized.replace(/_/g, ' '), className)) return null;
   return sanitized;
 }
@@ -296,7 +336,10 @@ function buildRichFallbackName(input: {
 
   const prefix = isConfidentialityClassRule(input.selectedClass)
     ? 'NDA'
-    : sanitizeFileNameSegment(input.selectedClass.name.split(' ')[0] ?? 'Documento', 'Documento');
+    : sanitizeDisplayFileNameSegment(
+        input.selectedClass.name.split(' ')[0] ?? 'Documento',
+        'Documento',
+      );
 
   const version = normalizeVersion(input.version);
   const parts = [
@@ -350,7 +393,7 @@ function buildDisambiguatedBaseName(
       ? formatFieldValueForName('data_assinatura', metadata.data_assinatura)
       : formatFieldValueForName('data_emissao', metadata.data_emissao);
 
-  const typePrefix = sanitizeFileNameSegment(
+  const typePrefix = sanitizeDisplayFileNameSegment(
     selectedClass.name.split(' ')[0] ?? 'Documento',
     'Documento',
   );
@@ -369,7 +412,7 @@ function buildDisambiguatedBaseName(
       !!titulo && normalizeCompareToken(titulo) === normalizeCompareToken(selectedClass.name);
 
     if (titulo && !isClassNameEcho && normalizeCompareToken(titulo) !== 'documento') {
-      const formatted = sanitizeFileNameSegment(titulo, '');
+      const formatted = sanitizeDisplayFileNameSegment(titulo, '');
       if (formatted) parts.push(formatted);
     }
   }
@@ -458,7 +501,7 @@ function applyNamingTemplate(input: {
       const raw = getFieldDisplayValue('titulo', field);
       const value =
         raw && !isGenericTitleValue(raw, input.selectedClass.name)
-          ? sanitizeFileNameSegment(raw, 'Documento')
+          ? sanitizeDisplayFileNameSegment(raw, 'Documento')
           : 'Documento';
       name = name.replace(placeholder, value);
       continue;
@@ -518,19 +561,31 @@ const GENERIC_SUBJECT_TOKENS = new Set([
   'titular',
   'nao informado',
   'nao identificado',
+  'document',
+  'documents',
+  'file',
+  'company',
+  'customer',
+  'client',
+  'supplier',
+  'vendor',
+  'party',
+  'parties',
+  'proveedor',
+  'contratista',
 ]);
 
 function buildNameFromRoles(roles: DocumentNamingRoles | undefined): string | null {
   if (!roles?.tipo) return null;
 
-  const tipo = sanitizeFileNameSegment(roles.tipo, '');
+  const tipo = sanitizeDisplayFileNameSegment(roles.tipo, '');
   if (!tipo) return null;
 
   const parts = [tipo];
 
   for (const subject of roles.sujeitos) {
     if (!isUsableSubject(subject)) continue;
-    const formatted = sanitizeFileNameSegment(subject, '');
+    const formatted = sanitizeDisplayFileNameSegment(subject, '');
     if (formatted) parts.push(formatted);
   }
 
@@ -553,8 +608,8 @@ function buildNameFromRoles(roles: DocumentNamingRoles | undefined): string | nu
  * variação que não significava nada.
  *
  * A extensão fica de fora: `.PDF` não acrescenta nada e faz o arquivo parecer
- * vindo de outro sistema. Os segmentos já saem sem acento de
- * `sanitizeFileNameSegment`, então não há caractere que mude de forma aqui.
+ * vindo de outro sistema. O acento sobrevive à caixa alta (`PROCURAÇÃO`): o nome
+ * é de exibição, e a chave do storage sai em ASCII em `resolveStorageFileNames`.
  */
 function upperCaseStem(fileName: string): string {
   const lastDot = fileName.lastIndexOf('.');
@@ -600,7 +655,7 @@ export function generateRecommendedFileName(input: {
       version: input.version,
     });
 
-  name = stripCategorySlugPrefix(name);
+  name = stripCategorySlugPrefix(name, input.selectedClass.name);
 
   const disambiguated = buildDisambiguatedBaseName(input.selectedClass, metadata);
   const templateIsWeak = !name || isGenericGeneratedName(name, input.selectedClass, metadata);

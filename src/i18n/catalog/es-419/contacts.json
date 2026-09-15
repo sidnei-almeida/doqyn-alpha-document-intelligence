@@ -1,0 +1,44 @@
+{
+  "addContactField": {
+    "adicionarContatoPeloNome": "Agregar contacto por nombre de usuario",
+    "ninguemComEsseNome": "Nadie con ese nombre de usuario. A quien no tiene cuenta DOQYN se le invita por enlace, al enviar el documento.",
+    "salvar": "Guardar"
+  },
+  "contactCard": {
+    "deFora": "De fuera",
+    "salvo": "Guardado",
+    "acoes": {
+      "compartilhar": "Compartir documento…",
+      "assinatura": "Solicitar firma…",
+      "pedir": "Pedir documento…",
+      "remover": "Quitar de la lista"
+    },
+    "semEmail": "sin correo en este intercambio",
+    "salvoSemTroca": "guardado a mano · ningún intercambio aún"
+  },
+  "contactsPage": {
+    "aListaCresceSozinha": "La lista crece sola conforme compartes, pides firmas y solicitas documentos. Para adelantar, guarda a alguien por nombre de usuario en el campo de arriba.",
+    "carregandoContatos": "Cargando contactos",
+    "comQuemVoceTroca": "Con quién intercambias documentos, del más activo al menos.",
+    "contatos": "Contactos",
+    "daSuaEmpresa": "De tu empresa",
+    "deForaDaqui": "De fuera",
+    "irParaABiblioteca": "Ir a la Biblioteca",
+    "nenhumContatoAinda": "Ningún contacto todavía",
+    "pedidoEnviado": "Solicitud enviada.",
+    "erroPedido": "No se pudo enviar la solicitud.",
+    "hintInterno": "Compartir con estas personas vale al instante, sin aceptación.",
+    "hintExterno": "El documento sigue en el acervo de quien lo envía, y el acceso depende de que lo acepten."
+  },
+  "pickDocumentDialog": {
+    "buscarDocumento": "Buscar documento",
+    "carregando": "Cargando…",
+    "noDocuments": "Todavía no tienes documentos.",
+    "noMatch": "Ningún documento con ese nombre.",
+    "nomeDoArquivo": "Nombre del archivo",
+    "shareWhich": "¿Qué documento compartir?",
+    "signWhich": "¿Qué documento firmar?",
+    "shareSubtitle": "Elige el documento que va para {{name}}.",
+    "signSubtitle": "Elige el documento que {{name}} va a firmar."
+  }
+}

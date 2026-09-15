@@ -6,9 +6,10 @@ import type { LibraryViewMode } from '../types/library';
 import {
   nextViewMode,
   VIEW_MODE_ICONS,
-  VIEW_MODE_LABELS,
-  VIEW_MODE_SHORT_LABELS,
+  VIEW_MODE_LABEL_KEYS,
+  VIEW_MODE_SHORT_KEYS,
 } from '../utils/libraryViewMode';
+import { useTranslation } from 'react-i18next';
 
 type ViewModeToggleProps = {
   value: LibraryViewMode;
@@ -33,11 +34,16 @@ type ViewModeToggleProps = {
  * controle de outro tamanho na barra.
  */
 export function ViewModeToggle({ value, onChange, className }: ViewModeToggleProps) {
+  const { t } = useTranslation('library');
   const upcoming = nextViewMode(value);
-  const label = `${VIEW_MODE_LABELS[value]}. Trocar para ${VIEW_MODE_SHORT_LABELS[upcoming]}.`;
+  const labelValues = {
+    current: t(VIEW_MODE_LABEL_KEYS[value]),
+    next: t(VIEW_MODE_SHORT_KEYS[upcoming]),
+  };
+  const label = t('viewModeToggle.label', labelValues);
 
   return (
-    <Tooltip label={`${VIEW_MODE_LABELS[value]}. Clique para ${VIEW_MODE_SHORT_LABELS[upcoming]}`}>
+    <Tooltip label={t('viewModeToggle.tooltip', labelValues)}>
       <button
         type="button"
         onClick={() => onChange(upcoming)}

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * O carregamento de uma lista — com a forma do que vem, não com uma roda girando.
@@ -22,7 +23,7 @@ export function SkeletonList({
   twoLines = false,
   className,
   rowClassName,
-  label = 'Carregando',
+  label,
 }: {
   rows?: number;
   media?: boolean;
@@ -31,8 +32,15 @@ export function SkeletonList({
   rowClassName?: string;
   label?: string;
 }) {
+  const { t } = useTranslation('components');
+
   return (
-    <div className={className} role="status" aria-label={label} aria-busy="true">
+    <div
+      className={className}
+      role="status"
+      aria-label={label ?? t('skeletonList.loading')}
+      aria-busy="true"
+    >
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}

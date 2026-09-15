@@ -1,65 +1,89 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'DOQYN';
-export const ACCESS_GROUPS = ['Financeiro', 'Frete', 'Jurídico', 'RH'] as const;
-
-export const DOCUMENT_TYPES = [
-  'Contrato',
-  'Nota Fiscal',
-  'Relatório',
-  'Política Interna',
-  'Comprovante',
-  'Outro',
-] as const;
-
+/**
+ * O estado de um documento: a chave é o dado, o rótulo é o catálogo.
+ *
+ * Mesma separação de `src/lib/theme.ts`. O que fica aqui é o que não se traduz — o
+ * identificador do estado e a cor semântica que ele resolve.
+ */
 export const DOCUMENT_STATUSES = {
-  active: { label: 'Ativo', variant: 'success' as const },
-  processed: { label: 'Processado', variant: 'success' as const },
-  analyzing: { label: 'Em análise', variant: 'info' as const },
-  updated: { label: 'Atualizado', variant: 'success' as const },
-  pending_review: { label: 'Aguardando revisão', variant: 'warning' as const },
-  needs_review: { label: 'Requer revisão', variant: 'danger' as const },
-  available: { label: 'Disponível', variant: 'success' as const },
-  pending_analysis: { label: 'Aguardando análise', variant: 'warning' as const },
-  update_processed: { label: 'Atualização processada', variant: 'success' as const },
-  review_required: { label: 'Revisão necessária', variant: 'danger' as const },
+  active: { labelKey: 'common:documentStatus.active', variant: 'success' as const },
+  processed: { labelKey: 'common:documentStatus.processed', variant: 'success' as const },
+  analyzing: { labelKey: 'common:documentStatus.analyzing', variant: 'info' as const },
+  updated: { labelKey: 'common:documentStatus.updated', variant: 'success' as const },
+  pending_review: { labelKey: 'common:documentStatus.pendingReview', variant: 'warning' as const },
+  needs_review: { labelKey: 'common:documentStatus.needsReview', variant: 'danger' as const },
+  available: { labelKey: 'common:documentStatus.available', variant: 'success' as const },
+  pending_analysis: {
+    labelKey: 'common:documentStatus.pendingAnalysis',
+    variant: 'warning' as const,
+  },
+  update_processed: {
+    labelKey: 'common:documentStatus.updateProcessed',
+    variant: 'success' as const,
+  },
+  review_required: {
+    labelKey: 'common:documentStatus.reviewRequired',
+    variant: 'danger' as const,
+  },
 };
 
 export const PROCESSING_STEPS = [
-  { id: 1, label: 'Upload recebido', description: 'Documento registrado com segurança' },
-  { id: 2, label: 'Análise do documento', description: 'Verificação e validação inicial' },
-  { id: 3, label: 'Classificação e metadados', description: 'Extração de informações relevantes' },
-  { id: 4, label: 'Disponível com rastreabilidade', description: 'Documento pronto para consulta' },
+  {
+    id: 1,
+    labelKey: 'common:processingStep.uploadLabel',
+    descriptionKey: 'common:processingStep.uploadDescription',
+  },
+  {
+    id: 2,
+    labelKey: 'common:processingStep.analysisLabel',
+    descriptionKey: 'common:processingStep.analysisDescription',
+  },
+  {
+    id: 3,
+    labelKey: 'common:processingStep.metadataLabel',
+    descriptionKey: 'common:processingStep.metadataDescription',
+  },
+  {
+    id: 4,
+    labelKey: 'common:processingStep.readyLabel',
+    descriptionKey: 'common:processingStep.readyDescription',
+  },
 ];
 
 export const NAV_ITEMS_PRIMARY = [
-  { label: 'Biblioteca', path: '/biblioteca', icon: 'folder' },
+  { labelKey: 'common:nav.biblioteca', path: '/library', icon: 'folder' },
 ] as const;
 
 /** Views da Biblioteca — recortes sobre a listagem real (listDocuments). */
 export const NAV_ITEMS_LIBRARY_VIEWS = [
-  { label: 'Compartilhados comigo', path: '/biblioteca/compartilhados', icon: 'folder_shared' },
-  { label: 'Para assinar', path: '/biblioteca/assinaturas', icon: 'draw' },
-  { label: 'Pedidos', path: '/pedidos', icon: 'assignment' },
-  { label: 'Contatos', path: '/contatos', icon: 'group' },
-  { label: 'Recentes', path: '/biblioteca/recentes', icon: 'history' },
-  { label: 'Favoritos', path: '/biblioteca/favoritos', icon: 'star' },
-  { label: 'Lixeira', path: '/biblioteca/lixeira', icon: 'delete' },
+  {
+    labelKey: 'common:nav.compartilhados',
+    path: '/library/shared',
+    icon: 'folder_shared',
+  },
+  { labelKey: 'common:nav.assinaturas', path: '/library/signatures', icon: 'draw' },
+  { labelKey: 'common:nav.pedidos', path: '/requests', icon: 'assignment' },
+  { labelKey: 'common:nav.contatos', path: '/contacts', icon: 'group' },
+  { labelKey: 'common:nav.recentes', path: '/library/recent', icon: 'history' },
+  { labelKey: 'common:nav.favoritos', path: '/library/favorites', icon: 'star' },
+  { labelKey: 'common:nav.lixeira', path: '/library/trash', icon: 'delete' },
 ] as const;
 
 export const NAV_ITEMS_ADMIN = [
-  { label: 'Visão Geral', path: '/dashboard', icon: 'dashboard' },
-  { label: 'Regras', path: '/rules', icon: 'account_tree', governanceOnly: true },
+  { labelKey: 'common:nav.dashboard', path: '/dashboard', icon: 'dashboard' },
+  { labelKey: 'common:nav.rules', path: '/rules', icon: 'account_tree', governanceOnly: true },
   // Aberta para dono também: cada um enxerga a fatia dele, e é o servidor que decide o recorte.
-  { label: 'Matriz', path: '/matriz', icon: 'grid_on' },
-  { label: 'Usuários', path: '/users', icon: 'group', managerOnly: true },
-  { label: 'Auditoria', path: '/audit', icon: 'shield' },
-  { label: 'Tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },
+  { labelKey: 'common:nav.matriz', path: '/access-matrix', icon: 'grid_on' },
+  { labelKey: 'common:nav.users', path: '/users', icon: 'group', managerOnly: true },
+  { labelKey: 'common:nav.audit', path: '/audit', icon: 'shield' },
+  { labelKey: 'common:nav.tracking', path: '/tracking', icon: 'monitoring', trackingOnly: true },
   {
-    label: 'Desativados',
-    path: '/biblioteca/desativados',
+    labelKey: 'common:nav.desativados',
+    path: '/library/deactivated',
     icon: 'block',
     adminOnly: true,
   },
-  { label: 'Configurações', path: '/settings', icon: 'settings' },
+  { labelKey: 'common:nav.settings', path: '/settings', icon: 'settings' },
 ] as const;
 
 /** @deprecated Use NAV_ITEMS_PRIMARY and NAV_ITEMS_ADMIN */

@@ -1,0 +1,76 @@
+{
+  "accessMatrixTable": {
+    "ajusteABuscaOu": "Ajusta la búsqueda o la categoría para ver la matriz.",
+    "celulaVaziaSemAcesso": "celda vacía = sin acceso",
+    "compartilharCom": "Compartir con",
+    "documento": "Documento",
+    "esteAcessoVemDa": "Este acceso viene de la regla. Abrir Reglas",
+    "nenhumDocumentoNestaSelecao": "Ningún documento en esta selección",
+    "origem": "Origen",
+    "pode": "Puede",
+    "revogarCompartilhamento": "Revocar la compartición",
+    "semAcessoAEste": "Sin acceso a este documento.",
+    "accessOf": "Acceso de {{name}}"
+  },
+  "groupAccessMatrixTable": {
+    "concederOuRemoverEm": "Conceder o quitar en Reglas",
+    "documento": "Documento",
+    "memberCount_one": "{{count}} persona",
+    "memberCount_many": "{{count}} personas",
+    "memberCount_other": "{{count}} personas",
+    "nenhumDocumentoNestaSelecao": "Ningún documento en esta selección",
+    "nenhumGrupoConfigurado": "Ningún grupo configurado",
+    "noGroupsHint": "Crea grupos en Reglas para gobernar el acceso por equipo en lugar de persona por persona.",
+    "granted": "{{verb}}: permitido",
+    "denied": "{{verb}}: no permitido"
+  },
+  "matrixPage": {
+    "buscarNaMatriz": "Buscar en la matriz",
+    "buscarNaMatriz2": "Buscar en la matriz",
+    "categoria": "Categoría",
+    "documentCount_one": "{{count}} documento",
+    "documentCount_many": "{{count}} documentos",
+    "documentCount_other": "{{count}} documentos",
+    "filtrarPorCategoria": "Filtrar por categoría",
+    "groupAxis_one": "{{count}} grupo",
+    "groupAxis_many": "{{count}} grupos",
+    "groupAxis_other": "{{count}} grupos",
+    "lenteDaMatriz": "Lente de la matriz",
+    "matrizDeDocumentos": "Matriz de documentos",
+    "montandoAMatriz": "Armando la matriz",
+    "naoFoiPossivelMontar": "No se pudo armar la matriz",
+    "peopleAxis_one": "{{count}} persona",
+    "peopleAxis_many": "{{count}} personas",
+    "peopleAxis_other": "{{count}} personas",
+    "eyebrow": "Gobernanza",
+    "lens": {
+      "people": {
+        "label": "Por persona",
+        "description": "Quién lee cada documento y de dónde viene el acceso."
+      },
+      "groups": {
+        "label": "Por grupo",
+        "description": "Lo que la regla concede a cada grupo, verbo por verbo."
+      }
+    },
+    "allCategories": "Todas las categorías",
+    "shareCreated": "Uso compartido creado.",
+    "shareRevoked": "Uso compartido revocado."
+  },
+  "origin": {
+    "owner": "Propietario",
+    "admin": "Administrador",
+    "governance": "Regla de la categoría",
+    "share": "Compartido"
+  },
+  "verb": {
+    "canView": "Ver",
+    "canDownload": "Descargar",
+    "canUpdate": "Modificar",
+    "canAudit": "Auditar",
+    "canShare": "Compartir"
+  },
+  "noAccess": "sin acceso",
+  "noCategory": "Sin categoría",
+  "loadFailed": "No se pudo cargar la matriz."
+}

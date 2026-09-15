@@ -1,0 +1,49 @@
+{
+  "login": {
+    "continuarComGoogle": "Continuar com Google",
+    "continuarComMicrosoft": "Continuar com Microsoft",
+    "criarAcesso": "Criar acesso",
+    "eMail": "E-mail",
+    "entrarNoSistema": "Entrar no sistema",
+    "esqueciMinhaSenha": "Esqueci minha senha",
+    "lembrarAcesso": "Lembrar acesso",
+    "naoTemAcessoAinda": "Não tem acesso ainda?",
+    "or": "ou",
+    "senha": "Senha",
+    "entrar": "Entrar",
+    "entrando": "Entrando...",
+    "falhaGenerica": "Não foi possível concluir a ação agora. Tente novamente.",
+    "emailPlaceholder": "voce@empresa.com"
+  },
+  "onboardingPage": {
+    "comoVoceQuerComecar": "Como você quer começar no DOQYN?",
+    "suaContaFoiAutenticada": "Sua conta foi autenticada. Falta escolher como o seu acesso será configurado."
+  },
+  "termsPage": {
+    "ambienteCorporativoSeguro": "Ambiente corporativo seguro",
+    "leiaAtentamenteAntesDe": "Leia atentamente antes de criar uma conta, cadastrar uma empresa ou solicitar acesso a\n              uma organização.",
+    "termosECondicoesDe": "Termos e Condições de Uso do DOQYN",
+    "versao": "Versão",
+    "vigencia": "Vigência",
+    "voltar": "Voltar",
+    "subtitle": "Termos e Condições"
+  },
+  "loginFeedback": {
+    "title": {
+      "invalidCredentials": "Credenciais inválidas",
+      "userDisabled": "Conta desativada",
+      "membershipPending": "Aguardando aprovação",
+      "membershipBlocked": "Acesso bloqueado",
+      "membershipRejected": "Solicitação rejeitada",
+      "noActiveMembership": "Sem ambiente ativo",
+      "sessionExpired": "Sessão expirada",
+      "oauthEmailNotVerified": "E-mail não verificado pelo provedor",
+      "oauthUnavailable": "Login social indisponível"
+    }
+  },
+  "oauthCallback": {
+    "completing": "Concluindo autenticação…",
+    "failed": "Não foi possível concluir o login social.",
+    "sessionFailed": "Não foi possível validar a sessão. Redirecionando…"
+  }
+}
