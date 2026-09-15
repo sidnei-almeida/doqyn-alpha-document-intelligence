@@ -25,6 +25,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tenantId?: string;
       tenantType?: 'business' | 'individual';
       displayName?: string;
+      country?: string;
+      taxIdType?: string;
       collectionPrefix?: string;
       createdByUserId?: string;
       createdByMembershipId?: string;
@@ -36,6 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tenantId: body.tenantId ?? '',
       tenantType,
       displayName: body.displayName ?? '',
+      country: typeof body.country === 'string' ? body.country : undefined,
+      taxIdType: typeof body.taxIdType === 'string' ? body.taxIdType : undefined,
       collectionPrefix: body.collectionPrefix ?? (tenantType === 'individual' ? 'compartilhado' : body.tenantId ?? ''),
       createdByUserId: body.createdByUserId ?? '',
       createdByMembershipId: body.createdByMembershipId ?? '',

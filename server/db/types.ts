@@ -60,7 +60,13 @@ export type MongoTenant = {
   _id: string;
   tenantId: string;
   tenantType: TenantType;
-  taxIdType: TaxIdType;
+  /** ISO 3166-1 alpha-2. Ausente em tenant anterior ao cadastro multi-país — esses são BR. */
+  country?: string;
+  /**
+   * Código do documento fiscal em maiúsculas, como o auth validou: CPF e CNPJ no Brasil, RUC, EIN,
+   * SSN e outros fora. Não é `TaxIdType`: aquele é só o par brasileiro que o app sabe validar.
+   */
+  taxIdType: string;
   taxIdMasked: string;
   taxIdHash: string;
   displayName: string;
