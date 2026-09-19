@@ -7,6 +7,9 @@ import {
   type ResolvedTenantCollectionNames,
 } from '../tenancy/tenantResolver.js';
 
+/** Prazo de guarda da trilha de auditoria: cinco anos, o mesmo da guarda fiscal no BR. */
+export const AUDIT_LOG_TTL_SECONDS = 5 * 365 * 24 * 60 * 60;
+
 export type IndexEnsureResult = {
   collection: string;
   name: string;
@@ -323,6 +326,15 @@ export function tenantScopedIndexSpecs(names: ResolvedTenantCollectionNames): Ar
         // A verificação da cadeia de integridade percorre o tenant inteiro em ordem de posição;
         // sem este índice ela vira collection scan com sort em memória.
         { key: { tenantId: 1, 'chain.seq': 1 } },
+        /* Cinco anos, o prazo de guarda fiscal: a trilha é escrita a cada visualização, download
+           e edição, e sem poda cresce sem limite — junto com o custo de toda leitura dela e da
+           caminhada da cadeia. A cadeia de hash fica truncada no começo depois desse prazo: a
+           verificação passa a valer do elo mais antigo que sobrou em diante, não do primeiro. */
+        {
+          key: { createdAt: 1 },
+          expireAfterSeconds: AUDIT_LOG_TTL_SECONDS,
+          name: 'audit_logs_ttl',
+        },
       ],
     },
   );
