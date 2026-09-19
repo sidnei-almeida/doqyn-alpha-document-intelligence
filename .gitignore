@@ -101,3 +101,8 @@ __pycache__/
 # do produto, e o repositório já recusa `*.pdf` desde antes deles existirem.
 synthetic_document_dataset/
 synthetic_document_dataset.zip
+
+# Potes de cookie que o curl escreve nos testes manuais de login. Guardavam sessão de
+# localhost e estavam versionados num repositório público.
+cookies*.txt
+*-cookies.txt
