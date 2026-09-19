@@ -20,25 +20,10 @@ type SeedCounts = {
 };
 
 async function ensureRegistryIndexes() {
-  const db = await getDb();
-
-  await db
-    .collection(REGISTRY_COLLECTIONS.tenants)
-    .createIndexes([
-      { key: { tenantId: 1 }, unique: true },
-      { key: { taxIdHash: 1 }, unique: true },
-      { key: { slug: 1 }, unique: true },
-      { key: { status: 1 } },
-      { key: { tenantType: 1, status: 1 } },
-    ]);
-
-  await db
-    .collection(REGISTRY_COLLECTIONS.tenantMembers)
-    .createIndexes([
-      { key: { tenantId: 1, status: 1 } },
-      { key: { tenantId: 1, emailNormalized: 1 }, unique: true },
-      { key: { authUserId: 1, status: 1 } },
-    ]);
+  // A lista canônica é a mesma do job de produção. A cópia que morava aqui criava `taxIdHash` e
+  // `(tenantId, emailNormalized)` únicos totais, sem o filtro parcial que o registry exige.
+  const { ensureRegistryTenantIndexes } = await import('./tenantIndexes.js');
+  await ensureRegistryTenantIndexes();
 
   const { ensureUserDocumentFavoritesIndexes } = await import('./userDocumentFavoritesIndexes.js');
   await ensureUserDocumentFavoritesIndexes();

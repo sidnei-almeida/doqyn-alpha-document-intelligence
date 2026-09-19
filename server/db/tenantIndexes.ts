@@ -35,6 +35,16 @@ async function ensureCollectionExists(collectionName: string): Promise<boolean> 
   return false;
 }
 
+/** `unique`, filtro parcial e TTL do índice existente batem com os declarados. */
+function sameIndexOptions(existing: IndexDescription, spec: IndexDescription): boolean {
+  return (
+    Boolean(existing.unique) === Boolean(spec.unique) &&
+    JSON.stringify(existing.partialFilterExpression ?? null) ===
+      JSON.stringify(spec.partialFilterExpression ?? null) &&
+    (existing.expireAfterSeconds ?? null) === (spec.expireAfterSeconds ?? null)
+  );
+}
+
 export async function ensureIndexesForCollection(
   collectionName: string,
   indexes: IndexDescription[],
@@ -82,7 +92,38 @@ export async function ensureIndexesForCollection(
       (idx) => JSON.stringify(idx.key) === keyStr && collationOf(idx) === collationOf(spec),
     );
 
-    if (match) {
+    /**
+     * Mesma chave, mas `unique`, filtro parcial ou TTL diferentes: não é o índice declarado.
+     *
+     * Antes bastava a chave bater para contar como existente. Um banco onde o `db:setup` rodou
+     * primeiro ficava para sempre com o único total de `taxIdHash` no lugar do parcial, e ligar
+     * `unique` ou TTL numa chave que já existia virava no-op em silêncio. TTL sozinho muda por
+     * `collMod`, sem derrubar; o resto derruba e recria.
+     */
+    if (match && !sameIndexOptions(match, spec)) {
+      const onlyTtlDiffers =
+        Boolean(match.unique) === Boolean(spec.unique) &&
+        JSON.stringify(match.partialFilterExpression ?? null) ===
+          JSON.stringify(spec.partialFilterExpression ?? null) &&
+        match.expireAfterSeconds !== undefined &&
+        spec.expireAfterSeconds !== undefined;
+
+      if (onlyTtlDiffers && match.name) {
+        await db.command({
+          collMod: collectionName,
+          index: { name: match.name, expireAfterSeconds: spec.expireAfterSeconds },
+        });
+        results.push({ collection: collectionName, name: match.name, status: 'existing' });
+        continue;
+      }
+
+      if (match.name) {
+        await collection.dropIndex(match.name);
+        const index = existing.indexOf(match);
+        if (index >= 0) existing.splice(index, 1);
+        results.push({ collection: collectionName, name: match.name, status: 'dropped' });
+      }
+    } else if (match) {
       results.push({
         collection: collectionName,
         name: match.name ?? keyStr,
