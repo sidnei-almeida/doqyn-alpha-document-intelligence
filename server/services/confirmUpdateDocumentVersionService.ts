@@ -31,7 +31,9 @@ import {
   isConfirmAnalysisError,
 } from './confirmAnalysisService.js';
 import {
+  alreadyConfirmedError,
   assertAiSuggestedNamePresent,
+  isDuplicateKeyError,
   requireConfirmClassification,
   buildDocumentTitle,
   buildProcessingSteps,
@@ -392,11 +394,13 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   };
 
   try {
+    // A linha do job vem antes da versão e da atualização do documento: `_id` é a chave primária,
+    // então é ela que decide quem confirma quando duas tentativas do mesmo job correm juntas.
+    await processingJobs.insertOne(processingJob);
     await documentVersions.insertOne(version);
     await documents.updateOne({ _id: documentId } as Record<string, unknown>, {
       $set: documentUpdate,
     });
-    await processingJobs.insertOne(processingJob);
 
     if (confirmedPdfBuffer || stagingPromotion) {
       await scheduleChunkPersistenceAfterVersionConfirm({
@@ -457,6 +461,13 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
         ?.deleteDocumentVersion(persistedObjectKey, tenantId, persistedBucketAlias)
         .catch(() => undefined);
     }
+    // Perdeu a corrida pela linha do job: é o mesmo aviso da leitura de guarda, não um erro nosso.
+    if (isDuplicateKeyError(error)) throw alreadyConfirmedError();
+    // Falhou depois de marcar o job. A marca é o que barra a repetição, e com ela de pé a pessoa
+    // nunca mais conseguiria confirmar esta análise — então some junto com a tentativa.
+    await processingJobs
+      .deleteOne({ _id: jobId } as Record<string, unknown>)
+      .catch(() => undefined);
     throw error;
   }
 

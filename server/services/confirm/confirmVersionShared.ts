@@ -1,9 +1,9 @@
-import type { MetadataExtractionResult, ProcessingLogItem } from '../../ai/types/documentAi.types.js';
-import { mapExtractedFieldSource } from '../../ai/utils/mapMetadataSource.js';
 import type {
-  MongoDocumentVersion,
-  MongoVersionMetadataField,
-} from '../../db/types.js';
+  MetadataExtractionResult,
+  ProcessingLogItem,
+} from '../../ai/types/documentAi.types.js';
+import { mapExtractedFieldSource } from '../../ai/utils/mapMetadataSource.js';
+import type { MongoDocumentVersion, MongoVersionMetadataField } from '../../db/types.js';
 import type { TenantStorageScope } from '../../tenancy/resolveTenantStorageScope.js';
 import {
   deleteAnalysisStaging,
@@ -278,10 +278,8 @@ export function buildDocumentTitle(
   className: string,
   metadata: Record<string, MongoVersionMetadataField>,
 ): string {
-  const reveladora =
-    metadata.parte_reveladora?.normalizedValue ?? metadata.parte_reveladora?.value;
-  const receptora =
-    metadata.parte_receptora?.normalizedValue ?? metadata.parte_receptora?.value;
+  const reveladora = metadata.parte_reveladora?.normalizedValue ?? metadata.parte_reveladora?.value;
+  const receptora = metadata.parte_receptora?.normalizedValue ?? metadata.parte_receptora?.value;
   const fornecedor = metadata.fornecedor?.normalizedValue ?? metadata.fornecedor?.value;
   const numeroNota = metadata.numero_nota?.value;
 
@@ -370,3 +368,24 @@ export function assertAiSuggestedNamePresent(input: {
 }
 
 export { projectDocumentSearchMeta, parseMetadataDate } from './projectSearchMeta.js';
+
+/**
+ * A linha do job é a garantia de que o mesmo job não confirma duas vezes: `_id` é a chave primária.
+ *
+ * Por isso ela é a PRIMEIRA das gravações, e não a última. Antes vinha depois do documento e da
+ * versão: duas confirmações do mesmo job em paralelo (duplo clique, reenvio da rede) passavam as
+ * duas pela leitura de guarda, cada uma gerava o próprio `documentId`, e as duas inseriam documento
+ * e versão — só então a segunda esbarrava na chave. Sobrava um documento órfão vivo na biblioteca,
+ * e quem perdeu a corrida recebia 500 em vez do aviso de já confirmado.
+ */
+export function isDuplicateKeyError(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && (error as { code?: number }).code === 11000);
+}
+
+export function alreadyConfirmedError(): ConfirmAnalysisError {
+  return new ConfirmAnalysisError(
+    'Esta análise já foi confirmada.',
+    'ANALYSIS_ALREADY_CONFIRMED',
+    409,
+  );
+}

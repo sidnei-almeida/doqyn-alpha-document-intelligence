@@ -43,12 +43,14 @@ import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFi
 import { resolveAnalysisMimeType } from '../ai/constants.js';
 import {
   ConfirmAnalysisError,
+  alreadyConfirmedError,
   assertAiSuggestedNamePresent,
   requireConfirmClassification,
   buildDocumentTitle,
   buildProcessingSteps,
   buildStoragePlaceholders,
   isConfirmAnalysisError,
+  isDuplicateKeyError,
   mapVersionMetadata,
   persistConfirmedVersionFile,
   projectDocumentSearchMeta,
@@ -441,10 +443,10 @@ export async function confirmAnalysisPersistence(input: {
   /**
    * O mesmo job não confirma duas vezes.
    *
-   * Antes a segunda tentativa morria sozinha no storage, porque a primeira apagava o provisório.
-   * Com a cópia em segundo plano o provisório vive mais alguns minutos, e a repetição (duplo clique,
-   * rede que reenviou) criava documento e versão para só então esbarrar na chave do job — deixando
-   * os dois órfãos. A pergunta tem de vir antes de gravar qualquer coisa.
+   * Isto é o caminho curto, para a repetição que chega depois de a primeira ter terminado: poupa o
+   * trabalho de storage e devolve o aviso certo. Quem garante de verdade é a chave `_id` da linha
+   * do job, gravada antes do documento e da versão — duas tentativas simultâneas passam as duas
+   * por esta leitura.
    */
   if (
     data.jobId &&
@@ -640,9 +642,12 @@ export async function confirmAnalysisPersistence(input: {
   const { documents, documentVersions, processingJobs } = input.ctx.collections;
 
   try {
+    // A linha do job vem antes do documento e da versão: `_id` é a chave primária, então é ela que
+    // decide quem confirma quando duas tentativas do mesmo job correm juntas. Quem perde para aqui
+    // sem ter criado documento nenhum.
+    await processingJobs.insertOne(processingJob);
     await documents.insertOne(document);
     await documentVersions.insertOne(version);
-    await processingJobs.insertOne(processingJob);
 
     if (confirmedPdfBuffer || stagingPromotion) {
       await scheduleChunkPersistenceAfterVersionConfirm({
@@ -703,6 +708,13 @@ export async function confirmAnalysisPersistence(input: {
         ?.deleteDocumentVersion(persistedObjectKey, tenantId, persistedBucketAlias)
         .catch(() => undefined);
     }
+    // Perdeu a corrida pela linha do job: é o mesmo aviso da leitura de guarda, não um erro nosso.
+    if (isDuplicateKeyError(error)) throw alreadyConfirmedError();
+    // Falhou depois de marcar o job. A marca é o que barra a repetição, e com ela de pé a pessoa
+    // nunca mais conseguiria confirmar esta análise — então some junto com a tentativa.
+    await processingJobs
+      .deleteOne({ _id: jobId } as Record<string, unknown>)
+      .catch(() => undefined);
     throw error;
   }
 
