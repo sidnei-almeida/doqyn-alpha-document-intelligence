@@ -51,7 +51,7 @@ describe('desligamento do processo', () => {
   });
 
   it('promessa rejeitada sem dono é registrada e não derruba o processo', async () => {
-    const { done, child } = runGuardedProcess(
+    const { done } = runGuardedProcess(
       BOOT + `\n  Promise.reject(new Error('solta'));\n  setTimeout(() => process.exit(7), 1500);`,
     );
     const { code, output } = await done;
