@@ -1,6 +1,7 @@
 {
   "ACCESS_GROUPS_MONGO_DEPRECATED": "Recurso no disponible en esta versión.",
   "ADMIN_DIRECT_CONFIRM": "Los administradores confirman los metadatos directamente, sin enviarlos para aprobación.",
+  "ANALYSIS_ALREADY_CONFIRMED": "Este análisis ya fue confirmado. El documento ya está en la Biblioteca.",
   "ANALYSIS_JOB_NOT_FOUND": "Trabajo de análisis no encontrado.",
   "ANALYSIS_QUEUE_UNAVAILABLE": "Cola de análisis no disponible. Configura Redis, storage y ANALYSIS_SYNC_FALLBACK=false.",
   "APPROVAL_NO_APPROVER": "Esta empresa no tiene administrador activo para aprobar la solicitud.",
@@ -103,6 +104,7 @@
   "INVALID_AVATAR_VERSION": "Versión de avatar inválida.",
   "INVALID_CATEGORY_ID": "Un ID de grupo (group_*) no puede usarse como clase de documento. Usa un ID cat_*.",
   "INVALID_COLLECTION_PREFIX": "collectionPrefix debe ser igual al tenantId para tenants business.",
+  "INVALID_COUNTRY": "País no válido.",
   "INVALID_CREDENTIALS": "Correo o contraseña inválidos.",
   "INVALID_EXPIRES_AT": "Fecha de expiración inválida.",
   "INVALID_FILE_EXTENSION": "El nombre debe terminar en .{{currentExtension}}.",
@@ -118,6 +120,7 @@
   "INVALID_RECIPIENT_PHONE": "Teléfono del destinatario inválido.",
   "INVALID_REQUEST_BODY": "Cuerpo JSON inválido.",
   "INVALID_SESSION": "Tu sesión venció. Inicia sesión de nuevo.",
+  "INVALID_SHA256": "El identificador de integridad del archivo no es válido. Envía el archivo de nuevo.",
   "INVALID_SHARE_PERMISSIONS": "canView es obligatorio para compartir.",
   "INVALID_SIGNATURE_ARTIFACT": "Nombre de artefacto de firma inválido.",
   "INVALID_SIGNER_EMAIL": "Correo del firmante inválido.",
@@ -127,6 +130,7 @@
   "INVALID_STORAGE_KEY": "storageKey inválida.",
   "INVALID_STORAGE_SEGMENT": "{{label}} inválido para storage.",
   "INVALID_TAX_ID": "{{taxIdType}} inválido.",
+  "INVALID_TAX_ID_TYPE": "Tipo de documento fiscal no válido.",
   "INVALID_TENANT_ID": "tenantId inválido para storage.",
   "INVALID_TENANT_TYPE": "tenantType inválido.",
   "INVALID_USER_ID": "userId inválido para el avatar.",
@@ -213,6 +217,7 @@
   "SIGNATURE_DOWNLOAD_DENIED": "Descarga no permitida.",
   "SIGNATURE_EVIDENCE_NOT_FOUND": "Evidencias no disponibles.",
   "SIGNATURE_FORBIDDEN": "No tienes permiso para esta firma.",
+  "SIGNATURE_IN_PROGRESS": "Esta firma ya está en curso o fue completada.",
   "SIGNATURE_PDF_ONLY": "Solo se pueden firmar documentos PDF en esta fase.",
   "SIGNATURE_PREVIEW_DENIED": "Visualización no permitida.",
   "SIGNATURE_REQUEST_CLOSED": "Solicitud de firma no disponible.",
@@ -272,7 +277,5 @@
   "USER_NOT_ACTIVE": "Esta cuenta no está activa.",
   "USER_REQUIRED": "userId es obligatorio.",
   "VALIDATION_ERROR": "Revisa los campos informados e inténtalo de nuevo.",
-  "VERSION_NOT_FOUND": "Versión no encontrada.",
-  "INVALID_SHA256": "El identificador de integridad del archivo no es válido. Envía el archivo de nuevo.",
-  "ANALYSIS_ALREADY_CONFIRMED": "Este análisis ya fue confirmado. El documento ya está en la Biblioteca."
+  "VERSION_NOT_FOUND": "Versión no encontrada."
 }

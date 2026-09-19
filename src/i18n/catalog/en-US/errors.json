@@ -1,6 +1,7 @@
 {
   "ACCESS_GROUPS_MONGO_DEPRECATED": "Feature unavailable in this version.",
   "ADMIN_DIRECT_CONFIRM": "Administrators confirm metadata directly, without submitting for approval.",
+  "ANALYSIS_ALREADY_CONFIRMED": "This analysis has already been confirmed. The document is already in the Library.",
   "ANALYSIS_JOB_NOT_FOUND": "Analysis job not found.",
   "ANALYSIS_QUEUE_UNAVAILABLE": "Analysis queue unavailable. Configure Redis, storage and ANALYSIS_SYNC_FALLBACK=false.",
   "APPROVAL_NO_APPROVER": "This company has no active administrator to approve the request.",
@@ -103,6 +104,7 @@
   "INVALID_AVATAR_VERSION": "Invalid avatar version.",
   "INVALID_CATEGORY_ID": "A group ID (group_*) cannot be used as a document class. Use a cat_* ID.",
   "INVALID_COLLECTION_PREFIX": "collectionPrefix must equal the tenantId for business tenants.",
+  "INVALID_COUNTRY": "Invalid country.",
   "INVALID_CREDENTIALS": "Invalid email or password.",
   "INVALID_EXPIRES_AT": "Invalid expiry date.",
   "INVALID_FILE_EXTENSION": "The name must end in .{{currentExtension}}.",
@@ -118,6 +120,7 @@
   "INVALID_RECIPIENT_PHONE": "Invalid recipient phone number.",
   "INVALID_REQUEST_BODY": "Invalid JSON body.",
   "INVALID_SESSION": "Your session has expired. Sign in again.",
+  "INVALID_SHA256": "The file integrity identifier is invalid. Upload the file again.",
   "INVALID_SHARE_PERMISSIONS": "canView is required for sharing.",
   "INVALID_SIGNATURE_ARTIFACT": "Invalid signature artifact name.",
   "INVALID_SIGNER_EMAIL": "Invalid signer email.",
@@ -127,6 +130,7 @@
   "INVALID_STORAGE_KEY": "Invalid storageKey.",
   "INVALID_STORAGE_SEGMENT": "{{label}} invalid for storage.",
   "INVALID_TAX_ID": "Invalid {{taxIdType}}.",
+  "INVALID_TAX_ID_TYPE": "Invalid tax ID type.",
   "INVALID_TENANT_ID": "Invalid tenantId for storage.",
   "INVALID_TENANT_TYPE": "Invalid tenantType.",
   "INVALID_USER_ID": "Invalid userId for the avatar.",
@@ -213,6 +217,7 @@
   "SIGNATURE_DOWNLOAD_DENIED": "Download not allowed.",
   "SIGNATURE_EVIDENCE_NOT_FOUND": "Evidence unavailable.",
   "SIGNATURE_FORBIDDEN": "You do not have permission for this signature.",
+  "SIGNATURE_IN_PROGRESS": "This signature is already in progress or has been completed.",
   "SIGNATURE_PDF_ONLY": "Only PDF documents can be signed at this stage.",
   "SIGNATURE_PREVIEW_DENIED": "Viewing not allowed.",
   "SIGNATURE_REQUEST_CLOSED": "Signature request unavailable.",
@@ -272,7 +277,5 @@
   "USER_NOT_ACTIVE": "This account is not active.",
   "USER_REQUIRED": "userId is required.",
   "VALIDATION_ERROR": "Review the fields you entered and try again.",
-  "VERSION_NOT_FOUND": "Version not found.",
-  "INVALID_SHA256": "The file integrity identifier is invalid. Upload the file again.",
-  "ANALYSIS_ALREADY_CONFIRMED": "This analysis has already been confirmed. The document is already in the Library."
+  "VERSION_NOT_FOUND": "Version not found."
 }

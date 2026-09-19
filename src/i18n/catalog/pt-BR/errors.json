@@ -1,6 +1,7 @@
 {
   "ACCESS_GROUPS_MONGO_DEPRECATED": "Recurso indisponível nesta versão.",
   "ADMIN_DIRECT_CONFIRM": "Administradores confirmam metadados diretamente, sem enviar para aprovação.",
+  "ANALYSIS_ALREADY_CONFIRMED": "Esta análise já foi confirmada. O documento já está na Biblioteca.",
   "ANALYSIS_JOB_NOT_FOUND": "Job de análise não encontrado.",
   "ANALYSIS_QUEUE_UNAVAILABLE": "Fila de análise indisponível. Configure Redis, storage e ANALYSIS_SYNC_FALLBACK=false.",
   "APPROVAL_NO_APPROVER": "Esta empresa não tem administrador ativo para aprovar o pedido.",
@@ -103,6 +104,7 @@
   "INVALID_AVATAR_VERSION": "Versão de avatar inválida.",
   "INVALID_CATEGORY_ID": "ID de grupo (group_*) não pode ser usado como classe de documento. Use um ID cat_*.",
   "INVALID_COLLECTION_PREFIX": "collectionPrefix deve ser igual ao tenantId para tenants business.",
+  "INVALID_COUNTRY": "País inválido.",
   "INVALID_CREDENTIALS": "E-mail ou senha inválidos.",
   "INVALID_EXPIRES_AT": "Data de expiração inválida.",
   "INVALID_FILE_EXTENSION": "O nome deve terminar em .{{currentExtension}}.",
@@ -118,6 +120,7 @@
   "INVALID_RECIPIENT_PHONE": "Telefone do destinatário inválido.",
   "INVALID_REQUEST_BODY": "Corpo JSON inválido.",
   "INVALID_SESSION": "Sua sessão expirou. Faça login novamente.",
+  "INVALID_SHA256": "O identificador de integridade do arquivo é inválido. Envie o arquivo novamente.",
   "INVALID_SHARE_PERMISSIONS": "canView é obrigatório para compartilhamento.",
   "INVALID_SIGNATURE_ARTIFACT": "Nome de artefato de assinatura inválido.",
   "INVALID_SIGNER_EMAIL": "E-mail do signatário inválido.",
@@ -127,6 +130,7 @@
   "INVALID_STORAGE_KEY": "storageKey inválida.",
   "INVALID_STORAGE_SEGMENT": "{{label}} inválido para storage.",
   "INVALID_TAX_ID": "{{taxIdType}} inválido.",
+  "INVALID_TAX_ID_TYPE": "Tipo de documento fiscal inválido.",
   "INVALID_TENANT_ID": "tenantId inválido para storage.",
   "INVALID_TENANT_TYPE": "tenantType inválido.",
   "INVALID_USER_ID": "userId inválido para avatar.",
@@ -213,6 +217,7 @@
   "SIGNATURE_DOWNLOAD_DENIED": "Download não permitido.",
   "SIGNATURE_EVIDENCE_NOT_FOUND": "Evidências indisponíveis.",
   "SIGNATURE_FORBIDDEN": "Você não tem permissão para esta assinatura.",
+  "SIGNATURE_IN_PROGRESS": "Esta assinatura já está em andamento ou foi concluída.",
   "SIGNATURE_PDF_ONLY": "Apenas documentos PDF podem ser assinados nesta fase.",
   "SIGNATURE_PREVIEW_DENIED": "Visualização não permitida.",
   "SIGNATURE_REQUEST_CLOSED": "Solicitação de assinatura indisponível.",
@@ -272,7 +277,5 @@
   "USER_NOT_ACTIVE": "Esta conta não está ativa.",
   "USER_REQUIRED": "userId é obrigatório.",
   "VALIDATION_ERROR": "Revise os campos informados e tente novamente.",
-  "VERSION_NOT_FOUND": "Versão não encontrada.",
-  "INVALID_SHA256": "O identificador de integridade do arquivo é inválido. Envie o arquivo novamente.",
-  "ANALYSIS_ALREADY_CONFIRMED": "Esta análise já foi confirmada. O documento já está na Biblioteca."
+  "VERSION_NOT_FOUND": "Versão não encontrada."
 }
