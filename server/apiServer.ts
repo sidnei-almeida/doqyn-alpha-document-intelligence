@@ -50,6 +50,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/internal/memberships/revoke-shares': () =>
     import('../api/internal/memberships/revoke-shares.js'),
   '/api/internal/tenant-members/sync': () => import('../api/internal/tenant-members/sync.js'),
+  '/api/internal/sessions/invalidate': () => import('../api/internal/sessions/invalidate.js'),
   '/api/company-members': () => import('../api/company-members/index.js'),
   '/api/document-requests': () => import('../api/document-requests/index.js'),
   '/api/inbound-shares': () => import('../api/inbound-shares/index.js'),

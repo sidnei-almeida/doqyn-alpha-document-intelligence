@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 import type { DoqynVerifiedSession } from './providers/doqynAuthProvider.js';
-import { redisDel, redisGetJson, redisSetJson } from '../redis/redisClient.js';
+import {
+  redisDel,
+  redisGetJson,
+  redisSetAddWithTtl,
+  redisSetJson,
+  redisSetMembers,
+} from '../redis/redisClient.js';
 
 function readBool(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim() === '') return defaultValue;
@@ -39,7 +45,28 @@ export async function setCachedDoqynSession(
   session: DoqynVerifiedSession,
 ): Promise<void> {
   if (!isSessionCacheEnabled()) return;
-  await redisSetJson(buildSessionCacheKey(sessionToken), session, getSessionCacheTtlSeconds());
+  const cacheKey = buildSessionCacheKey(sessionToken);
+  const ttl = getSessionCacheTtlSeconds();
+  await redisSetJson(cacheKey, session, ttl);
+  await redisSetAddWithTtl(buildUserSessionIndexKey(session.user.id), cacheKey, ttl);
+}
+
+function buildUserSessionIndexKey(userId: string): string {
+  return `session-user:${userId}`;
+}
+
+/**
+ * Esquece toda sessão em cache de um usuário. Chamado pelo auth-service quando revoga sessão.
+ *
+ * Sem isto, logout, reset de senha, bloqueio ou remoção de membro derrubavam a sessão no Postgres,
+ * mas o alpha continuava aceitando o cookie pelo que tinha em Redis até o TTL vencer. O cache é por
+ * token, e o auth não guarda o token cru — por isso o índice por usuário.
+ */
+export async function invalidateCachedDoqynSessionsForUser(userId: string): Promise<number> {
+  const indexKey = buildUserSessionIndexKey(userId);
+  const cacheKeys = await redisSetMembers(indexKey);
+  await redisDel(...cacheKeys, indexKey);
+  return cacheKeys.length;
 }
 
 /**
