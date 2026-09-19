@@ -5,10 +5,7 @@ import { getStorageConfig } from '../../storage/storageConfig.js';
 import { isPresignedUploadEnabled } from '../../storage/presignedUploadConfig.js';
 import { createStagingPresignedPutUrl } from '../../storage/r2/r2PresignedUrls.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
-import {
-  AI_ERROR_MESSAGES,
-  resolveAnalysisMimeType,
-} from '../../ai/constants.js';
+import { AI_ERROR_MESSAGES, resolveAnalysisMimeType } from '../../ai/constants.js';
 
 function resolveMimeType(fileName: string, mimeType?: string): string {
   const resolved = resolveAnalysisMimeType({ fileName, mimeType });
@@ -84,6 +81,7 @@ export async function issueAnalysisStagingUploadUrl(
     jobId,
     mimeType,
     originalFileName,
+    sizeBytes: input.sizeBytes,
     storageScope: input.storageScope,
   });
 
