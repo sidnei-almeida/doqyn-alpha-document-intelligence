@@ -124,37 +124,22 @@ export async function drainEmailOutbox(): Promise<{
   let throttled = 0;
 
   /**
-   * Quantos e-mails cada pessoa já recebeu na última hora.
+   * Quantos e-mails a pessoa já recebeu na última hora — contado do próprio outbox, que é o que
+   * todas as réplicas enxergam.
    *
-   * Contado uma vez por rodada, do próprio outbox — quem entregou é a fonte, não um contador em
-   * memória que zera a cada reinício.
+   * Antes a conta era uma foto por rodada, guardada num `Map` local e somada só com o que ESTA
+   * réplica mandasse. Com duas réplicas drenando, cada uma tirava sua foto no começo e nenhuma via
+   * o que a outra estava enviando: o teto por pessoa valia por réplica, não por pessoa.
    */
-  const desdeUmaHora = new Date(agora.getTime() - 60 * 60_000);
-  const enviadosPorUsuario = new Map<string, number>();
-  for (const userId of new Set(pendentes.map((linha) => linha.userId))) {
-    const total = await deliveries.countDocuments({
+  const contarEnviadosNaUltimaHora = async (userId: string): Promise<number> =>
+    deliveries.countDocuments({
       channel: 'email',
       userId,
       status: 'delivered',
-      deliveredAt: { $gte: desdeUmaHora },
+      deliveredAt: { $gte: new Date(Date.now() - 60 * 60_000) },
     } as Record<string, unknown>);
-    enviadosPorUsuario.set(userId, total);
-  }
 
   for (const linha of pendentes) {
-    const jaEnviados = enviadosPorUsuario.get(linha.userId) ?? 0;
-    if (jaEnviados >= EMAIL_MAX_PER_USER_PER_HOUR) {
-      // Adiado, não descartado: o aviso continua verdadeiro na próxima janela.
-      await deliveries.updateOne({ _id: linha._id } as Record<string, unknown>, {
-        $set: {
-          nextAttemptAt: new Date(agora.getTime() + 15 * 60_000),
-          reason: 'Teto de e-mails por hora atingido para este destinatário.',
-        },
-      });
-      throttled += 1;
-      continue;
-    }
-
     const travada = await deliveries.findOneAndUpdate(
       { _id: linha._id, status: linha.status } as Record<string, unknown>,
       { $set: { status: 'sending', lockedAt: agora } },
@@ -162,6 +147,22 @@ export async function drainEmailOutbox(): Promise<{
     );
     // Outra instância pegou primeiro: seguir em frente é o certo, não competir.
     if (!travada) continue;
+
+    // A conta vem depois da trava e imediatamente antes do envio: é o ponto mais tarde possível, e
+    // já inclui o que as outras réplicas marcaram como entregue.
+    if ((await contarEnviadosNaUltimaHora(linha.userId)) >= EMAIL_MAX_PER_USER_PER_HOUR) {
+      // Adiado, não descartado: o aviso continua verdadeiro na próxima janela.
+      await deliveries.updateOne({ _id: linha._id } as Record<string, unknown>, {
+        $set: {
+          status: 'queued',
+          lockedAt: null,
+          nextAttemptAt: new Date(agora.getTime() + 15 * 60_000),
+          reason: 'Teto de e-mails por hora atingido para este destinatário.',
+        },
+      });
+      throttled += 1;
+      continue;
+    }
 
     const destino = emails.get(`${linha.tenantId}:${linha.userId}`);
     if (!destino) {
@@ -218,7 +219,6 @@ export async function drainEmailOutbox(): Promise<{
         },
       });
       sent += 1;
-      enviadosPorUsuario.set(linha.userId, (enviadosPorUsuario.get(linha.userId) ?? 0) + 1);
       continue;
     }
 

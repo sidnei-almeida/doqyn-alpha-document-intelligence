@@ -43,6 +43,8 @@ export const NOTIFICATION_DELIVERY_INDEXES: IndexDescription[] = [
   },
   // A fila que um provedor futuro drena: o que ficou parado, mais antigo primeiro.
   { key: { tenantId: 1, status: 1, channel: 1, createdAt: 1 } },
+  // O teto por hora por destinatário é contado daqui, uma vez por entrega prestes a sair.
+  { key: { channel: 1, userId: 1, status: 1, deliveredAt: -1 } },
   {
     key: { createdAt: 1 },
     expireAfterSeconds: NOTIFICATION_DELIVERY_TTL_SECONDS,
