@@ -238,22 +238,42 @@ describe('tracking securityContext', () => {
     assert.equal(geo.timezone, 'America/Sao_Paulo');
   });
 
-  it('prioriza headers Cloudflare sobre lookup local', () => {
-    const context = buildSecurityContext(
-      {
-        headers: {
-          'cf-ipcountry': 'BR',
-          'cf-region': 'RS',
-          'cf-ipcity': 'Caxias do Sul',
-          'x-forwarded-for': '8.8.8.8',
-        },
-        socket: {},
-      },
-      { isExternalGuest: false },
-    );
-    assert.equal(context.city, 'Caxias do Sul');
-    assert.equal(context.region, 'RS');
-    assert.equal(context.country, 'BR');
+  const geoHeaders = {
+    'cf-ipcountry': 'BR',
+    'cf-region': 'RS',
+    'cf-ipcity': 'Caxias do Sul',
+    'x-forwarded-for': '8.8.8.8',
+  };
+
+  it('com TRUST_CLOUDFLARE=true, headers Cloudflare vêm antes do lookup local', () => {
+    const previous = process.env.TRUST_CLOUDFLARE;
+    process.env.TRUST_CLOUDFLARE = 'true';
+    try {
+      const context = buildSecurityContext(
+        { headers: geoHeaders, socket: {} },
+        { isExternalGuest: false },
+      );
+      assert.equal(context.city, 'Caxias do Sul');
+      assert.equal(context.region, 'RS');
+      assert.equal(context.country, 'BR');
+    } finally {
+      if (previous === undefined) delete process.env.TRUST_CLOUDFLARE;
+      else process.env.TRUST_CLOUDFLARE = previous;
+    }
+  });
+
+  it('sem Cloudflare na frente, o geo dos headers é ignorado — quem escreve é o cliente', () => {
+    const previous = process.env.TRUST_CLOUDFLARE;
+    delete process.env.TRUST_CLOUDFLARE;
+    try {
+      const context = buildSecurityContext(
+        { headers: geoHeaders, socket: {} },
+        { isExternalGuest: false },
+      );
+      assert.notEqual(context.city, 'Caxias do Sul');
+    } finally {
+      if (previous !== undefined) process.env.TRUST_CLOUDFLARE = previous;
+    }
   });
 
   it('UI mostra Rede local para eventos locais', () => {
