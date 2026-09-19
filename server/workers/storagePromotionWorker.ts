@@ -4,6 +4,7 @@ import { getStorageProvider } from '../storage/index.js';
 import { R2StorageProvider } from '../storage/r2/r2StorageProvider.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { logger } from '../utils/logger.js';
+import { onShutdown } from '../runtime/shutdown.js';
 import {
   enqueueStagingCleanupJob,
   startStoragePromotionWorker,
@@ -28,7 +29,9 @@ export async function promoteStagedVersionFile(
 ): Promise<'promoted' | 'skipped'> {
   const provider = getR2Provider();
   if (!provider) {
-    logger.warn('promoção de storage ignorada: provedor não é R2', { versionId: payload.versionId });
+    logger.warn('promoção de storage ignorada: provedor não é R2', {
+      versionId: payload.versionId,
+    });
     return 'skipped';
   }
 
@@ -139,6 +142,10 @@ export async function runStoragePromotionWorkerLoop(): Promise<void> {
       reason: error instanceof Error ? error.message : 'unknown',
     });
   });
+
+  // No SIGTERM o worker para de pegar job novo e espera o que está em mãos terminar, em vez
+  // de ser morto no meio e deixar a vaga do tenant presa até o prazo vencer.
+  onShutdown('worker de promoção de arquivo', () => worker.close());
 
   logger.info('Storage promotion worker aguardando jobs');
 }

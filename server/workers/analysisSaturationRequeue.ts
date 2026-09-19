@@ -54,7 +54,10 @@ export function getSaturationBaseDelayMs(): number {
  * Recuo progressivo a partir da base, dobrando a cada volta e limitado ao teto. A base é da ordem
  * da janela do limitador (um minuto): voltar antes disso é reencontrar a mesma janela cheia.
  */
-export function saturationRetryDelayMs(requeues: number, random: () => number = Math.random): number {
+export function saturationRetryDelayMs(
+  requeues: number,
+  random: () => number = Math.random,
+): number {
   const base = getSaturationBaseDelayMs();
   const backoff = Math.min(base * 2 ** Math.max(requeues, 0), MAX_DELAY_MS);
   return backoff + Math.floor(random() * JITTER_MS);

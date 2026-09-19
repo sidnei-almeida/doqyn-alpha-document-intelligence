@@ -1,7 +1,5 @@
 import type { Job } from 'bullmq';
-import {
-  generateDocumentPreviewForVersion,
-} from '../services/documentPreviewService.js';
+import { generateDocumentPreviewForVersion } from '../services/documentPreviewService.js';
 import type { PreviewQueueJobPayload } from '../services/preview/previewJobTypes.js';
 import {
   applyDocumentPreviewResult,
@@ -11,6 +9,7 @@ import {
 import { startPreviewWorker } from '../queues/previewQueue.js';
 import { resolveTenantStorageScopeById } from '../tenancy/resolveTenantStorageScope.js';
 import { logger } from '../utils/logger.js';
+import { onShutdown } from '../runtime/shutdown.js';
 import { recordPreviewJobCompletion } from '../metrics/prometheus.js';
 
 async function processPreviewJob(job: Job<PreviewQueueJobPayload>): Promise<void> {
@@ -90,6 +89,10 @@ export async function runPreviewWorkerLoop(): Promise<void> {
       message: error instanceof Error ? error.message : 'unknown',
     });
   });
+
+  // No SIGTERM o worker para de pegar job novo e espera o que está em mãos terminar, em vez
+  // de ser morto no meio e deixar a vaga do tenant presa até o prazo vencer.
+  onShutdown('worker de preview', () => worker.close());
 
   logger.info('Preview worker aguardando jobs');
 }

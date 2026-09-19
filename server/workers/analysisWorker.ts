@@ -23,6 +23,7 @@ import {
   tryAcquireTenantAnalysisSlot,
 } from '../queues/analysisTenantConcurrency.js';
 import { logger } from '../utils/logger.js';
+import { onShutdown } from '../runtime/shutdown.js';
 import { recordAnalysisJobCompletion } from '../metrics/prometheus.js';
 import {
   bufferMeta,
@@ -252,6 +253,7 @@ export function startInProcessAnalysisWorker(): void {
   if (!worker) return;
 
   workerStarted = true;
+  onShutdown('worker de análise no processo da API', () => worker.close());
   worker.on('failed', (job, error) => {
     if (error instanceof DelayedError) return;
     logger.warn('analysis worker failed event', {
@@ -278,6 +280,10 @@ export async function runAnalysisWorkerLoop(): Promise<void> {
       message: error instanceof Error ? error.message : 'unknown',
     });
   });
+
+  // No SIGTERM o worker para de pegar job novo e espera o que está em mãos terminar, em vez
+  // de ser morto no meio e deixar a vaga do tenant presa até o prazo vencer.
+  onShutdown('worker de análise', () => worker.close());
 
   logger.info('Analysis worker aguardando jobs');
 }

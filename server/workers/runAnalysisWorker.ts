@@ -4,13 +4,12 @@ import { runAnalysisWorkerLoop } from './analysisWorker.js';
 import { runEmbeddingWorkerLoop } from './embeddingWorker.js';
 import { runChunkingWorkerLoop } from './chunkingWorker.js';
 import { runStoragePromotionWorkerLoop } from './storagePromotionWorker.js';
-import {
-  configurePrometheusService,
-  initPrometheusMetrics,
-} from '../metrics/prometheus.js';
+import { configurePrometheusService, initPrometheusMetrics } from '../metrics/prometheus.js';
 import { startStandaloneMetricsServer } from '../metrics/metricsServer.js';
+import { installProcessGuards } from '../runtime/shutdown.js';
 
 async function main() {
+  installProcessGuards('doqyn-worker');
   configurePrometheusService({ serviceName: 'doqyn-worker', serviceRole: 'worker' });
   initPrometheusMetrics();
   startStandaloneMetricsServer('worker');
