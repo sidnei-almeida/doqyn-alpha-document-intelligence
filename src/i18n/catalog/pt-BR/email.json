@@ -44,17 +44,23 @@
     "share": {
       "eyebrow": "Compartilhamento",
       "title": "{{senderName}} compartilhou um documento com você",
-      "action": "Abrir documento",
-      "footNote": "Você recebeu este e-mail porque alguém compartilhou um documento com este endereço no DOQYN. Se não esperava este convite, pode ignorar — nenhum acesso foi concedido além do link acima."
+      "action": "Abrir documento"
     },
     "row": {
       "sharedBy": "Compartilhado por",
       "expiresAt": "Expira em",
-      "permission": "Permissão"
+      "permission": "Permissão",
+      "requestedBy": "Pedido por"
     },
     "permission": {
       "viewOnly": "Somente visualizar",
       "viewAndDownload": "Visualizar e baixar"
-    }
+    },
+    "signature": {
+      "eyebrow": "Assinatura",
+      "title": "{{senderName}} pediu sua assinatura em um documento",
+      "action": "Abrir para assinar"
+    },
+    "footNote": "Você recebeu este e-mail porque este endereço foi indicado em um convite do DOQYN. Se não esperava, pode ignorar — nenhum acesso foi concedido além do link acima."
   }
 }

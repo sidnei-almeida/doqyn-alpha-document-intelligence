@@ -31,6 +31,9 @@ import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
 import { decryptLinkToken, encryptLinkToken } from '../../security/linkTokenCipher.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import { notifySignatureRequested } from '../notifications/documentNotifications.js';
+import { enqueueExternalEmail } from '../notifications/externalEmailOutbox.js';
+import { buildExternalSignatureInviteEmail } from '../notifications/externalEmailTemplates.js';
+import { getTenantById } from '../tenantsService.js';
 import {
   isSignatureRequestOpen,
   resolveEffectiveSignatureRequestStatus,
@@ -613,6 +616,26 @@ export async function createDocumentSignatureRequest(
     actorName: user.name,
     expiresAt,
   });
+
+  // `portalToken` só existe para quem entra pelo link — external_guest, ou internal_user resolvido
+  // cross-tenant. Signatário interno de casa já foi avisado acima; não tem link de portal para
+  // mandar por e-mail, e mandaria um e-mail sem link nenhum.
+  if (portalToken) {
+    await enqueueExternalEmail({
+      tenantId: ctx.tenantId,
+      kind: 'external_signature_invite',
+      dedupeKey: `external_signature:${signatureRequestId}:${signerId}`,
+      recipientEmail: signerEmail,
+      ...buildExternalSignatureInviteEmail({
+        recipientLocale: request.recipientLocale,
+        portalUrl: buildSignaturePortalUrl(portalToken, origin, request.recipientLocale),
+        senderName: user.name?.trim() || user.email,
+        tenantName: (await getTenantById(ctx.tenantId))?.displayName ?? ctx.tenantId,
+        expiresAt,
+        message: input.message,
+      }),
+    });
+  }
 
   return {
     request: serializeSignatureRequest(request, {

@@ -60,7 +60,7 @@ export function buildExternalShareInviteEmail(input: {
       emailRows(rows),
       emailButton(t('externalGuest.share.action'), input.inviteUrl),
     ],
-    footNote: t('externalGuest.share.footNote'),
+    footNote: t('externalGuest.footNote'),
   });
 
   const textLines = [
@@ -71,6 +71,49 @@ export function buildExternalShareInviteEmail(input: {
     `${t('externalGuest.row.permission')}: ${permissionLabel}`,
     '',
     input.inviteUrl,
+  ].filter((line) => Boolean(line) || line === '');
+
+  return { subject: title, html, text: textLines.join('\n') };
+}
+
+export function buildExternalSignatureInviteEmail(input: {
+  recipientLocale?: string | null;
+  portalUrl: string;
+  senderName: string;
+  tenantName: string;
+  expiresAt?: Date | null;
+  message?: string | null;
+}): ExternalGuestEmail {
+  const lang = normalizeServerLocale(input.recipientLocale);
+  const t = getServerT(lang, 'email');
+
+  const title = t('externalGuest.signature.title', { senderName: input.senderName });
+  const expiryText = input.expiresAt ? formatCalendarDate(lang, input.expiresAt) : null;
+
+  const rows = [
+    emailRow(t('externalGuest.row.requestedBy'), `${input.senderName} — ${input.tenantName}`),
+    expiryText ? emailRow(t('externalGuest.row.expiresAt'), expiryText) : null,
+  ].filter((row): row is string => Boolean(row));
+
+  const html = renderEmailLayout({
+    lang,
+    eyebrow: t('externalGuest.signature.eyebrow'),
+    title,
+    blocks: [
+      input.message ? emailText(escapeHtml(input.message)) : '',
+      emailRows(rows),
+      emailButton(t('externalGuest.signature.action'), input.portalUrl),
+    ],
+    footNote: t('externalGuest.footNote'),
+  });
+
+  const textLines = [
+    title,
+    input.message ?? '',
+    `${t('externalGuest.row.requestedBy')}: ${input.senderName} — ${input.tenantName}`,
+    expiryText ? `${t('externalGuest.row.expiresAt')}: ${expiryText}` : '',
+    '',
+    input.portalUrl,
   ].filter((line) => Boolean(line) || line === '');
 
   return { subject: title, html, text: textLines.join('\n') };

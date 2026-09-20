@@ -2,14 +2,6 @@
 ================================================================================
 Reparo de normalizedValue decapitado
 ================================================================================
-Database: doqyn_dev
+Database: doqyn_test
 Modo: DRY-RUN
-
-================================================================================
-RESULTADO
-================================================================================
-Versões varridas: 19
-Versões com campo a reparar: 0
-Campos reparados: 0
-
-Execute com --apply para gravar.
+Coleção document_versions não existe. Nada a fazer.

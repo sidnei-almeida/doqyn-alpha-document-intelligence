@@ -248,3 +248,103 @@ describe('convite de compartilhamento externo por e-mail — wiring no serviço'
     assert.match(regenerateBlock, /dedupeKey: `external_share:\$\{shareId\}:\$\{inviteTokenHash\}`/);
   });
 });
+
+describe('convite de assinatura externa por e-mail — template', () => {
+  it('carrega sender/tenant/prazo e o link do portal, nunca o título do documento', async () => {
+    const { buildExternalSignatureInviteEmail } =
+      await import('../server/services/notifications/externalEmailTemplates.ts');
+    const email = buildExternalSignatureInviteEmail({
+      recipientLocale: 'pt-BR',
+      portalUrl: 'https://app.doqyn.com/guest/sign/tok456',
+      senderName: 'Bruno Lima',
+      tenantName: 'Acme Ltda',
+      expiresAt: new Date('2026-11-05T00:00:00Z'),
+      message: 'Favor assinar até o fim do mês.',
+    });
+
+    assert.match(email.html, /Bruno Lima/);
+    assert.match(email.html, /Acme Ltda/);
+    assert.match(email.html, /05\/11\/2026/);
+    assert.match(email.html, /Favor assinar até o fim do mês\./);
+    assert.match(email.html, /href="https:\/\/app\.doqyn\.com\/guest\/sign\/tok456"/);
+    assert.match(email.text, /https:\/\/app\.doqyn\.com\/guest\/sign\/tok456/);
+  });
+
+  it('não aceita título nem nome de arquivo do documento — a assinatura não tem esse parâmetro', async () => {
+    const source = read('server/services/notifications/externalEmailTemplates.ts');
+    const signatureMatch = source.match(
+      /export function buildExternalSignatureInviteEmail\(([^)]*)\)/s,
+    );
+    assert.ok(signatureMatch);
+    assert.equal(/documentTitle|documentName|fileName/.test(signatureMatch![1]), false);
+  });
+
+  it('copy distinta do convite de compartilhamento — o pedido é de assinar, não de ver', async () => {
+    const { buildExternalShareInviteEmail, buildExternalSignatureInviteEmail } =
+      await import('../server/services/notifications/externalEmailTemplates.ts');
+    const share = buildExternalShareInviteEmail({
+      recipientLocale: 'pt-BR',
+      inviteUrl: 'https://app.doqyn.com/guest/share/tok1',
+      senderName: 'Ana',
+      tenantName: 'Acme',
+      expiresAt: null,
+      canDownload: false,
+      message: null,
+    });
+    const signature = buildExternalSignatureInviteEmail({
+      recipientLocale: 'pt-BR',
+      portalUrl: 'https://app.doqyn.com/guest/sign/tok2',
+      senderName: 'Ana',
+      tenantName: 'Acme',
+      expiresAt: null,
+      message: null,
+    });
+    assert.notEqual(share.subject, signature.subject);
+  });
+
+  it('escapa senderName e message', async () => {
+    const { buildExternalSignatureInviteEmail } =
+      await import('../server/services/notifications/externalEmailTemplates.ts');
+    const email = buildExternalSignatureInviteEmail({
+      recipientLocale: 'pt-BR',
+      portalUrl: 'https://app.doqyn.com/guest/sign/tok456',
+      senderName: '<img src=x onerror=alert(1)>',
+      tenantName: 'Acme Ltda',
+      expiresAt: null,
+      message: '<script>alert(2)</script>',
+    });
+    assert.equal(email.html.includes('<img src=x'), false);
+    assert.equal(email.html.includes('<script>'), false);
+    assert.match(email.html, /&lt;img/);
+    assert.match(email.html, /&lt;script&gt;/);
+  });
+});
+
+describe('convite de assinatura externa por e-mail — wiring no serviço', () => {
+  const service = read('server/services/signatures/documentSignatureService.ts');
+
+  it('enfileira apenas quando portalToken foi gerado', () => {
+    assert.match(service, /enqueueExternalEmail/);
+    assert.match(service, /kind: 'external_signature_invite'/);
+    const enqueueCallStart = service.indexOf('enqueueExternalEmail({');
+    assert.ok(enqueueCallStart > -1);
+    const before = service.slice(Math.max(0, enqueueCallStart - 200), enqueueCallStart);
+    assert.match(before, /if \(portalToken\)/);
+  });
+
+  it('a chave de dedupe combina signatureRequestId e signerId', () => {
+    assert.match(
+      service,
+      /dedupeKey: `external_signature:\$\{signatureRequestId\}:\$\{signerId\}`/,
+    );
+  });
+
+  it('não enfileira para signatário interno do mesmo tenant — só a notificação in-app existente', () => {
+    const createFn = service.slice(
+      service.indexOf('export async function createDocumentSignatureRequest'),
+      service.indexOf('export async function listDocumentSignatureRequests'),
+    );
+    assert.match(createFn, /notifySignatureRequested/);
+    assert.match(createFn, /if \(portalToken\)/);
+  });
+});

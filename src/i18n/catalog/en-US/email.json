@@ -44,17 +44,23 @@
     "share": {
       "eyebrow": "Sharing",
       "title": "{{senderName}} shared a document with you",
-      "action": "Open document",
-      "footNote": "You received this email because someone shared a document with this address on DOQYN. If you weren't expecting this invite, you can ignore it — no access was granted beyond the link above."
+      "action": "Open document"
     },
     "row": {
       "sharedBy": "Shared by",
       "expiresAt": "Expires on",
-      "permission": "Permission"
+      "permission": "Permission",
+      "requestedBy": "Requested by"
     },
     "permission": {
       "viewOnly": "View only",
       "viewAndDownload": "View and download"
-    }
+    },
+    "signature": {
+      "eyebrow": "Signature",
+      "title": "{{senderName}} requested your signature on a document",
+      "action": "Open to sign"
+    },
+    "footNote": "You received this email because this address was given in a DOQYN invite. If you weren't expecting it, you can ignore it — no access was granted beyond the link above."
   }
 }
