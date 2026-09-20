@@ -122,6 +122,13 @@ export async function drainExternalEmailOutbox(): Promise<{
   let retried = 0;
   let throttled = 0;
 
+  // Teto de melhor esforço, não atômico — o mesmo raciocínio do EMAIL_MAX_PER_USER_PER_HOUR do
+  // canal de membro. Contar e decidir são dois passos, e só a reivindicação da linha (abaixo) é
+  // atômica: com mais de uma réplica do doqyn-api drenando ao mesmo tempo, duas podem contar a
+  // mesma janela e as duas decidirem que o destinatário ainda está sob o teto, passando dele em
+  // conjunto. Fechar isso de verdade pede um contador por destinatário com incremento atômico —
+  // peça nova, não um ajuste deste laço — e o estouro que sobra é pequeno e não se acumula: a
+  // próxima hora volta a contar do zero.
   const contarEnviadosNaUltimaHora = async (recipientEmail: string): Promise<number> =>
     col.countDocuments({
       recipientEmail,
