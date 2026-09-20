@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { buildDocumentListQuery } from '../server/utils/documentListQuery.js';
+import { TRASH_DOCUMENT_FILTER } from '../server/services/trash/trashListQueries.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -72,17 +74,24 @@ describe('document trash — soft delete service', () => {
   });
 
   it('listDocuments exclui deletedAt, permanentlyDeletedAt e deactivatedAt', () => {
-    const documentService = read('server/services/documentService.ts');
-    assert.ok(documentService.includes('permanentlyDeletedAt'));
-    assert.ok(documentService.includes('deactivatedAt'));
-    assert.ok(documentService.includes('deletedAt: { $in: [null, undefined] }'));
+    const query = buildDocumentListQuery({ tenantId: 'tenant_a' }, {});
+
+    for (const field of ['deletedAt', 'permanentlyDeletedAt', 'deactivatedAt']) {
+      assert.deepEqual(
+        query[field],
+        { $in: [null, undefined] },
+        `a listagem não está excluindo "${field}"`,
+      );
+    }
   });
 
   it('listTrashDocuments filtra deletedAt != null e não desativados', () => {
     const service = read('server/services/trash/documentTrashService.ts');
     assert.ok(service.includes('TRASH_DOCUMENT_FILTER'));
-    assert.ok(service.includes('deletedAt: { $ne: null'));
-    assert.ok(service.includes('deactivatedAt: { $in: [null, undefined] }'));
+
+    const filter = TRASH_DOCUMENT_FILTER as Record<string, unknown>;
+    assert.deepEqual(filter.deletedAt, { $ne: null, $exists: true });
+    assert.deepEqual(filter.deactivatedAt, { $in: [null, undefined] });
   });
 
   it('restore limpa campos de lixeira', () => {

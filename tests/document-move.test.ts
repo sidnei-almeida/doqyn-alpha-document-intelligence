@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { buildDocumentListQuery } from '../server/utils/documentListQuery.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,7 +162,9 @@ describe('document move — frontend', () => {
 
 describe('document move — listDocuments', () => {
   it('filtro por categoryId usa classId no Mongo', () => {
-    const service = read('server/services/documentService.ts');
-    assert.ok(service.includes('query.classId = filters.categoryId'));
+    const query = buildDocumentListQuery({ tenantId: 'tenant_a' }, { categoryId: 'cat_1' });
+
+    assert.equal(query.classId, 'cat_1');
+    assert.equal(query.categoryId, undefined);
   });
 });

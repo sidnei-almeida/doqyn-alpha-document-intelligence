@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import { DOCUMENT_REQUEST_INDEXES } from '../server/db/documentRequestIndexes.js';
+import { sharedAppIndexSpecs } from '../server/db/sharedAppIndexSpecs.js';
+import { SHARED_APP_COLLECTIONS } from '../server/db/constants.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -36,15 +39,25 @@ describe('requisitar documento — modelo', () => {
   });
 
   it('os índices atendem as duas direções e a varredura de prazo', () => {
-    const indexes = read('server/db/documentRequestIndexes.ts');
-    const script = read('scripts/ensure-mongodb-indexes.ts');
-    const setup = read('server/db/setupMongo.ts');
+    const keys = DOCUMENT_REQUEST_INDEXES.map((index) => Object.keys(index.key).join(','));
 
-    assert.ok(indexes.includes("'requestedFrom.userId': 1"));
-    assert.ok(indexes.includes("'requestedBy.userId': 1"));
-    assert.ok(indexes.includes('status: 1, dueAt: 1'));
-    // O job do Compose é este script, não `setupMongo`.
-    assert.ok(script.includes('DOCUMENT_REQUEST_INDEXES'));
+    assert.ok(
+      keys.some((key) => key.includes('requestedFrom.userId')),
+      'falta "o que me pediram"',
+    );
+    assert.ok(
+      keys.some((key) => key.includes('requestedBy.userId')),
+      'falta "o que eu pedi"',
+    );
+    assert.ok(keys.includes('status,dueAt'), 'falta a varredura de prazo');
+
+    // O job do Compose passou a montar a lista a partir de `sharedAppIndexSpecs`, e não mais com
+    // um import por coleção: a guarda confere que a coleção continua chegando lá.
+    const setup = read('server/db/setupMongo.ts');
+    const spec = sharedAppIndexSpecs().find(
+      (entry) => entry.collection === SHARED_APP_COLLECTIONS.documentRequests,
+    );
+    assert.equal(spec?.indexes, DOCUMENT_REQUEST_INDEXES);
     assert.ok(setup.includes('ensureDocumentRequestIndexes'));
   });
 });
