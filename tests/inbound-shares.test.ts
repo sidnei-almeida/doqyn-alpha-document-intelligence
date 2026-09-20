@@ -2,6 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { SHARED_APP_COLLECTIONS } from '../server/db/constants.js';
+import { sharedAppIndexSpecs } from '../server/db/sharedAppIndexSpecs.js';
 
 function read(relativePath: string): string {
   return readFileSync(resolve(process.cwd(), relativePath), 'utf8');
@@ -87,13 +89,17 @@ describe('caixa de entrada — o que chega de fora não entra sozinho', () => {
   });
 
   it('o índice da caixa é parcial, senão a escrita de casa paga por ele', () => {
-    const indexes = read('server/db/documentShareGrantsIndexes.ts');
-    const job = read('scripts/ensure-mongodb-indexes.ts');
+    const group = sharedAppIndexSpecs().find(
+      (entry) => entry.collection === SHARED_APP_COLLECTIONS.documentShareGrants,
+    );
+    assert.ok(group, 'document_share_grants saiu da lista de índices do job de produção');
 
-    assert.ok(indexes.includes("partialFilterExpression: { 'inbound.status': 'pending' }"));
-    // O job do Compose é este; ficar só em `setupMongo` deixaria a coleção sem índice em produção.
-    assert.ok(job.includes('DOCUMENT_SHARE_GRANTS_INDEXES'));
-    assert.ok(job.includes('SHARED_APP_COLLECTIONS.documentShareGrants'));
+    const inbound = group.indexes.find((index) => index.name === 'inbound_pending_by_recipient');
+    assert.ok(inbound, 'o índice da caixa sumiu');
+    assert.deepEqual(inbound.partialFilterExpression, { 'inbound.status': 'pending' });
+
+    // Que o job do Compose percorra esta mesma lista — e que toda coleção global esteja nela — é o
+    // que `tests/shared-app-index-specs.test.ts` cobra. Aqui basta o índice existir e ser parcial.
   });
 
   it('as rotas estão no despachante, que é mantido à mão', () => {

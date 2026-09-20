@@ -3,7 +3,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import type { IndexDescription } from 'mongodb';
 import { COLLECTIONS } from '../server/db/constants.js';
+import { tenantScopedIndexSpecs } from '../server/db/tenantIndexes.js';
 import {
   resolveSharedCollections,
   resolveTenantStorageContextFromIds,
@@ -15,6 +17,15 @@ const repoRoot = join(__dirname, '..');
 
 function read(path: string): string {
   return readFileSync(join(repoRoot, path), 'utf8');
+}
+
+/**
+ * Índice TTL não pode liderar por tenant: o Mongo exige campo único sobre a data, e a varredura de
+ * expiração é global por natureza. Fica fora da regra de prefixo por impossibilidade, não por
+ * escolha — por isso a exceção é esta função, e não uma entrada na lista de motivos.
+ */
+function isTtlIndex(index: IndexDescription): boolean {
+  return (index as { expireAfterSeconds?: number }).expireAfterSeconds !== undefined;
 }
 
 describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', () => {
@@ -55,7 +66,7 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
     }
   });
 
-  it('mil tenants resolvem para o mesmo conjunto de 10 coleções', () => {
+  it('mil tenants resolvem para o mesmo conjunto de coleções', () => {
     const seen = new Set<string>();
 
     for (let i = 0; i < 1000; i += 1) {
@@ -68,31 +79,37 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
       }
     }
 
-    // Era isto que estourava o Atlas: 10 coleções × N tenants. Agora é 10, ponto.
-    assert.equal(seen.size, 10);
+    // Era isto que estourava o Atlas: N coleções × N tenants. O que importa é o conjunto não
+    // crescer com a quantidade de tenants — o tamanho dele em si pode mudar quando o produto ganha
+    // uma coleção, e já mudou (`pending_invite_groups` entrou depois deste teste nascer). Cravar o
+    // número aqui só fazia a guarda quebrar por motivo errado, então quem decide é a fonte única.
+    const shared = Object.values(resolveSharedCollections()).filter(Boolean);
+    assert.deepEqual([...seen].sort(), [...new Set(shared)].sort());
   });
 
   it('todo índice de dado de tenant lidera por tenantId', () => {
-    const indexes = read('server/db/tenantIndexes.ts');
-    const specsStart = indexes.indexOf('function tenantScopedIndexSpecs');
-    const specsEnd = indexes.indexOf('export async function ensureSharedCollectionIndexes');
-    const specs = indexes.slice(specsStart, specsEnd);
-
-    const keys = [...specs.matchAll(/key:\s*\{\s*([A-Za-z'"][\w'".]*)\s*:/g)].map((m) =>
-      m[1].replace(/['"]/g, ''),
+    // Lê os índices de verdade, não o texto do arquivo: a versão em regex não enxergava
+    // `expireAfterSeconds` e cobrava prefixo de tenant de um índice TTL, que o Mongo exige que
+    // seja de campo único sobre a data. Era uma falha que ninguém podia consertar.
+    const groups = tenantScopedIndexSpecs(resolveSharedCollections());
+    const all = groups.flatMap((group) =>
+      group.indexes.map((index) => ({ collection: group.collection, index })),
     );
 
-    assert.ok(keys.length > 20, `esperava dezenas de índices, achei ${keys.length}`);
-    for (const first of keys) {
+    assert.ok(all.length > 20, `esperava dezenas de índices, achei ${all.length}`);
+    for (const { collection, index } of all) {
+      if (isTtlIndex(index)) continue;
+      const first = Object.keys(index.key)[0];
       assert.equal(
         first,
         'tenantId',
-        `índice liderado por "${first}" não usa o prefixo de tenant e varre o pool inteiro`,
+        `${collection}: índice liderado por "${first}" não usa o prefixo de tenant e varre o ` +
+          `pool inteiro`,
       );
     }
   });
 
-  it('nos demais arquivos de índice, todo prefixo fora do padrão é justificado', () => {
+  it('nos demais arquivos de índice, todo prefixo fora do padrão é justificado', async () => {
     // O teste acima cobre só `tenantIndexes.ts`. Estes seis arquivos definem índice de dado de
     // tenant e ficavam fora de qualquer guarda — foi por aí que `documentTenantId` sobreviveu como
     // segundo nome de `tenantId` até 2026-08-13.
@@ -112,6 +129,16 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
       verificationCode: 'verificação pública de assinatura, sem sessão',
       // destinatário externo pode receber de vários tenants — cruzar tenant é o propósito
       recipientEmailNormalized: 'destinatário externo recebe de múltiplos tenants',
+      recipientEmail:
+        'o teto por hora do outbox externo é contado por endereço, e o mesmo endereço pode ' +
+        'receber de vários tenants — atravessar tenant é o propósito da contagem',
+      channel:
+        'espelho do anterior no canal de membro: o teto por hora é por pessoa e por canal, e uma ' +
+        'pessoa pertence a mais de um tenant — somar só dentro de um deixaria o teto furado',
+      dedupeKey:
+        'chave de idempotência do outbox externo: o índice único precisa valer na coleção ' +
+        'inteira, senão o mesmo fato entraria uma vez por tenant e a retentativa duplicaria o ' +
+        'e-mail, que é exatamente o que ele existe para impedir',
       'signers.userId': 'signatário pode ser externo ao tenant do documento',
       requestedByUserId:
         'espelho de signers.userId — a afinidade de contato olha quem esta pessoa chamou para ' +
@@ -144,35 +171,55 @@ describe('modelo de coleções compartilhadas — Passo 7 do plano de escala', (
       .filter(
         (name) =>
           name.endsWith('Indexes.ts') &&
-          // `tenantIndexes.ts` é a máquina que aplica os outros, não declara índice.
+          // `tenantIndexes.ts` é a máquina que aplica os outros, e o teste acima já o cobre.
           name !== 'tenantIndexes.ts' &&
           // Índice vetorial do Atlas tem outra forma — campos de filtro, não `key: {}` — e já
           // traz `tenantId` entre eles. A regra de prefixo não se aplica.
           name !== 'vectorIndexes.ts',
       )
-      .map((name) => `server/db/${name}`)
       .sort();
     assert.ok(files.length >= 6, `esperava vários arquivos de índice, achei ${files.length}`);
 
     let total = 0;
-    for (const file of files) {
-      const keys = [...read(file).matchAll(/key:\s*\{\s*([A-Za-z'"][\w'".]*)\s*:/g)].map((m) =>
-        m[1].replace(/['"]/g, ''),
+    const offenders: string[] = [];
+    for (const name of files) {
+      // Importa o módulo em vez de ler o texto: o `expireAfterSeconds` de um índice TTL não
+      // aparece na expressão que capturava só a primeira chave, e a guarda cobrava desses índices
+      // um prefixo que o Mongo recusa.
+      const mod: Record<string, unknown> = await import(
+        `../server/db/${name.replace('.ts', '.js')}`
       );
-      assert.ok(keys.length > 0, `${file} não declarou índice nenhum — o teste está lendo errado?`);
-      total += keys.length;
-
-      for (const first of keys) {
-        if (first === 'tenantId') continue;
-        assert.ok(
-          first in ALLOWED_NON_TENANT_PREFIX,
-          `${file}: índice liderado por "${first}" não lidera por tenantId nem consta na lista de ` +
-            `exceções justificadas. Ou ponha tenantId na frente, ou acrescente a exceção com o motivo.`,
+      const indexes = Object.values(mod)
+        .filter((value): value is IndexDescription[] => Array.isArray(value))
+        .flat()
+        .filter((index): index is IndexDescription =>
+          Boolean(index && typeof index === 'object' && 'key' in index),
         );
+
+      assert.ok(
+        indexes.length > 0,
+        `${name} não declarou índice nenhum — o teste está lendo errado?`,
+      );
+      total += indexes.length;
+
+      for (const index of indexes) {
+        if (isTtlIndex(index)) continue;
+        const first = Object.keys(index.key)[0];
+        if (first === 'tenantId') continue;
+        if (first in ALLOWED_NON_TENANT_PREFIX) continue;
+        // Junta tudo antes de falhar: com `assert` dentro do laço, a primeira violação escondia
+        // todas as outras e cada rodada revelava uma só.
+        offenders.push(`${name}: índice liderado por "${first}"`);
       }
     }
 
-    assert.ok(total > 20, `esperava dezenas de índices nos seis arquivos, achei ${total}`);
+    assert.deepEqual(
+      offenders,
+      [],
+      `índice que não lidera por tenantId e não consta na lista de exceções justificadas. Ou ` +
+        `ponha tenantId na frente, ou acrescente a exceção com o motivo:\n  ${offenders.join('\n  ')}`,
+    );
+    assert.ok(total > 20, `esperava dezenas de índices nos arquivos varridos, achei ${total}`);
   });
 
   it('nenhum arquivo de índice ressuscita documentTenantId como segundo nome de tenantId', () => {
