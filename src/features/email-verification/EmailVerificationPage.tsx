@@ -38,8 +38,14 @@ export function EmailVerificationPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const ticketFromNavigation = (location.state as { ticket?: string } | null)?.ticket;
+  const navigationState = location.state as { ticket?: string; emailSent?: boolean } | null;
+  const ticketFromNavigation = navigationState?.ticket;
   const [ticket] = useState<string | null>(ticketFromNavigation ?? readVerificationTicket());
+
+  // Só `false` explícito muda a afirmação da tela. Ausente ou `undefined` — inclusive depois de
+  // um F5, já que `location.state` não sobrevive a recarga — mantém o comportamento de sempre:
+  // um aviso que reaparecesse sozinho sem essa base seria pior que nenhum.
+  const [firstSendFailed, setFirstSendFailed] = useState(navigationState?.emailSent === false);
 
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<EmailVerificationStatus | null>(null);
@@ -124,6 +130,9 @@ export function EmailVerificationPage() {
       setCode('');
       setDevCode(result.code ?? null);
       toast.success(result.message);
+      // O reenvio terminou com sucesso — a afirmação de que o primeiro e-mail não saiu deixou de
+      // valer a partir daqui.
+      setFirstSendFailed(false);
       await refreshStatus();
     } catch (err) {
       const message = getEmailVerificationErrorMessage(err);
@@ -158,11 +167,23 @@ export function EmailVerificationPage() {
       <AuthHeading
         title={t('emailVerificationPage.confirmeSeuEMail')}
         description={
-          status?.email
-            ? t('emailVerificationPage.descriptionWithEmail', { email: status.email })
-            : t('emailVerificationPage.description')
+          firstSendFailed
+            ? t('emailVerificationPage.descriptionSendFailed')
+            : status?.email
+              ? t('emailVerificationPage.descriptionWithEmail', { email: status.email })
+              : t('emailVerificationPage.description')
         }
       />
+
+      {firstSendFailed ? (
+        <div className="mb-6">
+          <AlertBanner
+            variant="warning"
+            title={t('emailVerificationPage.firstSendFailedTitle')}
+            message={t('emailVerificationPage.firstSendFailedMessage')}
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mb-6">

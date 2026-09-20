@@ -36,6 +36,8 @@ export type IndividualSignupResponse = {
    */
   emailVerificationRequired?: boolean;
   verificationTicket?: string;
+  /** Só vem junto de `emailVerificationRequired`. `false` diz que o primeiro código não saiu. */
+  emailSent?: boolean;
 };
 
 export async function submitIndividualSignup(

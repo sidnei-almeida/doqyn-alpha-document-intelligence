@@ -172,7 +172,7 @@ export function IndividualSignupPage() {
         toast.success(t('individualSignupPage.createdVerify'));
         navigate('/verify-email', {
           replace: true,
-          state: { ticket: result.verificationTicket },
+          state: { ticket: result.verificationTicket, emailSent: result.emailSent },
         });
         return;
       }
