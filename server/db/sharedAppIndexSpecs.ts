@@ -9,6 +9,7 @@ import {
 } from './documentSignatureIndexes.js';
 import { DOCUMENT_UPLOAD_APPROVAL_INDEXES } from './documentUploadApprovalIndexes.js';
 import { EXTERNAL_DOCUMENT_SHARE_GRANTS_INDEXES } from './externalDocumentShareGrantsIndexes.js';
+import { EXTERNAL_EMAIL_OUTBOX_INDEXES } from './externalEmailOutboxIndexes.js';
 import { NOTIFICATION_DELIVERY_INDEXES, NOTIFICATION_INDEXES } from './notificationIndexes.js';
 import { SAVED_CONTACTS_INDEXES } from './savedContactsIndexes.js';
 import { USER_DOCUMENT_FAVORITES_INDEXES } from './userDocumentFavoritesIndexes.js';
@@ -56,5 +57,9 @@ export function sharedAppIndexSpecs(): Array<{ collection: string; indexes: Inde
       indexes: DOCUMENT_UPLOAD_APPROVAL_INDEXES,
     },
     { collection: SHARED_APP_COLLECTIONS.savedContacts, indexes: SAVED_CONTACTS_INDEXES },
+    {
+      collection: SHARED_APP_COLLECTIONS.externalEmailOutbox,
+      indexes: EXTERNAL_EMAIL_OUTBOX_INDEXES,
+    },
   ];
 }

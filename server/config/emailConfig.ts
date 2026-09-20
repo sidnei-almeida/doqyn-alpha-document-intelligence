@@ -74,3 +74,12 @@ export function emailRetryDelayMinutes(attempts: number): number {
  * continua verdadeiro dez minutos depois.
  */
 export const EMAIL_MAX_PER_USER_PER_HOUR = 12;
+
+/**
+ * Teto por hora para o e-mail de convidado externo — mais baixo que o do membro.
+ *
+ * Este destinatário nunca fez login, e o endereço é o que alguém digitou num formulário: pode ser
+ * erro de digitação ou pode ser mal-intencionado. Um teto mais baixo limita o estrago de um e
+ * outro, e ainda cobre quem regenera o link algumas vezes seguidas ao testar o envio.
+ */
+export const EXTERNAL_EMAIL_MAX_PER_RECIPIENT_PER_HOUR = 6;

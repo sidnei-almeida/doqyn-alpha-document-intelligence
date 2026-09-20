@@ -1328,3 +1328,41 @@ export type MongoDocumentSignature = {
 };
 
 export type DocumentSignatureStatusLabel = 'none' | 'pending' | 'signed' | 'declined' | 'expired';
+
+export type ExternalEmailOutboxKind = 'external_share_invite' | 'external_signature_invite';
+
+export type ExternalEmailOutboxStatus =
+  | 'queued'
+  | 'sending'
+  | 'delivered'
+  | 'failed'
+  | 'skipped_no_provider';
+
+/**
+ * Um e-mail para quem não tem conta — o link de um compartilhamento ou de um pedido de assinatura
+ * externo, já pronto para sair.
+ *
+ * Não estende `MongoNotificationDelivery`: não existe usuário, notificação ou preferência por
+ * trás desta linha, só um endereço de e-mail digitado num formulário e um assunto/corpo já
+ * renderizado. `dedupeKey` é o que absorve a criação retentada — índice único, e não checagem em
+ * memória.
+ */
+export type MongoExternalEmailOutboxRow = {
+  _id: string;
+  tenantId: string;
+  kind: ExternalEmailOutboxKind;
+  /** O fato que produziu esta linha — retentar a mesma criação não gera uma segunda. */
+  dedupeKey: string;
+  recipientEmail: string;
+  subject: string;
+  html: string;
+  text: string;
+  status: ExternalEmailOutboxStatus;
+  reason?: string;
+  attempts?: number;
+  nextAttemptAt?: Date | null;
+  lockedAt?: Date | null;
+  providerMessageId?: string | null;
+  createdAt: Date;
+  deliveredAt?: Date | null;
+};

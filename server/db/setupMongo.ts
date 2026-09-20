@@ -49,6 +49,8 @@ async function ensureRegistryIndexes() {
   await ensureDocumentUploadApprovalIndexes();
   const { ensureAnalysisJobIndexes } = await import('./analysisJobIndexes.js');
   await ensureAnalysisJobIndexes();
+  const { ensureExternalEmailOutboxIndexes } = await import('./externalEmailOutboxIndexes.js');
+  await ensureExternalEmailOutboxIndexes();
 }
 
 async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {

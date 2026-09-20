@@ -5,6 +5,7 @@ import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
 import { startEmailOutboxDrain } from './services/notifications/emailOutboxDrain.js';
+import { startExternalEmailOutboxDrain } from './services/notifications/externalEmailOutbox.js';
 import { scheduleDailyExpirySweep, startExpiryAlertWorker } from './queues/expiryAlertQueue.js';
 import { assertPublicAppBaseUrlInProduction } from './config/publicUrlConfig.js';
 import { logger } from './utils/logger.js';
@@ -585,6 +586,16 @@ export async function startApiServer(options?: StartApiServerOptions): Promise<S
   } catch (error) {
     // Configuração pela metade não pode derrubar o boot: o aviso in-app continua funcionando.
     logger.error('canal de e-mail não iniciado', {
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+  }
+
+  // Mesmo canal, fila própria: convite de compartilhamento/assinatura externo não tem `userId`
+  // por trás, então drena de uma coleção separada — ver `externalEmailOutbox.ts`.
+  try {
+    startExternalEmailOutboxDrain();
+  } catch (error) {
+    logger.error('canal de e-mail externo não iniciado', {
       message: error instanceof Error ? error.message : 'unknown',
     });
   }
