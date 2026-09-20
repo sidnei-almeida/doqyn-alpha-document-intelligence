@@ -277,5 +277,10 @@
   "USER_NOT_ACTIVE": "Esta cuenta no está activa.",
   "USER_REQUIRED": "userId es obligatorio.",
   "VALIDATION_ERROR": "Revisa los campos informados e inténtalo de nuevo.",
-  "VERSION_NOT_FOUND": "Versión no encontrada."
+  "VERSION_NOT_FOUND": "Versión no encontrada.",
+  "PASSWORD_RESET_RATE_LIMITED": "Demasiados intentos. Espera un poco antes de intentarlo de nuevo.",
+  "PASSWORD_RESET_TOKEN_INVALID": "Este enlace de restablecimiento ya no es válido. Puede haber caducado.",
+  "PASSWORD_RESET_TOKEN_USED": "Este enlace ya se usó para restablecer la contraseña.",
+  "PASSWORD_RESET_WEAK_PASSWORD": "Contraseña débil. Usa letras y números, con al menos 8 caracteres.",
+  "PASSWORD_RESET_FAILED": "No pudimos restablecer tu contraseña. Intenta pedir un nuevo enlace."
 }

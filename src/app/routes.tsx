@@ -21,6 +21,7 @@ import {
   OnboardingRoute,
   MatrixRoute,
   RequestPasswordResetRoute,
+  ResetPasswordRoute,
   RulesRoute,
   NotificationsRoute,
   SettingsRoute,
@@ -65,6 +66,12 @@ export const router = createBrowserRouter([
       // Pedir redefinição de senha. Fora do `PublicRoute` pelo mesmo motivo de
       // `/reset-password/:token` — ver o comentário completo naquela rota.
       { path: '/forgot-password', element: <RequestPasswordResetRoute /> },
+      // O endereço que o e-mail de redefinição já manda. Fora do `PublicRoute` de propósito: quem
+      // abre este link pode ter uma sessão válida ativa noutra aba — o próprio motivo de existir a
+      // redefinição é funcionar independente disso, inclusive para quem suspeita da própria conta
+      // comprometida. E `resetPassword` revoga todas as sessões no sucesso: um guarda que manda
+      // quem já está logado direto para a biblioteca impediria exatamente o caso que mais importa.
+      { path: '/reset-password/:token', element: <ResetPasswordRoute /> },
       { path: '/onboarding', element: <OnboardingRoute /> },
     ],
   },

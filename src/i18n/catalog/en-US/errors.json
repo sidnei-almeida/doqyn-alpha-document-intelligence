@@ -277,5 +277,10 @@
   "USER_NOT_ACTIVE": "This account is not active.",
   "USER_REQUIRED": "userId is required.",
   "VALIDATION_ERROR": "Review the fields you entered and try again.",
-  "VERSION_NOT_FOUND": "Version not found."
+  "VERSION_NOT_FOUND": "Version not found.",
+  "PASSWORD_RESET_RATE_LIMITED": "Too many attempts. Wait a little before trying again.",
+  "PASSWORD_RESET_TOKEN_INVALID": "This reset link is no longer valid. It may have expired.",
+  "PASSWORD_RESET_TOKEN_USED": "This link has already been used to reset the password.",
+  "PASSWORD_RESET_WEAK_PASSWORD": "Weak password. Use letters and numbers, with at least 8 characters.",
+  "PASSWORD_RESET_FAILED": "We couldn't reset your password. Try requesting a new link."
 }

@@ -277,5 +277,10 @@
   "USER_NOT_ACTIVE": "Esta conta não está ativa.",
   "USER_REQUIRED": "userId é obrigatório.",
   "VALIDATION_ERROR": "Revise os campos informados e tente novamente.",
-  "VERSION_NOT_FOUND": "Versão não encontrada."
+  "VERSION_NOT_FOUND": "Versão não encontrada.",
+  "PASSWORD_RESET_RATE_LIMITED": "Muitas tentativas. Espere um pouco antes de tentar de novo.",
+  "PASSWORD_RESET_TOKEN_INVALID": "Este link de redefinição não é mais válido. Pode ter expirado.",
+  "PASSWORD_RESET_TOKEN_USED": "Este link já foi usado para redefinir a senha.",
+  "PASSWORD_RESET_WEAK_PASSWORD": "Senha fraca. Use letras e números, com pelo menos 8 caracteres.",
+  "PASSWORD_RESET_FAILED": "Não foi possível redefinir sua senha. Tente pedir um novo link."
 }
