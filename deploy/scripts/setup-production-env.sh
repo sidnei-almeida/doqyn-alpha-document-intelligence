@@ -106,7 +106,7 @@ echo ""
 info "Configuração de produção — stack DOQYN (auth + alpha)"
 echo ""
 
-PUBLIC_APP_URL="$(prompt_default "URL pública do app (com https)" "https://app.doqyn.com.br")"
+PUBLIC_APP_URL="$(prompt_default "URL pública do app (com https)" "https://app.doqyn.com")"
 
 # O auth-service força cookie Secure quando NODE_ENV=production
 # (doqyn-auth-service/src/security/cookies.ts) — não há flag que desligue isso.
@@ -237,6 +237,43 @@ echo ""
 # dar acesso ao signatário de fora.
 EXTERNAL_SHARING_ENABLED="$(prompt_default "EXTERNAL_SHARING_ENABLED (convite externo e assinatura de convidado)" "$(read_existing EXTERNAL_SHARING_ENABLED "true")")"
 
+echo ""
+# O canal de e-mail. Enquanto isto ficou fora do script, o deploy/.env nascia com
+# EMAIL_ENABLED=false e o que funcionava em produção era edição à mão — quer dizer, rodar o
+# setup de novo desligava o e-mail inteiro em silêncio, e ninguém descobria até alguém dizer
+# que não recebeu o código de confirmação.
+#
+# A chave é preservada do .env atual pelo mesmo motivo da chave de link externo: regerar não
+# existe aqui, ela vem da conta da Resend, e perguntar de novo a cada execução convida a colar
+# errado.
+RESEND_API_KEY="$(read_existing RESEND_API_KEY "")"
+if [[ -z "$RESEND_API_KEY" ]]; then
+  read -r -p "RESEND_API_KEY (vazio desliga o e-mail): " RESEND_API_KEY
+else
+  info "RESEND_API_KEY preservada do .env atual."
+fi
+
+if [[ -n "$RESEND_API_KEY" ]]; then
+  EMAIL_ENABLED_VALUE="true"
+  EMAIL_PROVIDER_VALUE="resend"
+  NOTIFICATION_EMAIL_PROVIDER_VALUE="resend"
+  # O remetente precisa estar num domínio verificado na Resend, senão todo envio volta 403 e a
+  # falha só aparece como "não chegou o e-mail". O padrão acompanha o host público.
+  EMAIL_FROM="$(prompt_default "Remetente dos e-mails (domínio verificado na Resend)" "$(read_existing EMAIL_FROM "noreply@${PUBLIC_HOST#app.}")")"
+  NOTIFICATION_EMAIL_FROM="$(prompt_default "Remetente dos avisos do app" "$(read_existing NOTIFICATION_EMAIL_FROM "DOQYN <${EMAIL_FROM}>")")"
+  NOTIFICATION_EMAIL_REPLY_TO="$(prompt_default "Responder-para dos avisos (vazio = sem)" "$(read_existing NOTIFICATION_EMAIL_REPLY_TO "")")"
+else
+  warn "Sem RESEND_API_KEY: e-mail desligado."
+  warn "O cadastro por formulário recusa na porta (só Google/Microsoft), a redefinição de"
+  warn "senha não tem como chegar a ninguém, e os avisos ficam só na caixa do app."
+  EMAIL_ENABLED_VALUE="false"
+  EMAIL_PROVIDER_VALUE="smtp"
+  NOTIFICATION_EMAIL_PROVIDER_VALUE=""
+  EMAIL_FROM="$(read_existing EMAIL_FROM "noreply@${PUBLIC_HOST#app.}")"
+  NOTIFICATION_EMAIL_FROM=""
+  NOTIFICATION_EMAIL_REPLY_TO=""
+fi
+
 # Chave preservada, nunca regerada: ela abre os links já cifrados. Gerar uma nova a cada
 # execução tornaria ilegível todo convite e portal emitido antes — sem erro visível, os links
 # apenas parariam de ser recuperáveis. É a mesma armadilha que derrubava o login Microsoft
@@ -316,12 +353,15 @@ EMAIL_VERIFICATION_CODE_TTL_MINUTES=15
 EMAIL_VERIFICATION_MAX_ATTEMPTS=5
 EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS=60
 EMAIL_VERIFICATION_TICKET_TTL_MINUTES=30
-# Sem SMTP o código não sai, e o cadastro por formulário recusa na porta em vez de criar conta
-# inalcançável — ver assertSignupEmailDeliverable no auth-service. Enquanto ficar false, a entrada
+# Sem provedor o código não sai, e o cadastro por formulário recusa na porta em vez de criar
+# conta inalcançável — ver assertSignupEmailDeliverable no auth-service. Com false, a entrada
 # nova é só por Google ou Microsoft.
-EMAIL_ENABLED=false
+EMAIL_FROM=${EMAIL_FROM}
+EMAIL_PROVIDER=${EMAIL_PROVIDER_VALUE}
+RESEND_API_KEY=${RESEND_API_KEY}
+EMAIL_ENABLED=${EMAIL_ENABLED_VALUE}
 # A troca de e-mail depende do mesmo envio, e por isso acompanha EMAIL_ENABLED.
-EMAIL_CHANGE_ENABLED=false
+EMAIL_CHANGE_ENABLED=${EMAIL_ENABLED_VALUE}
 EMAIL_CHANGE_TTL_HOURS=24
 EMAIL_CHANGE_CODE_TTL_MINUTES=15
 EMAIL_CHANGE_MAX_ATTEMPTS=5
@@ -349,6 +389,18 @@ MONGODB_DATABASE=${MONGODB_DB:-doqyn_prod}
 MONGODB_USE_ATLAS=${MONGODB_USE_ATLAS:-false}
 MONGODB_SERVER_SELECTION_TIMEOUT_MS=$([[ "${MONGODB_USE_ATLAS}" == "true" ]] && echo 10000 || echo 5000)
 STORAGE_PROVIDER=r2
+
+# Canal de e-mail do app (avisos). Vazio em NOTIFICATION_EMAIL_PROVIDER mantém o canal
+# desligado: nenhuma entrega nasce `queued` e o drenador nem sobe. A chave é a mesma do
+# auth-service — uma conta da Resend para os dois.
+NOTIFICATION_EMAIL_PROVIDER=${NOTIFICATION_EMAIL_PROVIDER_VALUE}
+# Aspas obrigatórias: o formato de remetente é `Nome <endereco>`, e oito scripts do deploy leem
+# este arquivo com `source`. Sem aspas o `<` vira redirecionamento, o `source` aborta NAQUELA
+# LINHA e tudo abaixo dela some da vista do script — com `set -e`, o deploy morre; sem ele, o
+# validador reporta como ausente variável que está logo ali. O Compose v2 remove as aspas ao ler.
+NOTIFICATION_EMAIL_FROM="${NOTIFICATION_EMAIL_FROM}"
+NOTIFICATION_EMAIL_REPLY_TO="${NOTIFICATION_EMAIL_REPLY_TO}"
+RESEND_API_KEY=${RESEND_API_KEY}
 
 # Compartilhamento externo e assinatura de convidado
 EXTERNAL_SHARING_ENABLED=${EXTERNAL_SHARING_ENABLED}

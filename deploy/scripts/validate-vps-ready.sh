@@ -182,6 +182,42 @@ if [[ -f "$ENV_FILE" ]]; then
     ok "LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}"
   fi
 
+  # Canal de e-mail. Meio configurado é pior que desligado: o cadastro por formulário passa
+  # pela porta achando que consegue entregar, e o código morre numa recusa que só aparece como
+  # "não chegou o e-mail".
+  if [[ "${EMAIL_ENABLED:-false}" == "true" ]]; then
+    if [[ "${EMAIL_PROVIDER:-}" == "resend" && -z "${RESEND_API_KEY:-}" ]]; then
+      fail "EMAIL_ENABLED=true com EMAIL_PROVIDER=resend, mas RESEND_API_KEY vazia — todo envio falha"
+    elif [[ -z "${EMAIL_FROM:-}" ]]; then
+      fail "EMAIL_ENABLED=true sem EMAIL_FROM — a Resend recusa sem remetente"
+    else
+      ok "Canal de e-mail do auth configurado (${EMAIL_PROVIDER:-smtp}, de ${EMAIL_FROM})"
+      # O remetente precisa estar em domínio verificado; fora dele a Resend devolve 403 e o
+      # e-mail nunca sai. Não dá para verificar o domínio daqui sem falar com a API, mas dá
+      # para pegar o descuido mais comum: remetente num domínio que nem é o do app.
+      EMAIL_FROM_DOMAIN="${EMAIL_FROM##*@}"
+      if [[ -n "$PUBLIC_HOST" && "$PUBLIC_HOST" != *"$EMAIL_FROM_DOMAIN" ]]; then
+        warn "EMAIL_FROM em ${EMAIL_FROM_DOMAIN}, fora do host público (${PUBLIC_HOST}) — confirme que esse domínio está verificado na Resend"
+      fi
+    fi
+  else
+    warn "EMAIL_ENABLED não é true — cadastro por formulário recusado, redefinição de senha sem saída, avisos só na caixa do app"
+  fi
+
+  # O canal do app é independente do canal do auth, e esquecer um dos dois é o erro fácil:
+  # o código de confirmação chega e o aviso de documento não, ou o contrário.
+  if [[ -n "${NOTIFICATION_EMAIL_PROVIDER:-}" ]]; then
+    if [[ -z "${NOTIFICATION_EMAIL_FROM:-}" ]]; then
+      fail "NOTIFICATION_EMAIL_PROVIDER definido sem NOTIFICATION_EMAIL_FROM — a API recusa subir o canal"
+    elif [[ -z "${RESEND_API_KEY:-}" ]]; then
+      fail "NOTIFICATION_EMAIL_PROVIDER definido sem RESEND_API_KEY — o drenador nasce falhando"
+    else
+      ok "Canal de aviso do app configurado (de ${NOTIFICATION_EMAIL_FROM})"
+    fi
+  elif [[ "${EMAIL_ENABLED:-false}" == "true" ]]; then
+    warn "Auth manda e-mail, mas NOTIFICATION_EMAIL_PROVIDER está vazio — os avisos do app ficam só na caixa interna"
+  fi
+
   if [[ -z "${ALLOWED_ORIGINS:-}" ]]; then
     fail "ALLOWED_ORIGINS ausente — CORS do auth bloqueia o front"
   elif [[ ",${ALLOWED_ORIGINS}," == *",${PUBLIC_URL},"* ]]; then
