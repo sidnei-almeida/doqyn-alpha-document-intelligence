@@ -12,18 +12,15 @@
 import 'dotenv/config';
 import { join } from 'node:path';
 import type { Db } from 'mongodb';
-import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type {
   MongoDocument,
   MongoDocumentVersion,
-  MongoTenant,
   MongoVersionMetadataField,
 } from '../server/db/types.js';
 import { projectDocumentSearchMeta } from '../server/services/confirm/projectSearchMeta.js';
 import { resolveSharedCollections } from '../server/tenancy/tenantStorage.js';
-import { SHARED_INDIVIDUAL_COLLECTION_PREFIX } from '../server/tenancy/taxId.js';
 import { createReportWriter, isApplyFlag } from './lib/reportUtils.js';
 
 const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_BACKFILL_SEARCH_META.txt');
@@ -164,11 +161,6 @@ async function main() {
   report.line(`Database: ${database}`);
   report.line(`Modo: ${apply ? 'APPLY' : 'DRY-RUN'}`);
   report.line(`Unset peso morto: ${unsetDead ? 'sim' : 'não'}`);
-
-  const tenants = await db
-    .collection<MongoTenant>(REGISTRY_COLLECTIONS.tenants)
-    .find({ status: { $in: ['active', 'pending'] } })
-    .toArray();
 
   // Coleções compartilhadas: um único par para todos os tenants. O laço por tenant sumiu junto
   // com as coleções prefixadas.

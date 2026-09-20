@@ -56,7 +56,9 @@ async function main() {
       report.line(`  ${p}: ${count} docs`);
     }
 
-    const tenant = await resolveActiveTenant(DEV_TENANT_ID);
+    // Chamado pelo que ele recusa, não pelo que devolve: o tenant precisa existir, estar ativo e
+    // ter a estratégia de isolamento coerente, senão o relatório descreveria um estado inválido.
+    await resolveActiveTenant(DEV_TENANT_ID);
     const tenantNames = resolveSharedCollections();
     report.line(`\nTenant ${DEV_TENANT_ID} → documents=${tenantNames.documents}`);
   } else {

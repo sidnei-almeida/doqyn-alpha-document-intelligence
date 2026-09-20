@@ -1,9 +1,8 @@
 import 'dotenv/config';
 import { join } from 'node:path';
-import { COLLECTIONS, REGISTRY_COLLECTIONS } from '../server/db/constants.js';
+import { COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
-import type { MongoTenant } from '../server/db/types.js';
 import { resolveSharedCollections } from '../server/tenancy/tenantResolver.js';
 import {
   isForbiddenAuditMetadataKey,
@@ -44,14 +43,12 @@ function metadataNeedsSanitization(metadata: unknown): boolean {
 async function resolveAuditCollections(db: Awaited<ReturnType<typeof getDb>>): Promise<string[]> {
   const names = new Set<string>();
 
-  const tenants = await db
-    .collection<MongoTenant>(REGISTRY_COLLECTIONS.tenants)
-    .find({ status: 'active' })
-    .toArray();
-
-  for (const tenant of tenants) {
-    const resolved = resolveSharedCollections();
-    if (resolved.auditLogs) names.add(resolved.auditLogs);
+  // Desde o Passo 7 é uma coleção só para todos os tenants, então o laço por tenant acrescentava
+  // o mesmo nome N vezes — e, num banco sem tenant ativo, nenhuma. O que decide agora é a coleção
+  // existir, mesmo critério já usado logo abaixo para o nome plano legado.
+  const shared = resolveSharedCollections();
+  if (shared.auditLogs && (await db.listCollections({ name: shared.auditLogs }).hasNext())) {
+    names.add(shared.auditLogs);
   }
 
   if (await db.listCollections({ name: COLLECTIONS.auditLogs }).hasNext()) {

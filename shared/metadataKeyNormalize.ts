@@ -190,7 +190,7 @@ export function slugifyMetadataToken(value: string): string {
     .trim()
     .replace(/([a-z])([A-Z])/g, '$1_$2')
     .toLowerCase()
-    .replace(/[\s\-]+/g, '_')
+    .replace(/[\s-]+/g, '_')
     .replace(/[^a-z0-9_]/g, '')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '');

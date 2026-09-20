@@ -21,6 +21,22 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      /**
+       * O underscore na frente já é a convenção do repositório para "não uso, e é de propósito":
+       * parâmetro que existe só para segurar a posição na assinatura, desestruturação que
+       * descarta um campo, variável mantida para documentar o formato do retorno. Sem este
+       * padrão, o lint cobra exatamente aquilo que a pessoa já sinalizou — e a única saída vira
+       * apagar o nome, que é justamente a informação que o underscore preserva.
+       */
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
     },
   },
   /**
