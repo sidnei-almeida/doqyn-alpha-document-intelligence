@@ -138,6 +138,18 @@ describe('document external sharing — API e ACL', () => {
     assert.ok(preview.includes('EXTERNAL_SHARE_DOWNLOAD_DENIED'));
     assert.ok(preview.includes('canDownload'));
   });
+
+  it('criar, re-compartilhar e renovar convite externo enfileiram e-mail ao convidado', () => {
+    const service = read('server/services/sharing/externalDocumentShareService.ts');
+    assert.ok(service.includes('enqueueExternalEmail'));
+    assert.ok(service.includes('buildExternalShareInviteEmail'));
+
+    const regenerateFn = service.slice(
+      service.indexOf('export async function regenerateDocumentExternalShareGrant'),
+      service.indexOf('export type ExternalShareAccessResult'),
+    );
+    assert.ok(regenerateFn.includes('enqueueExternalEmail'));
+  });
 });
 
 describe('document external sharing — tracking', () => {

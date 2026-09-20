@@ -39,5 +39,22 @@
     "footNote": "You received this email because you follow this document on DOQYN, or because the notice is addressed to your account.",
     "footNoteAccount": "You received this email because the notice is addressed to your DOQYN account.",
     "uncategorized": "Uncategorized"
+  },
+  "externalGuest": {
+    "share": {
+      "eyebrow": "Sharing",
+      "title": "{{senderName}} shared a document with you",
+      "action": "Open document",
+      "footNote": "You received this email because someone shared a document with this address on DOQYN. If you weren't expecting this invite, you can ignore it — no access was granted beyond the link above."
+    },
+    "row": {
+      "sharedBy": "Shared by",
+      "expiresAt": "Expires on",
+      "permission": "Permission"
+    },
+    "permission": {
+      "viewOnly": "View only",
+      "viewAndDownload": "View and download"
+    }
   }
 }

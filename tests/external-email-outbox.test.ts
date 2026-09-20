@@ -126,3 +126,125 @@ describe('outbox de e-mail externo — boot', () => {
     assert.ok(apiServer.includes('startEmailOutboxDrain'));
   });
 });
+
+describe('convite de compartilhamento externo por e-mail — template', () => {
+  it('carrega sender/tenant/prazo/permissão e o link, nunca o título do documento', async () => {
+    const { buildExternalShareInviteEmail } =
+      await import('../server/services/notifications/externalEmailTemplates.ts');
+    const email = buildExternalShareInviteEmail({
+      recipientLocale: 'pt-BR',
+      inviteUrl: 'https://app.doqyn.com/guest/share/tok123',
+      senderName: 'Ana Souza',
+      tenantName: 'Acme Ltda',
+      expiresAt: new Date('2026-10-20T00:00:00Z'),
+      canDownload: false,
+      message: 'Segue o contrato revisado.',
+    });
+
+    assert.match(email.html, /Ana Souza/);
+    assert.match(email.html, /Acme Ltda/);
+    assert.match(email.html, /20\/10\/2026/);
+    assert.match(email.html, /Somente visualizar/);
+    assert.match(email.html, /Segue o contrato revisado\./);
+    assert.match(email.html, /href="https:\/\/app\.doqyn\.com\/guest\/share\/tok123"/);
+    assert.match(email.text, /https:\/\/app\.doqyn\.com\/guest\/share\/tok123/);
+  });
+
+  it('canDownload muda o rótulo de permissão', async () => {
+    const { buildExternalShareInviteEmail } =
+      await import('../server/services/notifications/externalEmailTemplates.ts');
+    const email = buildExternalShareInviteEmail({
+      recipientLocale: 'pt-BR',
+      inviteUrl: 'https://app.doqyn.com/guest/share/tok123',
+      senderName: 'Ana Souza',
+      tenantName: 'Acme Ltda',
+      expiresAt: null,
+      canDownload: true,
+      message: null,
+    });
+    assert.match(email.html, /Visualizar e baixar/);
+  });
+
+  it('não aceita título nem nome de arquivo do documento — a assinatura não tem esse parâmetro', async () => {
+    const source = read('server/services/notifications/externalEmailTemplates.ts');
+    const signatureMatch = source.match(/export function buildExternalShareInviteEmail\(([^)]*)\)/s);
+    assert.ok(signatureMatch);
+    assert.equal(/documentTitle|documentName|fileName/.test(signatureMatch![1]), false);
+  });
+
+  it('escapa senderName e message — nunca marcação crua no html', async () => {
+    const { buildExternalShareInviteEmail } =
+      await import('../server/services/notifications/externalEmailTemplates.ts');
+    const email = buildExternalShareInviteEmail({
+      recipientLocale: 'pt-BR',
+      inviteUrl: 'https://app.doqyn.com/guest/share/tok123',
+      senderName: '<img src=x onerror=alert(1)>',
+      tenantName: 'Acme Ltda',
+      expiresAt: null,
+      canDownload: false,
+      message: '<script>alert(2)</script>',
+    });
+    assert.equal(email.html.includes('<img src=x'), false);
+    assert.equal(email.html.includes('<script>'), false);
+    assert.match(email.html, /&lt;img/);
+    assert.match(email.html, /&lt;script&gt;/);
+  });
+
+  it('idioma do destinatário muda a cópia', async () => {
+    const { buildExternalShareInviteEmail } =
+      await import('../server/services/notifications/externalEmailTemplates.ts');
+    const ptBR = buildExternalShareInviteEmail({
+      recipientLocale: 'pt-BR',
+      inviteUrl: 'https://app.doqyn.com/guest/share/tok123',
+      senderName: 'Ana Souza',
+      tenantName: 'Acme Ltda',
+      expiresAt: null,
+      canDownload: false,
+      message: null,
+    });
+    const enUS = buildExternalShareInviteEmail({
+      recipientLocale: 'en-US',
+      inviteUrl: 'https://app.doqyn.com/guest/share/tok123',
+      senderName: 'Ana Souza',
+      tenantName: 'Acme Ltda',
+      expiresAt: null,
+      canDownload: false,
+      message: null,
+    });
+    assert.notEqual(ptBR.subject, enUS.subject);
+    assert.match(enUS.html, /Open document/);
+
+    const semLocale = buildExternalShareInviteEmail({
+      recipientLocale: null,
+      inviteUrl: 'https://app.doqyn.com/guest/share/tok123',
+      senderName: 'Ana Souza',
+      tenantName: 'Acme Ltda',
+      expiresAt: null,
+      canDownload: false,
+      message: null,
+    });
+    assert.equal(semLocale.subject, ptBR.subject);
+  });
+});
+
+describe('convite de compartilhamento externo por e-mail — wiring no serviço', () => {
+  const service = read('server/services/sharing/externalDocumentShareService.ts');
+
+  it('createDocumentExternalShareGrant enfileira nos dois ramos (existente e novo)', () => {
+    assert.match(service, /enqueueExternalEmail/);
+    assert.match(service, /kind: 'external_share_invite'/);
+    const occurrences = service.match(/enqueueExternalEmail\(/g) ?? [];
+    assert.ok(occurrences.length >= 2, `esperava 2+ chamadas, achou ${occurrences.length}`);
+  });
+
+  it('a chave de dedupe usa o id da concessão e o hash do token novo', () => {
+    assert.match(service, /dedupeKey: `external_share:\$\{existing\._id\}:\$\{inviteTokenHash\}`/);
+    assert.match(service, /dedupeKey: `external_share:\$\{grant\._id\}:\$\{inviteTokenHash\}`/);
+  });
+
+  it('regenerateDocumentExternalShareGrant também enfileira, com o hash novo', () => {
+    const regenerateBlock = service.slice(service.indexOf('export async function regenerateDocumentExternalShareGrant'));
+    assert.match(regenerateBlock, /enqueueExternalEmail/);
+    assert.match(regenerateBlock, /dedupeKey: `external_share:\$\{shareId\}:\$\{inviteTokenHash\}`/);
+  });
+});

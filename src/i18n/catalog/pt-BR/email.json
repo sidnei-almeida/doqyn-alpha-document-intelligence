@@ -39,5 +39,22 @@
     "footNote": "Você recebeu este e-mail porque acompanha este documento no DOQYN, ou porque o aviso é dirigido à sua conta.",
     "footNoteAccount": "Você recebeu este e-mail porque o aviso é dirigido à sua conta no DOQYN.",
     "uncategorized": "Sem categoria"
+  },
+  "externalGuest": {
+    "share": {
+      "eyebrow": "Compartilhamento",
+      "title": "{{senderName}} compartilhou um documento com você",
+      "action": "Abrir documento",
+      "footNote": "Você recebeu este e-mail porque alguém compartilhou um documento com este endereço no DOQYN. Se não esperava este convite, pode ignorar — nenhum acesso foi concedido além do link acima."
+    },
+    "row": {
+      "sharedBy": "Compartilhado por",
+      "expiresAt": "Expira em",
+      "permission": "Permissão"
+    },
+    "permission": {
+      "viewOnly": "Somente visualizar",
+      "viewAndDownload": "Visualizar e baixar"
+    }
   }
 }

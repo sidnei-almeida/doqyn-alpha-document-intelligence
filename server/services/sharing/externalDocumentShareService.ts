@@ -34,6 +34,8 @@ import {
 import type { DocumentAuditContext } from '../../audit/documentAuditTypes.js';
 import { hashTrackingValue } from '../tracking/trackingSecurity.js';
 import { generateExternalShareInviteToken, hashExternalShareToken } from './externalShareTokens.js';
+import { enqueueExternalEmail } from '../notifications/externalEmailOutbox.js';
+import { buildExternalShareInviteEmail } from '../notifications/externalEmailTemplates.js';
 
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
@@ -344,6 +346,27 @@ export async function createDocumentExternalShareGrant(
       },
     );
 
+    const existingInviteUrl = buildExternalShareInviteUrl(
+      inviteToken,
+      input.inviteOrigin,
+      recipientLocale,
+    );
+    await enqueueExternalEmail({
+      tenantId: ctx.tenantId,
+      kind: 'external_share_invite',
+      dedupeKey: `external_share:${existing._id}:${inviteTokenHash}`,
+      recipientEmail,
+      ...buildExternalShareInviteEmail({
+        recipientLocale,
+        inviteUrl: existingInviteUrl,
+        senderName: user.name?.trim() || user.email,
+        tenantName: (await getTenantById(ctx.tenantId))?.displayName ?? ctx.tenantId,
+        expiresAt,
+        canDownload: permissions.canDownload,
+        message: input.message,
+      }),
+    });
+
     return {
       shareId: existing._id,
       documentId,
@@ -354,7 +377,7 @@ export async function createDocumentExternalShareGrant(
       updated: true,
       inviteToken,
       invitePath: buildExternalShareInvitePath(inviteToken),
-      inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin, recipientLocale),
+      inviteUrl: existingInviteUrl,
       currentVersionId: doc.currentVersionId,
     };
   }
@@ -392,6 +415,27 @@ export async function createDocumentExternalShareGrant(
 
   await collection.insertOne(grant);
 
+  const newGrantInviteUrl = buildExternalShareInviteUrl(
+    inviteToken,
+    input.inviteOrigin,
+    recipientLocale,
+  );
+  await enqueueExternalEmail({
+    tenantId: ctx.tenantId,
+    kind: 'external_share_invite',
+    dedupeKey: `external_share:${grant._id}:${inviteTokenHash}`,
+    recipientEmail,
+    ...buildExternalShareInviteEmail({
+      recipientLocale,
+      inviteUrl: newGrantInviteUrl,
+      senderName: user.name?.trim() || user.email,
+      tenantName: (await getTenantById(ctx.tenantId))?.displayName ?? ctx.tenantId,
+      expiresAt,
+      canDownload: permissions.canDownload,
+      message: input.message,
+    }),
+  });
+
   return {
     shareId: grant._id,
     documentId,
@@ -402,7 +446,7 @@ export async function createDocumentExternalShareGrant(
     updated: false,
     inviteToken,
     invitePath: buildExternalShareInvitePath(inviteToken),
-    inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin, recipientLocale),
+    inviteUrl: newGrantInviteUrl,
     currentVersionId: doc.currentVersionId,
   };
 }
@@ -532,6 +576,27 @@ export async function regenerateDocumentExternalShareGrant(
     },
   );
 
+  const regeneratedInviteUrl = buildExternalShareInviteUrl(
+    inviteToken,
+    input?.inviteOrigin,
+    grant.recipientLocale,
+  );
+  await enqueueExternalEmail({
+    tenantId: ctx.tenantId,
+    kind: 'external_share_invite',
+    dedupeKey: `external_share:${shareId}:${inviteTokenHash}`,
+    recipientEmail: grant.recipientEmail,
+    ...buildExternalShareInviteEmail({
+      recipientLocale: grant.recipientLocale,
+      inviteUrl: regeneratedInviteUrl,
+      senderName: user.name?.trim() || user.email,
+      tenantName: (await getTenantById(ctx.tenantId))?.displayName ?? ctx.tenantId,
+      expiresAt,
+      canDownload: grant.permissions.canDownload,
+      message: grant.message,
+    }),
+  });
+
   return {
     shareId,
     documentId,
@@ -540,7 +605,7 @@ export async function regenerateDocumentExternalShareGrant(
     status: 'pending' as const,
     inviteToken,
     invitePath: buildExternalShareInvitePath(inviteToken),
-    inviteUrl: buildExternalShareInviteUrl(inviteToken, input?.inviteOrigin, grant.recipientLocale),
+    inviteUrl: regeneratedInviteUrl,
     currentVersionId: doc.currentVersionId,
   };
 }
