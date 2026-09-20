@@ -61,7 +61,8 @@
     "administracao": "Administration"
   },
   "sidebarBrandLogo": {
-    "doqyn": "Doqyn"
+    "doqyn": "Doqyn",
+    "homeLink": "Doqyn — go to Library"
   },
   "sidebarEdgeToggle": {
     "collapse": "Collapse sidebar (Ctrl + \\)",
