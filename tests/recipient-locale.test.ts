@@ -8,6 +8,18 @@ import { buildSignaturePortalUrl } from '../server/services/signatures/documentS
 
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8');
 
+/**
+ * Chamada de função como expressão regular tolerante a quebra de linha.
+ *
+ * A versão cravada num único `\(a, b, c\)` quebrou quando o Prettier partiu a chamada em várias
+ * linhas — o argumento continuava lá, a asserção é que não enxergava. O que este teste protege é
+ * o locale ser passado, não a chamada caber numa linha.
+ */
+function callMatching(fnName: string, args: string[]): RegExp {
+  const escaped = args.map((arg) => arg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(`${fnName}\\(\\s*${escaped.join(',\\s*')},?\\s*\\)`);
+}
+
 describe('idioma escolhido para o convidado', () => {
   it('só idioma conhecido vira escolha; o resto é "não escolheu", e não pt-BR', () => {
     assert.equal(parseRecipientLocale('en'), 'en-US');
@@ -46,11 +58,19 @@ describe('idioma escolhido para o convidado', () => {
     const share = read('server/services/sharing/externalDocumentShareService.ts');
     assert.match(
       share,
-      /buildExternalShareInviteUrl\(recoveredToken, options\?\.inviteOrigin, grant\.recipientLocale\)/,
+      callMatching('buildExternalShareInviteUrl', [
+        'recoveredToken',
+        'options?.inviteOrigin',
+        'grant.recipientLocale',
+      ]),
     );
     assert.match(
       share,
-      /buildExternalShareInviteUrl\(inviteToken, input\?\.inviteOrigin, grant\.recipientLocale\)/,
+      callMatching('buildExternalShareInviteUrl', [
+        'inviteToken',
+        'input?.inviteOrigin',
+        'grant.recipientLocale',
+      ]),
     );
     // Grava nos dois caminhos: convite que reaproveita o registro e convite novo.
     assert.match(share, /message: input\.message\?\.trim\(\) \|\| null,\n\s+recipientLocale,/);
@@ -62,7 +82,11 @@ describe('idioma escolhido para o convidado', () => {
     const sign = read('server/services/signatures/documentSignatureService.ts');
     assert.match(
       sign,
-      /buildSignaturePortalUrl\(recoveredToken, options\?\.origin, request\.recipientLocale\)/,
+      callMatching('buildSignaturePortalUrl', [
+        'recoveredToken',
+        'options?.origin',
+        'request.recipientLocale',
+      ]),
     );
     assert.match(
       sign,

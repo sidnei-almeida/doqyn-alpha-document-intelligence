@@ -1,4 +1,6 @@
 import 'dotenv/config';
+// Antes de tudo: desliga o Redis para a suíte. Ver o porquê em `testEnv.ts`.
+import './testEnv.js';
 import type { Server } from 'node:http';
 import type {
   DoqynPublicMembership,
@@ -135,9 +137,8 @@ function applyTestEnv(): void {
   // de sessão (ex.: sync de membros) falha rápido em vez de encostar num serviço real.
   process.env.DOQYN_AUTH_BASE_URL = 'http://127.0.0.1:59999';
 
-  process.env.SESSION_CACHE_ENABLED = 'false';
-  process.env.REDIS_ENABLED = 'false';
-  delete process.env.REDIS_URL;
+  // Redis e cache de sessão saem em `testEnv.ts`, no import: aqui já seria tarde, porque toda
+  // fixture plantada antes de `bootTestApi()` já teria aberto a conexão.
 
   process.env.STORAGE_PROVIDER = 'local';
 
@@ -184,6 +185,10 @@ export async function bootTestApi(): Promise<TestApi> {
       restoreFetch();
       const { closeMongoConnection } = await import('../../server/db/mongoClient.js');
       await closeMongoConnection();
+      // Cinto e suspensório do que `testEnv.ts` já previne: se algum caminho ainda abrir o Redis,
+      // o socket some aqui em vez de segurar o event loop depois do último teste passar.
+      const { closeRedis } = await import('../../server/redis/redisClient.js');
+      await closeRedis();
     },
   };
 }
