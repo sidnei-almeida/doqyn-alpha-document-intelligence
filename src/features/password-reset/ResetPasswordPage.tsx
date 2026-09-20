@@ -30,7 +30,11 @@ function getPasswordRequirements(password: string): PasswordRequirement[] {
     {
       id: 'letters',
       label: i18n.t('settings:changePasswordForm.req.letters'),
-      met: /[A-Za-zÀ-ÿ]/.test(password),
+      // Sem acentuadas, porque o servidor também não as aceita: validatePasswordStrength usa
+      // /[a-zA-Z]/. Com À-ÿ aqui, "çãoção1234" marcava o requisito como cumprido e mostrava
+      // "Forte", e só então o servidor recusava por senha fraca — a lista afirmava algo falso.
+      // (À-ÿ ainda pegava × e ÷, que não são letra em lugar nenhum.)
+      met: /[a-zA-Z]/.test(password),
     },
     {
       id: 'numbers',
@@ -134,6 +138,27 @@ export function ResetPasswordPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Sem token não há o que enviar, e um formulário que aceita digitação para recusar no botão
+  // é pior que uma recusa franca: a pessoa preenche duas vezes antes de desconfiar.
+  if (!token) {
+    return (
+      <>
+        <AuthHeading
+          title={t('resetPasswordPage.linkBrokenTitle')}
+          description={t('resetPasswordPage.linkTruncated')}
+        />
+        <Link to="/forgot-password" className={cn(AUTH_PRIMARY_BUTTON, 'w-full')}>
+          {t('resetPasswordPage.requestNewLink')}
+        </Link>
+        <AuthFooterLink>
+          <Link to="/login" className="text-doqyn-action underline-offset-4 hover:underline">
+            {t('resetPasswordPage.backToLogin')}
+          </Link>
+        </AuthFooterLink>
+      </>
+    );
   }
 
   if (view === 'done') {

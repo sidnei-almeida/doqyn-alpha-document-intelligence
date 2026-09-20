@@ -34,7 +34,11 @@ function getPasswordRequirements(password: string): PasswordRequirement[] {
     {
       id: 'letters',
       label: i18n.t('settings:changePasswordForm.req.letters'),
-      met: /[A-Za-zÀ-ÿ]/.test(password),
+      // Sem acentuadas, porque o servidor também não as aceita: validatePasswordStrength usa
+      // /[a-zA-Z]/. Com À-ÿ aqui, "çãoção1234" marcava o requisito como cumprido e mostrava
+      // "Forte", e só então o servidor recusava por senha fraca — a lista afirmava algo falso.
+      // (À-ÿ ainda pegava × e ÷, que não são letra em lugar nenhum.)
+      met: /[a-zA-Z]/.test(password),
     },
     {
       id: 'numbers',

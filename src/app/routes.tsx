@@ -72,6 +72,10 @@ export const router = createBrowserRouter([
       // comprometida. E `resetPassword` revoga todas as sessões no sucesso: um guarda que manda
       // quem já está logado direto para a biblioteca impediria exatamente o caso que mais importa.
       { path: '/reset-password/:token', element: <ResetPasswordRoute /> },
+      // O mesmo endereço sem o token. Cliente de e-mail quebra linha em link longo, e o que a
+      // pessoa cola volta cortado: sem esta rota isso caía no curinga e virava tela de login,
+      // sem uma palavra sobre o que houve. A página reconhece a falta do token e explica.
+      { path: '/reset-password', element: <ResetPasswordRoute /> },
       { path: '/onboarding', element: <OnboardingRoute /> },
     ],
   },

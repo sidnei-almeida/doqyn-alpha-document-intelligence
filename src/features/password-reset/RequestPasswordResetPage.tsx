@@ -28,6 +28,17 @@ export function RequestPasswordResetPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
+
+    // Conferido aqui porque o servidor valida com zod e devolve VALIDATION_ERROR com a frase em
+    // português — e VALIDATION_ERROR é código de passagem, quer dizer, a frase do servidor vence
+    // a do catálogo. Numa tela em inglês ou espanhol a pessoa levaria português na cara por um
+    // arroba mal digitado. O `type="email"` do navegador aceita `a@b`, que o zod recusa, então
+    // sem esta conferência o buraco continuaria aberto justo no caso mais comum.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setErrorMessage(t('requestPasswordResetPage.invalidEmail'));
+      return;
+    }
+
     setSubmitting(true);
     setErrorMessage(null);
 
