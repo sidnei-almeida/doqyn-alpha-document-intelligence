@@ -112,6 +112,15 @@ describe('outbox de e-mail externo — drenagem', () => {
     }
   });
 
+  it('entrega e desistência zeram o corpo — o link não fica legível até o TTL apagar a linha', () => {
+    // A linha carrega o link do portal em texto puro, e o índice TTL só apaga em 30 dias — sem
+    // isto o link ficaria de pé por até um mês depois de já ter sido entregue ou desistido.
+    const setSucesso = outbox.match(/deliveredAt: new Date\(\),[\s\S]*?\}/)?.[0] ?? '';
+    assert.match(setSucesso, /html: ''/);
+    assert.match(setSucesso, /text: ''/);
+    assert.match(outbox, /\.\.\.\(desiste \? \{ html: '', text: '' \} : \{\}\)/);
+  });
+
   it('drenador externo tem timer próprio, independente do canal de membro', () => {
     assert.match(outbox, /startExternalEmailOutboxDrain/);
     assert.match(outbox, /stopExternalEmailOutboxDrain/);

@@ -172,6 +172,11 @@ export async function drainExternalEmailOutbox(): Promise<{
           providerMessageId: resultado.providerMessageId,
           reason: undefined,
           lockedAt: null,
+          // O corpo carrega o link do portal — credencial ao portador para documento ou
+          // assinatura de terceiro. O índice TTL apaga a linha em 30 dias, mas o link não pode
+          // ficar legível por 30 dias só porque a entrega já aconteceu há segundos.
+          html: '',
+          text: '',
         },
       });
       sent += 1;
@@ -190,6 +195,9 @@ export async function drainExternalEmailOutbox(): Promise<{
         nextAttemptAt: desiste
           ? null
           : new Date(Date.now() + emailRetryDelayMinutes(tentativas) * 60_000),
+        // Desistência é o mesmo raciocínio do sucesso: o link nunca chegou a lugar nenhum, e uma
+        // linha morta não é onde guardar credencial viva pelos 30 dias até o TTL apagá-la.
+        ...(desiste ? { html: '', text: '' } : {}),
       },
     });
 
