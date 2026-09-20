@@ -129,10 +129,16 @@ export function EmailVerificationPage() {
       const result = await emailVerificationApi.resend(ticket);
       setCode('');
       setDevCode(result.code ?? null);
-      toast.success(result.message);
-      // O reenvio terminou com sucesso — a afirmação de que o primeiro e-mail não saiu deixou de
-      // valer a partir daqui.
-      setFirstSendFailed(false);
+      // A rota devolve 200 mesmo quando o envio falha — `emailSent` é quem conta a verdade. Sem
+      // ler esse campo, um reenvio que também não saiu apagava o aviso e pintava um toast verde,
+      // mandando a pessoa esperar de novo um e-mail que de novo não partiu.
+      const reenvioSaiu = result.emailSent !== false;
+      if (reenvioSaiu) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+      setFirstSendFailed(!reenvioSaiu);
       await refreshStatus();
     } catch (err) {
       const message = getEmailVerificationErrorMessage(err);

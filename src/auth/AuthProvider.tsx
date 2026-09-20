@@ -35,7 +35,17 @@ const PUBLIC_UNAUTHENTICATED_PATHS = [
  * página precisa da sessão para decidir entre o formulário, "entre para aceitar" e "troque de
  * conta". E fica no bypass porque quem aceita pode ainda não ter empresa nenhuma.
  */
-const ACCESS_GATE_BYPASS_PATHS = ['/onboarding', '/sso/callback', '/invite'];
+// A redefinição de senha entra aqui pelo motivo que a torna necessária: quem desconfia da
+// própria conta comprometida pode estar com a associação bloqueada e ainda assim segurando um
+// cookie válido. Sem o desvio, a parede do portão de acesso substitui o roteador inteiro e o
+// formulário nunca chega a montar — justo para quem mais precisa dele.
+const ACCESS_GATE_BYPASS_PATHS = [
+  '/onboarding',
+  '/sso/callback',
+  '/invite',
+  '/forgot-password',
+  '/reset-password',
+];
 
 function applyPartialUserFromSessionError(
   err: SessionApiError,

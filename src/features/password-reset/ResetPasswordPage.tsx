@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'sonner';
+import { Link, useParams } from 'react-router-dom';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
@@ -74,7 +73,6 @@ export function ResetPasswordPage() {
   const { t } = useTranslation(['auth', 'settings']);
 
   const { token } = useParams<{ token: string }>();
-  const navigate = useNavigate();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -84,7 +82,7 @@ export function ResetPasswordPage() {
     confirmPassword?: string;
   }>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [view, setView] = useState<'form' | 'broken'>('form');
+  const [view, setView] = useState<'form' | 'broken' | 'done'>('form');
   const [brokenMessage, setBrokenMessage] = useState('');
 
   const requirements = getPasswordRequirements(newPassword);
@@ -109,8 +107,14 @@ export function ResetPasswordPage() {
     setSubmitting(true);
     try {
       await passwordResetApi.resetPassword(token, newPassword);
-      toast.success(t('resetPasswordPage.resetSuccess'));
-      navigate('/login', { replace: true });
+      // Sem `navigate` do roteador aqui, e sem `logout()`: o servidor acabou de revogar todas as
+      // sessões, mas o `AuthProvider` desta aba não sabe disso — ele só reconsulta `/api/me` ao
+      // montar, e não a cada navegação do SPA. Um `navigate('/login')` seria lido pelo
+      // `PublicRoute` com `isAuthenticated` velho e jogaria a pessoa na biblioteca, onde toda
+      // requisição responde 401. `logout()` também não serve: ele espera o `logoutRequest`, que
+      // pode falhar justamente porque a sessão já morreu, e aí o `clearSession` nunca roda.
+      // A vista abaixo termina aqui, e o botão dela recarrega a página de verdade.
+      setView('done');
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'PASSWORD_RESET_TOKEN_INVALID' || err.code === 'PASSWORD_RESET_TOKEN_USED') {
@@ -130,6 +134,26 @@ export function ResetPasswordPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (view === 'done') {
+    return (
+      <>
+        <AuthHeading
+          title={t('resetPasswordPage.doneTitle')}
+          description={t('resetPasswordPage.resetSuccess')}
+        />
+        <button
+          type="button"
+          className={cn(AUTH_PRIMARY_BUTTON, 'w-full')}
+          // Navegação dura de propósito: recarregar remonta o `AuthProvider`, que reconsulta
+          // `/api/me`, recebe 401 e só então a tela de login aparece de verdade.
+          onClick={() => window.location.assign('/login')}
+        >
+          {t('resetPasswordPage.backToLogin')}
+        </button>
+      </>
+    );
   }
 
   if (view === 'broken') {
