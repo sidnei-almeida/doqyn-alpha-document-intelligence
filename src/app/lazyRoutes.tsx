@@ -80,6 +80,10 @@ const LazyVerifyEmailLinkPage = lazyNamed(
   () => import('@/features/email-verification/VerifyEmailLinkPage'),
   'VerifyEmailLinkPage',
 );
+const LazyRequestPasswordResetPage = lazyNamed(
+  () => import('@/features/password-reset/RequestPasswordResetPage'),
+  'RequestPasswordResetPage',
+);
 
 const LazyTrackingRoute = lazyNamed(
   () => import('@/features/tracking/TrackingRoute'),
@@ -131,3 +135,4 @@ export const AcceptInviteRoute = withRouteSuspense(LazyAcceptInvitePage);
 export const ConfirmEmailChangeRoute = withRouteSuspense(LazyConfirmEmailChangePage);
 export const EmailVerificationRoute = withRouteSuspense(LazyEmailVerificationPage);
 export const VerifyEmailLinkRoute = withRouteSuspense(LazyVerifyEmailLinkPage);
+export const RequestPasswordResetRoute = withRouteSuspense(LazyRequestPasswordResetPage);

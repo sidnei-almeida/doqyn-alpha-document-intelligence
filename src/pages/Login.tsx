@@ -172,12 +172,12 @@ export function Login() {
             }
             wrapperClassName="items-center"
           />
-          <button
-            type="button"
+          <Link
+            to="/forgot-password"
             className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-text hover:underline"
           >
             {t('login.esqueciMinhaSenha')}
-          </button>
+          </Link>
         </div>
 
         {error ? (

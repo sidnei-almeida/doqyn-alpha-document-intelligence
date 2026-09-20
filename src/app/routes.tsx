@@ -20,6 +20,7 @@ import {
   OAuthCallbackRoute,
   OnboardingRoute,
   MatrixRoute,
+  RequestPasswordResetRoute,
   RulesRoute,
   NotificationsRoute,
   SettingsRoute,
@@ -61,6 +62,9 @@ export const router = createBrowserRouter([
       // um guarda que só sabe perguntar se já está logado.
       { path: '/verify-email', element: <EmailVerificationRoute /> },
       { path: '/verify-email/:token', element: <VerifyEmailLinkRoute /> },
+      // Pedir redefinição de senha. Fora do `PublicRoute` pelo mesmo motivo de
+      // `/reset-password/:token` — ver o comentário completo naquela rota.
+      { path: '/forgot-password', element: <RequestPasswordResetRoute /> },
       { path: '/onboarding', element: <OnboardingRoute /> },
     ],
   },
