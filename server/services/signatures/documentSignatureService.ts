@@ -624,6 +624,13 @@ export async function createDocumentSignatureRequest(
     await enqueueExternalEmail({
       tenantId: ctx.tenantId,
       kind: 'external_signature_invite',
+      // signatureRequestId e signerId nascem de randomUUID() nesta mesma chamada, então a
+      // chave nunca colide numa retentativa — cada retentativa cria um pedido novo, com token de
+      // portal novo, e este dedupeKey só evita mandar duas vezes o e-mail DESTE pedido específico
+      // se este trecho for executado duas vezes. O problema maior — duas chamadas de rede
+      // criarem dois pedidos de assinatura genuinamente distintos, ambos válidos — é da criação
+      // do pedido, não do envio de e-mail, e não existe verificação de pedido já aberto para o
+      // mesmo documento+signatário antes de criar um novo. Fora do escopo deste conserto.
       dedupeKey: `external_signature:${signatureRequestId}:${signerId}`,
       recipientEmail: signerEmail,
       ...buildExternalSignatureInviteEmail({

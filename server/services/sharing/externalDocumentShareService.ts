@@ -34,6 +34,20 @@ import {
 import type { DocumentAuditContext } from '../../audit/documentAuditTypes.js';
 import { hashTrackingValue } from '../tracking/trackingSecurity.js';
 import { generateExternalShareInviteToken, hashExternalShareToken } from './externalShareTokens.js';
+
+/**
+ * Um balde por minuto, não o hash do token recém-gerado.
+ *
+ * O token é sorteado de novo em toda chamada — inclusive numa retentativa de rede do mesmo
+ * clique. Com o hash dele na chave, o índice único do outbox nunca vê repetição: cada retentativa
+ * gera um dedupeKey diferente, e a pessoa recebe dois e-mails com dois links diferentes, o mais
+ * antigo já morto pela sobrescrita do grant. O balde por minuto colapsa isso — duas chamadas para
+ * o mesmo grant dentro do mesmo minuto compartilham a chave — e ainda deixa um reenvio deliberado
+ * passado esse minuto sair como e-mail novo, que é o comportamento que "regenerar link" promete.
+ */
+function dedupeMinuteBucket(): number {
+  return Math.floor(Date.now() / 60_000);
+}
 import { enqueueExternalEmail } from '../notifications/externalEmailOutbox.js';
 import { buildExternalShareInviteEmail } from '../notifications/externalEmailTemplates.js';
 
@@ -354,7 +368,7 @@ export async function createDocumentExternalShareGrant(
     await enqueueExternalEmail({
       tenantId: ctx.tenantId,
       kind: 'external_share_invite',
-      dedupeKey: `external_share:${existing._id}:${inviteTokenHash}`,
+      dedupeKey: `external_share:${existing._id}:${dedupeMinuteBucket()}`,
       recipientEmail,
       ...buildExternalShareInviteEmail({
         recipientLocale,
@@ -423,7 +437,7 @@ export async function createDocumentExternalShareGrant(
   await enqueueExternalEmail({
     tenantId: ctx.tenantId,
     kind: 'external_share_invite',
-    dedupeKey: `external_share:${grant._id}:${inviteTokenHash}`,
+    dedupeKey: `external_share:${grant._id}:${dedupeMinuteBucket()}`,
     recipientEmail,
     ...buildExternalShareInviteEmail({
       recipientLocale,
@@ -584,7 +598,7 @@ export async function regenerateDocumentExternalShareGrant(
   await enqueueExternalEmail({
     tenantId: ctx.tenantId,
     kind: 'external_share_invite',
-    dedupeKey: `external_share:${shareId}:${inviteTokenHash}`,
+    dedupeKey: `external_share:${shareId}:${dedupeMinuteBucket()}`,
     recipientEmail: grant.recipientEmail,
     ...buildExternalShareInviteEmail({
       recipientLocale: grant.recipientLocale,

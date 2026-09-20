@@ -246,15 +246,21 @@ describe('convite de compartilhamento externo por e-mail — wiring no serviço'
     assert.ok(occurrences.length >= 2, `esperava 2+ chamadas, achou ${occurrences.length}`);
   });
 
-  it('a chave de dedupe usa o id da concessão e o hash do token novo', () => {
-    assert.match(service, /dedupeKey: `external_share:\$\{existing\._id\}:\$\{inviteTokenHash\}`/);
-    assert.match(service, /dedupeKey: `external_share:\$\{grant\._id\}:\$\{inviteTokenHash\}`/);
+  it('a chave de dedupe usa o id da concessão e um balde por minuto, não o hash do token', () => {
+    // O token é sorteado de novo em toda chamada — inclusive numa retentativa de rede do mesmo
+    // clique. Com o hash dele na chave, o índice único nunca via repetição: cada retentativa
+    // gerava uma chave diferente e mandava dois e-mails com dois links, o mais antigo já morto
+    // pela sobrescrita do grant. O balde por minuto colapsa retentativa rápida no mesmo grant.
+    assert.match(service, /function dedupeMinuteBucket/);
+    assert.match(service, /dedupeKey: `external_share:\$\{existing\._id\}:\$\{dedupeMinuteBucket\(\)\}`/);
+    assert.match(service, /dedupeKey: `external_share:\$\{grant\._id\}:\$\{dedupeMinuteBucket\(\)\}`/);
+    assert.equal(service.includes('dedupeKey: `external_share:${existing._id}:${inviteTokenHash}`'), false);
   });
 
-  it('regenerateDocumentExternalShareGrant também enfileira, com o hash novo', () => {
+  it('regenerateDocumentExternalShareGrant também enfileira, com o mesmo balde', () => {
     const regenerateBlock = service.slice(service.indexOf('export async function regenerateDocumentExternalShareGrant'));
     assert.match(regenerateBlock, /enqueueExternalEmail/);
-    assert.match(regenerateBlock, /dedupeKey: `external_share:\$\{shareId\}:\$\{inviteTokenHash\}`/);
+    assert.match(regenerateBlock, /dedupeKey: `external_share:\$\{shareId\}:\$\{dedupeMinuteBucket\(\)\}`/);
   });
 });
 
