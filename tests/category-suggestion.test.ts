@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { parseCategorySuggestion } from '../server/ai/services/categorySuggestionAgent.js';
+import { buildCategorySuggestionPrompt } from '../server/ai/utils/categorySuggestionPrompt.js';
 import { analysisHasResolvableCategory } from '../src/features/document-send/services/normalizeConfirmPayload.js';
 import type { DocumentClassRule } from '../server/ai/types/documentAi.types.js';
 import {
@@ -52,6 +53,31 @@ describe('proposta de categoria da IA', () => {
     // sinônimo dela e passa a achar que está resolvido.
     for (const name of ['Documentos', 'Outros', 'Geral', 'arquivos', 'Misc']) {
       assert.equal(parseCategorySuggestion({ ...valid, name }, existing), null, name);
+    }
+  });
+
+  it('recusa nome vazio nos três idiomas da interface', () => {
+    // O nome sai no idioma de quem enviou o arquivo, então a guarda tem de valer nos três. Só em
+    // português, ela deixava "Files" e "Archivos" virarem pasta.
+    for (const name of [
+      'Documents',
+      'Files',
+      'Miscellaneous',
+      'Uncategorized',
+      'Archivos',
+      'Varios',
+      'Documentación',
+      'Generales',
+    ]) {
+      assert.equal(parseCategorySuggestion({ ...valid, name }, existing), null, name);
+    }
+  });
+
+  it('continua aceitando nome de família que separa de verdade', () => {
+    // A guarda de nome vazio não pode engolir a proposta boa: "Financeiro" e "Recrutamento" são
+    // abrangentes de propósito, e é exatamente o que o prompt passou a pedir.
+    for (const name of ['Financeiro', 'Recrutamento', 'Saúde Ocupacional', 'Recruiting']) {
+      assert.ok(parseCategorySuggestion({ ...valid, name }, existing), name);
     }
   });
 
@@ -212,5 +238,48 @@ describe('auto_create precisa chegar ao servidor', () => {
       classification: { ...analysisWithoutClass.classification, classId: 'cat_nf' },
     } as typeof analysisWithoutClass;
     assert.ok(analysisHasResolvableCategory(comClasse));
+  });
+});
+
+describe('o prompt da proposta pede a família, não o tipo', () => {
+  const prompt = buildCategorySuggestionPrompt({
+    chunks: [],
+    classes: existing,
+    documentType: 'NDA',
+    firstReason: 'Nenhuma pasta cobre acordo de confidencialidade.',
+    outputLocale: 'pt-BR',
+  });
+
+  it('nomeia o erro que motivou a regra', () => {
+    // Um NDA virava "Acordos de Confidencialidade" e inaugurava a própria pasta. O prompt agora
+    // traz o par errado/certo por escrito — sem ele o modelo devolve o nome do documento que leu.
+    assert.match(prompt, /FAMÍLIA de documentos, não o nome deste documento/);
+    assert.match(prompt, /NÃO "Acordos de Confidencialidade"/);
+    assert.match(prompt, /quantos tipos diferentes de documento caberiam nesta pasta/);
+  });
+
+  it('mantém o contrapeso contra a pasta que aceita tudo', () => {
+    // Pedir amplitude sem teto trocaria uma pasta por documento por uma pasta só, chamada
+    // "Documentos" — que é o mesmo que não ter pasta.
+    assert.match(prompt, /genérico demais, desça um nível/);
+  });
+
+  it('pede o nome no idioma de quem vai ler a pasta', () => {
+    for (const [locale, language] of [
+      ['pt-BR', 'português'],
+      ['en-US', 'inglês'],
+      ['es-419', 'espanhol'],
+    ] as const) {
+      const built = buildCategorySuggestionPrompt({
+        chunks: [],
+        classes: existing,
+        documentType: 'NDA',
+        firstReason: 'Nenhuma pasta serve.',
+        outputLocale: locale,
+      });
+      // A quebra de linha do template cai entre "em" e o idioma, então a âncora é o que vem
+      // depois dele.
+      assert.ok(built.includes(`${language}, do jeito que`), locale);
+    }
   });
 });

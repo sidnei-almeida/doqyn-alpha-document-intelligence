@@ -52,32 +52,63 @@ const REASON_MAX_CHARS = 200;
  * Uma pasta "Documentos" aceita qualquer documento, então o próximo classificador vai mandar tudo
  * para lá — e a empresa troca "Sem categoria" por um sinônimo dela, com a diferença de que agora
  * parece resolvido. O prompt já pede para evitar; a guarda existe porque pedir não é garantir.
+ *
+ * A lista cobre os três idiomas da interface, porque o nome sai no idioma de quem enviou o
+ * arquivo (`outputLocale`): uma guarda só em português deixaria "Files" e "Archivos" passarem.
+ * As entradas já vêm normalizadas — minúsculas e sem acento, como `normalizeForComparison`
+ * devolve.
  */
 const EMPTY_NAMES = new Set([
+  // pt-BR
   'documento',
   'documentos',
+  'documentacao',
   'arquivo',
   'arquivos',
+  'papeis',
   'outro',
   'outros',
   'diverso',
   'diversos',
+  'diversas',
   'geral',
   'gerais',
   'variado',
   'variados',
+  'material',
+  'materiais',
+  'registros',
   'sem categoria',
+  // en-US
   'document',
   'documents',
+  'documentation',
   'file',
   'files',
+  'paperwork',
+  'papers',
   'other',
   'others',
   'misc',
+  'miscellaneous',
   'general',
+  'items',
+  'records',
+  'uncategorized',
+  // es-419
+  'documentacion',
+  'archivo',
+  'archivos',
+  'papeleo',
   'otro',
   'otros',
   'varios',
+  'varias',
+  'generales',
+  'miscelanea',
+  'miscelaneos',
+  'materiales',
+  'sin categoria',
 ]);
 
 function normalizeForComparison(value: string): string {
