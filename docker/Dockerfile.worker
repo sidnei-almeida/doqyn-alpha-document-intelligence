@@ -13,9 +13,9 @@ COPY server ./server
 COPY shared ./shared
 # Catálogos de tradução que o servidor importa (build-server copia para dist/).
 COPY src/i18n/catalog ./src/i18n/catalog
-COPY scripts/build-server.mjs ./scripts/build-server.mjs
-COPY scripts/ensure-mongodb-indexes.ts ./scripts/ensure-mongodb-indexes.ts
-COPY scripts/lib ./scripts/lib
+# Mesma razão do `Dockerfile.api`: manter uma lista por arquivo aqui era manter um segundo lugar
+# para esquecer de atualizar. Quem escolhe o que vai para `dist/` é o `SCRIPT_ROOTS` do build.
+COPY scripts ./scripts
 
 RUN npm run build:server
 

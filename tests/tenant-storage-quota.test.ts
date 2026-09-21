@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
@@ -143,6 +143,32 @@ describe('cota de armazenamento — onde está ligada', () => {
     // `tsx` é devDependency e a imagem de produção instala com `--omit=dev`: script que não entra
     // no bundle não tem como rodar na VPS, que é justamente onde a reconciliação importa.
     assert.ok(read('scripts/build-server.mjs').includes('scripts/reconcile-tenant-storage.ts'));
+
+    // E estar na lista do build não basta: a imagem precisa ter o arquivo para compilar. Os dois
+    // Dockerfiles copiavam `scripts/` arquivo por arquivo, e a lista deles não batia com a do
+    // build — `enable-expiry-alerts-defaults.ts` ficou de fora da imagem por isso.
+    for (const dockerfile of ['docker/Dockerfile.api', 'docker/Dockerfile.worker']) {
+      const content = read(dockerfile);
+      assert.ok(
+        /^COPY scripts \.\/scripts$/m.test(content),
+        `${dockerfile} deve copiar scripts/ inteiro, senão a lista do build silencia o que falta`,
+      );
+    }
+  });
+
+  it('todo script na lista do build existe no repo', () => {
+    // O build não reclama de arquivo ausente: ele não acha e segue. Então a guarda é aqui.
+    const build = read('scripts/build-server.mjs');
+    const block = build.slice(
+      build.indexOf('const SCRIPT_ROOTS'),
+      build.indexOf('];', build.indexOf('const SCRIPT_ROOTS')),
+    );
+    const entries = [...block.matchAll(/'(scripts\/[^']+)'/g)].map((match) => match[1]);
+    assert.ok(entries.length >= 3, 'a lista do build deveria ter entradas');
+    for (const entry of entries) {
+      // Entradas podem ser arquivo ou pasta (`scripts/lib`), então a checagem é de existência.
+      assert.ok(existsSync(join(repoRoot, entry)), `${entry} está na lista do build e não existe`);
+    }
   });
 });
 
