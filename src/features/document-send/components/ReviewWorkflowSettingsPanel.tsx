@@ -131,9 +131,6 @@ function NamingPolicyOptions({
                 <span className="settings-choice-item__label">
                   {t(NAMING_POLICY_LABEL_KEYS[policy])}
                 </span>
-                <span className="settings-choice-item__sep" aria-hidden>
-                  —
-                </span>
                 <span className="settings-choice-item__hint">
                   {t(NAMING_POLICY_DESCRIPTION_KEYS[policy])}
                 </span>
@@ -190,9 +187,6 @@ function CategorySuggestionOptions({
                 <span className="settings-choice-item__label">
                   {t(CATEGORY_SUGGESTION_LABEL_KEYS[mode])}
                 </span>
-                <span className="settings-choice-item__sep" aria-hidden>
-                  —
-                </span>
                 <span className="settings-choice-item__hint">
                   {t(CATEGORY_SUGGESTION_DESCRIPTION_KEYS[mode])}
                 </span>
@@ -247,9 +241,6 @@ function EmptyDocumentOptions({
               <span className="settings-choice-item__inline">
                 <span className="settings-choice-item__label">
                   {t(EMPTY_DOCUMENT_LABEL_KEYS[mode])}
-                </span>
-                <span className="settings-choice-item__sep" aria-hidden>
-                  —
                 </span>
                 <span className="settings-choice-item__hint">
                   {t(EMPTY_DOCUMENT_DESCRIPTION_KEYS[mode])}

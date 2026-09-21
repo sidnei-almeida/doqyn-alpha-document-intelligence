@@ -3284,14 +3284,14 @@
     font-weight: 500;
   }
 
-  .settings-choice-item__sep {
-    margin: 0 0.35rem;
-    color: var(--text-tertiary);
-  }
-
+  /* A hierarquia na mesma linha sai do peso e da cor, não de pontuação.
+     O travessão entre rótulo e explicação se repetia em toda opção da tela e não
+     dizia nada que o cinza mais claro já não dissesse — o espaço basta para
+     separar, e sobra uma linha mais limpa de ler. */
   .settings-choice-item__hint {
     color: var(--text-tertiary);
     font-weight: 400;
+    margin-left: 0.5rem;
   }
 
   .settings-dependent-group {
