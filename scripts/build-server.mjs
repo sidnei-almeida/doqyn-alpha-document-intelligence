@@ -16,6 +16,7 @@ const SOURCE_ROOTS = ['api', 'server', 'shared'];
 const SCRIPT_ROOTS = [
   'scripts/ensure-mongodb-indexes.ts',
   'scripts/enable-expiry-alerts-defaults.ts',
+  'scripts/reconcile-tenant-storage.ts',
   'scripts/lib',
 ];
 

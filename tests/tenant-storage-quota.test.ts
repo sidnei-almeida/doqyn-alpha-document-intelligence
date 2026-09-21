@@ -140,6 +140,9 @@ describe('cota de armazenamento — onde está ligada', () => {
     assert.ok(script.includes('setTenantStoredBytes'));
     assert.ok(script.includes('sumTenantStoredBytes'));
     assert.ok(read('package.json').includes('storage:reconcile'));
+    // `tsx` é devDependency e a imagem de produção instala com `--omit=dev`: script que não entra
+    // no bundle não tem como rodar na VPS, que é justamente onde a reconciliação importa.
+    assert.ok(read('scripts/build-server.mjs').includes('scripts/reconcile-tenant-storage.ts'));
   });
 });
 
