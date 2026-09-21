@@ -84,6 +84,17 @@ if [[ -f "$ENV_FILE" ]]; then
   require_var GROQ_API_KEY
   require_var R2_ACCESS_KEY_ID
   require_var R2_SECRET_ACCESS_KEY
+  # Espelho: desligado não cobra nada. Ligado, credencial incompleta enfileiraria
+  # jobs que falham para sempre e o acervo pareceria espelhado sem estar.
+  mirror_flag="$(printf '%s' "${STORAGE_MIRROR_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$mirror_flag" == "true" || "$mirror_flag" == "1" ]]; then
+    require_var STORAGE_MIRROR_ENDPOINT
+    require_var STORAGE_MIRROR_ACCESS_KEY_ID
+    require_var STORAGE_MIRROR_SECRET_ACCESS_KEY
+    ok "STORAGE_MIRROR_ENABLED=true (Compose sobe o profile mirror)"
+  else
+    ok "STORAGE_MIRROR_ENABLED desligado — MinIO não sobe"
+  fi
   require_var DOQYN_INTERNAL_API_KEY
   require_var DOQYN_AUTH_INTERNAL_API_KEY
   require_var DATA_ENCRYPTION_KEY

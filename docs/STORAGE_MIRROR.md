@@ -85,7 +85,7 @@ esconderia isso atrás de um "não encontrado".
 
 ## Variáveis
 
-Acrescente ao `deploy/.env` (e ao `.env.example`, com valores vazios):
+No `.env.example` e no `deploy/.env` gerado pelo setup (a flag sai `false`):
 
 ```bash
 # Espelho do acervo — nasce desligado. Ligue só quando houver disco para o acervo inteiro.
@@ -120,15 +120,18 @@ armazenamento do produto:
 df -h /
 ```
 
-Depois:
+Depois, no `deploy/.env` da VPS:
+
+1. Confirme `STORAGE_MIRROR_ACCESS_KEY_ID` e `STORAGE_MIRROR_SECRET_ACCESS_KEY` (o
+   `setup-production-env.sh` já gera o par e o deixa no `.env`, com a flag ainda em `false`).
+2. `STORAGE_MIRROR_ENABLED=true`
+3. Rode o deploy normal (`./deploy/scripts/deploy-production.sh`). O wrapper do Compose passa
+   `--profile mirror` **só quando a flag é true** — não precisa lembrar o profile na mão.
+
+Quem for subir o MinIO isolado, sem o wrapper:
 
 ```bash
-# 1. Suba só o MinIO (ele está atrás do profile `mirror`)
 cd deploy && docker compose -f docker-compose.production.yml --env-file .env --profile mirror up -d minio
-
-# 2. Ligue o espelho e reinicie quem escreve
-# STORAGE_MIRROR_ENABLED=true no deploy/.env
-docker compose -f docker-compose.production.yml --env-file .env up -d doqyn-api doqyn-worker
 ```
 
 Não há passo de criar bucket à mão: cada bucket nasce na primeira gravação daquele tenant, com o
@@ -137,6 +140,24 @@ mesmo nome e a mesma política de CORS do R2.
 A partir daí, **todo arquivo novo** é espelhado. O que já está no R2 não é copiado
 retroativamente — o backfill é um passo à parte, e vale decidir se ele é necessário depois de
 medir quanto disco o acervo atual ocupa.
+
+## Próxima sessão (ligar na VPS)
+
+O código e o Compose já estão no repositório. O que falta é operação na máquina:
+
+1. Puxar a branch que contém este trabalho e rebuild de `doqyn-api` + `doqyn-worker` (o worker de
+   promoção é quem enfileira o `mirror`).
+2. `df -h /` — o disco da VPS vira o teto do acervo.
+3. Se o `.env` da VPS foi gerado **antes** deste bloco existir, copiar as variáveis de
+   `.env.example` (ou de `setup-production-env.sh`) para `deploy/.env` e gerar o par de chaves.
+   Não commitar esse arquivo; os repositórios são públicos.
+4. `STORAGE_MIRROR_ENABLED=true` e `./deploy/scripts/deploy-production.sh`.
+5. Confirmar `docker compose ... ps` com o serviço `minio` saudável e, no log da API/worker,
+   `storage mirror job completed` depois de um upload novo.
+6. Decidir se precisa backfill do que já está no R2 — não vem ligado.
+
+Se a garantia desejada for contra perder a VPS (não só contra o R2 cair), mude
+`STORAGE_MIRROR_ENDPOINT` para outro provedor. O MinIO local não resolve isso.
 
 ## Desligando
 

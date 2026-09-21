@@ -214,6 +214,40 @@ describe('o MinIO do Compose não se expõe', () => {
   });
 });
 
+describe('ligar o espelho na VPS não depende de lembrar o profile na mão', () => {
+  it('o .env.example traz o bloco, desligado, e sem bucket único', () => {
+    const example = read('.env.example');
+    assert.match(example, /^STORAGE_MIRROR_ENABLED=false$/m);
+    assert.match(example, /^STORAGE_MIRROR_ENDPOINT=http:\/\/minio:9000$/m);
+    assert.match(example, /^STORAGE_MIRROR_ACCESS_KEY_ID=$/m);
+    assert.match(example, /^STORAGE_MIRROR_SECRET_ACCESS_KEY=$/m);
+    assert.ok(!/STORAGE_MIRROR_BUCKET\b/.test(example), 'bucket único não pode voltar');
+  });
+
+  it('o wrapper do Compose só passa --profile mirror quando a flag está ligada', () => {
+    const wrapper = read('deploy/scripts/lib/compose-production.sh');
+    assert.match(wrapper, /compose_append_mirror_profile/);
+    assert.match(wrapper, /storage_mirror_profile_enabled/);
+    assert.match(wrapper, /__compose_cmd\+=\(--profile mirror\)/);
+  });
+
+  it('o setup grava o espelho desligado, com credencial já gerada', () => {
+    const setup = read('deploy/scripts/setup-production-env.sh');
+    assert.match(setup, /STORAGE_MIRROR_ENABLED=false/);
+    assert.match(setup, /openssl rand -hex 24/);
+    assert.match(setup, /STORAGE_MIRROR_ACCESS_KEY_ID=\$\{STORAGE_MIRROR_ACCESS_KEY_ID\}/);
+  });
+
+  it('o validador da VPS só cobra credencial do espelho quando a flag está ligada', () => {
+    const validate = read('deploy/scripts/validate-vps-ready.sh');
+    const r2 = validate.indexOf('require_var R2_SECRET_ACCESS_KEY');
+    const mirror = validate.indexOf('require_var STORAGE_MIRROR_SECRET_ACCESS_KEY');
+    const flag = validate.indexOf('STORAGE_MIRROR_ENABLED');
+    assert.ok(r2 > 0 && mirror > r2, 'a cobrança do espelho tem de vir depois do R2');
+    assert.ok(flag > 0 && flag < mirror, 'a cobrança tem de ficar atrás da flag');
+  });
+});
+
 describe('o espelho entra depois da promoção, e a leitura cai nele por último', () => {
   it('o job de espelho é enfileirado só quando a versão já está no endereço definitivo', () => {
     const worker = read('server/workers/storagePromotionWorker.ts');

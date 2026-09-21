@@ -285,6 +285,19 @@ else
   info "EXTERNAL_LINK_ENCRYPTION_KEY preservada do .env atual."
 fi
 
+# Credencial do MinIO / espelho: gerada já, mas o espelho nasce desligado.
+# Ligar exige STORAGE_MIRROR_ENABLED=true e disco para o acervo inteiro —
+# docs/STORAGE_MIRROR.md. Preservar se já existir: trocar a senha do MinIO
+# depois de gravar objetos deixa a cópia ilegível.
+STORAGE_MIRROR_ACCESS_KEY_ID="$(read_existing STORAGE_MIRROR_ACCESS_KEY_ID "")"
+STORAGE_MIRROR_SECRET_ACCESS_KEY="$(read_existing STORAGE_MIRROR_SECRET_ACCESS_KEY "")"
+if [[ -z "$STORAGE_MIRROR_ACCESS_KEY_ID" || -z "$STORAGE_MIRROR_SECRET_ACCESS_KEY" ]]; then
+  STORAGE_MIRROR_ACCESS_KEY_ID="$(openssl rand -hex 24)"
+  STORAGE_MIRROR_SECRET_ACCESS_KEY="$(openssl rand -hex 24)"
+else
+  info "credenciais do espelho de storage preservadas do .env atual."
+fi
+
 info "Gerando chaves internas sincronizadas entre auth e alpha..."
 DOQYN_INTERNAL_API_KEY="$(generate_base64_32)"
 DOQYN_APP_INTERNAL_API_KEY="$(generate_base64_32)"
@@ -417,6 +430,23 @@ R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
 R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
 R2_ADMIN_ACCESS_KEY_ID=${R2_ADMIN_ACCESS_KEY_ID}
 R2_ADMIN_SECRET_ACCESS_KEY=${R2_ADMIN_SECRET_ACCESS_KEY}
+
+# Espelho do acervo — desligado. A credencial já está aqui para o MinIO não
+# cair no par padrão minioadmin:minioadmin no dia em que a flag ligar.
+# docs/STORAGE_MIRROR.md
+STORAGE_MIRROR_ENABLED=false
+STORAGE_MIRROR_ENDPOINT=http://minio:9000
+STORAGE_MIRROR_REGION=us-east-1
+STORAGE_MIRROR_KEY_PREFIX=
+STORAGE_MIRROR_ACCESS_KEY_ID=${STORAGE_MIRROR_ACCESS_KEY_ID}
+STORAGE_MIRROR_SECRET_ACCESS_KEY=${STORAGE_MIRROR_SECRET_ACCESS_KEY}
+STORAGE_MIRROR_FORCE_PATH_STYLE=true
+STORAGE_MIRROR_MAX_OBJECT_MB=100
+STORAGE_MIRROR_REQUEST_TIMEOUT_MS=60000
+MINIO_BROWSER=off
+MINIO_MEM_LIMIT=512m
+MINIO_CPUS=0.3
+
 GROQ_API_KEY=${GROQ_API_KEY}
 GROQ_MODEL=${GROQ_MODEL_ID}
 GROQ_REQUEST_TIMEOUT_MS=25000
