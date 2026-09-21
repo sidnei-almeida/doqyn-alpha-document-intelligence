@@ -254,7 +254,20 @@ export function getAutoSaveBlockers(params: AutoSaveParams): string[] {
   ) {
     blockers.push('low_confidence');
   }
-  if (!rawAnalysis.classification.classId) {
+  /**
+   * Sem pasta não há o que salvar — a não ser que o tenant tenha escolhido criar a proposta.
+   *
+   * Sem esta exceção, `auto_create` nunca chegava ao servidor: o documento sem classe era barrado
+   * aqui, ia para a revisão, e lá a pessoa era obrigada a escolher uma pasta à mão — o que grava
+   * `manualClassId` e faz a criação automática nem ser tentada.
+   */
+  if (
+    !rawAnalysis.classification.classId &&
+    !(
+      settings.categorySuggestionMode === 'auto_create' &&
+      rawAnalysis.classification.suggestedCategory?.name?.trim()
+    )
+  ) {
     blockers.push('missing_class');
   }
 

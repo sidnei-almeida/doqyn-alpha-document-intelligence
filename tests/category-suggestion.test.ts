@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { parseCategorySuggestion } from '../server/ai/services/categorySuggestionAgent.js';
+import { analysisHasResolvableCategory } from '../src/features/document-send/services/normalizeConfirmPayload.js';
 import type { DocumentClassRule } from '../server/ai/types/documentAi.types.js';
 import {
   DEFAULT_TENANT_UPLOAD_POLICY,
@@ -144,5 +145,72 @@ describe('modo de sugestão de categoria na política do tenant', () => {
     assert.ok(isCategorySuggestionMode('auto_create'));
     assert.ok(!isCategorySuggestionMode('auto'));
     assert.ok(!isCategorySuggestionMode(undefined));
+  });
+});
+
+describe('auto_create precisa chegar ao servidor', () => {
+  /**
+   * O modo nasceu inalcançável: três guardas do cliente exigiam `classId`, e a única saída que
+   * elas ofereciam — escolher a pasta à mão — grava `manualClassId`, que vence a proposta e faz a
+   * criação automática nem ser tentada. O servidor estava certo e coberto por teste; o produto
+   * nunca o chamava.
+   */
+  const analysisWithoutClass = {
+    jobId: 'job_1',
+    classification: {
+      classId: null,
+      className: null,
+      confidence: 0,
+      requiresReview: true,
+      reason: 'Nenhuma classe serve.',
+      evidence: [],
+      suggestedCategory: {
+        name: 'Boletos',
+        description: 'Boletos bancários e faturas de cobrança.',
+        keywords: ['boleto'],
+        reason: 'Nada cobre cobrança bancária.',
+      },
+    },
+  } as unknown as Parameters<typeof analysisHasResolvableCategory>[0];
+
+  it('a proposta resolve a categoria em auto_create', () => {
+    assert.ok(
+      analysisHasResolvableCategory(analysisWithoutClass, {
+        categorySuggestionMode: 'auto_create',
+      }),
+    );
+  });
+
+  it('não resolve em suggest nem em off — ali a escolha é humana', () => {
+    for (const mode of ['suggest', 'off'] as const) {
+      assert.equal(
+        analysisHasResolvableCategory(analysisWithoutClass, { categorySuggestionMode: mode }),
+        false,
+        mode,
+      );
+    }
+  });
+
+  it('auto_create sem proposta continua sem categoria', () => {
+    const semProposta = {
+      ...analysisWithoutClass,
+      classification: { ...analysisWithoutClass.classification, suggestedCategory: null },
+    } as typeof analysisWithoutClass;
+
+    assert.equal(
+      analysisHasResolvableCategory(semProposta, { categorySuggestionMode: 'auto_create' }),
+      false,
+    );
+  });
+
+  it('as outras três origens continuam valendo sozinhas', () => {
+    assert.ok(analysisHasResolvableCategory(analysisWithoutClass, { manualClassId: 'cat_x' }));
+    assert.ok(analysisHasResolvableCategory(analysisWithoutClass, { documentRequestId: 'req_x' }));
+
+    const comClasse = {
+      ...analysisWithoutClass,
+      classification: { ...analysisWithoutClass.classification, classId: 'cat_nf' },
+    } as typeof analysisWithoutClass;
+    assert.ok(analysisHasResolvableCategory(comClasse));
   });
 });

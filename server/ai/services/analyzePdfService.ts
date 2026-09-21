@@ -205,12 +205,16 @@ function buildUnclassifiedExtraction(input: {
  * vale nesse caso, pelo mesmo motivo que `normalizeTenantUploadPolicy` aceita entrada parcial.
  */
 async function suggestCategoryWhenConfigured(input: {
+  /** `true` quando o documento já tem pasta: não há o que propor, e a política nem é lida. */
+  skip: boolean;
   companyId: string;
   chunks: RetrievedChunk[];
   classes: DocumentClassRule[];
   classification: ClassificationResult;
   context: GroqPromptContext & { outputLocale?: string };
 }): Promise<SuggestedCategory | null> {
+  if (input.skip) return null;
+
   let mode: CategorySuggestionMode = DEFAULT_TENANT_UPLOAD_POLICY.categorySuggestionMode;
 
   try {
@@ -677,6 +681,13 @@ export async function analyzePdfBuffer(input: {
      * desligou a sugestão não paga nada.
      */
     const suggestedCategory = await suggestCategoryWhenConfigured({
+      // Só quando NÃO há pasta.
+      //
+      // Este ramo também recebe o documento que achou pasta mas ficou em revisão por confiança
+      // baixa, e para ele a proposta é contraditória: ela afirma que nenhuma categoria serve
+      // enquanto a classificação aponta uma. Custava uma chamada à Groq por documento duvidoso,
+      // que é exatamente a faixa mais comum — e a cota diária é o recurso escasso aqui.
+      skip: Boolean(classification.classId),
       companyId: input.companyId,
       chunks: classificationChunks,
       classes: documentClassRules,

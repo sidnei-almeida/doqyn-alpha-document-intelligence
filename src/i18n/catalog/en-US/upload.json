@@ -59,7 +59,8 @@
       "manual": "Chosen by you. The AI's choice stays in the audit log.",
       "ai": "Suggested by the automatic analysis.",
       "pick": "Choose the category to save this document.",
-      "suggested": "No existing category fits. The AI proposed one below."
+      "suggested": "No existing category fits. The AI proposed one below.",
+      "willCreate": "No existing folder fits. The AI will create “{{name}}” on save."
     }
   },
   "uploadDropOverlay": {

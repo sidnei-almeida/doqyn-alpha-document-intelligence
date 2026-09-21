@@ -210,6 +210,8 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       const validationError = validateConfirmableAnalysis(raw, {
         manualClassId,
         documentRequestId: item.context?.documentRequestId,
+        // Em `auto_create` a pasta proposta é categoria válida: quem a cria é o servidor.
+        categorySuggestionMode: reviewSettings.categorySuggestionMode,
       });
       if (validationError) {
         dispatch({ type: 'error', id: item.id, message: validationError });

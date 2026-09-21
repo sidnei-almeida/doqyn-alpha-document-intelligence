@@ -59,7 +59,8 @@
       "manual": "Escolhida por você. A IA fica registrada na auditoria.",
       "ai": "Sugerida pela análise automática.",
       "pick": "Escolha a categoria para salvar este documento.",
-      "suggested": "Nenhuma categoria existente serve. A IA propôs uma abaixo."
+      "suggested": "Nenhuma categoria existente serve. A IA propôs uma abaixo.",
+      "willCreate": "Nenhuma pasta existente serve. A IA vai criar «{{name}}» ao salvar."
     }
   },
   "uploadDropOverlay": {

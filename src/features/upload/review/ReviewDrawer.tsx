@@ -113,9 +113,21 @@ export function ReviewDrawer() {
    */
   const fulfillsRequest = Boolean(item.context?.documentRequestId);
 
+  /**
+   * Em `auto_create`, quem revisa não precisa escolher pasta: o tenant já disse que aceita a que a
+   * IA propôs, e quem a cria é o servidor na confirmação.
+   *
+   * Obrigar a escolha aqui matava o modo inteiro — escolher grava `manualClassId`, e `manualClassId`
+   * vence a proposta, então a criação automática nunca era tentada.
+   */
+  const suggestionResolvesCategory =
+    reviewSettings.categorySuggestionMode === 'auto_create' &&
+    Boolean(suggestedCategory?.name?.trim());
+
   // Sem classe da IA, o documento só sai daqui com alguém escolhendo a categoria. Antes ele ficava
   // preso: a confirmação exige classe e a análise não tinha nenhuma para dar.
-  const needsManualCategory = !aiClassId && !manualCategory && !fulfillsRequest;
+  const needsManualCategory =
+    !aiClassId && !manualCategory && !fulfillsRequest && !suggestionResolvesCategory;
 
   const canConfirm =
     reviewChecked &&
@@ -236,9 +248,11 @@ export function ReviewDrawer() {
                     ? t('reviewDrawer.categoryHint.manual')
                     : aiClassId
                       ? t('reviewDrawer.categoryHint.ai')
-                      : suggestedCategory
-                        ? t('reviewDrawer.categoryHint.suggested')
-                        : t('reviewDrawer.categoryHint.pick')}
+                      : suggestionResolvesCategory
+                        ? t('reviewDrawer.categoryHint.willCreate', { name: suggestedCategory?.name ?? '' })
+                        : suggestedCategory
+                          ? t('reviewDrawer.categoryHint.suggested')
+                          : t('reviewDrawer.categoryHint.pick')}
               </p>
             </div>
 

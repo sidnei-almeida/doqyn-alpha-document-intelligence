@@ -78,7 +78,6 @@ const EMPTY_NAMES = new Set([
   'otro',
   'otros',
   'varios',
-  'general es',
 ]);
 
 function normalizeForComparison(value: string): string {
