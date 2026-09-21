@@ -8,7 +8,7 @@ import {
   previewText,
 } from '../utils/pipelineDebug.js';
 import type { ExtractedPdfText } from '../types/documentAi.types.js';
-import { getPdfAnalysisMaxPages } from '../utils/aiConfig.js';
+import { getPdfAnalysisMaxInputChars, getPdfAnalysisMaxPages } from '../utils/aiConfig.js';
 import { recordVisionOcrRequest } from '../../metrics/prometheus.js';
 import { isImageAnalysisMimeType, isPdfAnalysisMimeType } from '../constants.js';
 import {
@@ -267,7 +267,7 @@ export async function extractTextFromDocumentPdf(
       pages: merged.pages,
       pageCount: ocr.pageCount || native.pageCount || pageCountHint,
       charCount: merged.charCount,
-      truncated: ocr.truncated || native.truncated,
+      truncated: ocr.truncated || native.truncated || merged.truncated,
       source,
       ocrFallbackUsed: true,
       ocrAttempted: true,
@@ -439,7 +439,13 @@ export async function extractTextFromDocument(
 export function mergeNativeAndOcrPages(
   nativePages: readonly { pageNumber: number; text: string }[],
   ocrPages: readonly { pageNumber: number; text: string }[],
-): { text: string; pages: { pageNumber: number; text: string }[]; charCount: number } {
+  maxChars: number = getPdfAnalysisMaxInputChars(),
+): {
+  text: string;
+  pages: { pageNumber: number; text: string }[];
+  charCount: number;
+  truncated: boolean;
+} {
   const byPage = new Map<number, string>();
 
   for (const page of nativePages) {
@@ -450,14 +456,53 @@ export function mergeNativeAndOcrPages(
     if (page.text?.trim()) byPage.set(page.pageNumber, page.text);
   }
 
-  const pages = [...byPage.entries()]
+  const ordered = [...byPage.entries()]
     .sort(([a], [b]) => a - b)
     .map(([pageNumber, text]) => ({ pageNumber, text }));
+
+  /**
+   * O teto de caracteres tem de ser reaplicado aqui.
+   *
+   * `extractTextFromPdf` corta o texto nativo em `PDF_ANALYSIS_MAX_INPUT_CHARS`, e o OCR corta o
+   * dele por conta própria — mas a soma dos dois não passava por corte nenhum. Somar sem reaplicar
+   * o teto deixava a entrada do modelo crescer até o dobro do limite, que é o limite que existe
+   * justamente para segurar custo e não estourar a janela de contexto da Groq.
+   */
+  const pages: { pageNumber: number; text: string }[] = [];
+  let total = 0;
+  let truncated = false;
+
+  for (const page of ordered) {
+    if (page.text.length === 0) {
+      pages.push(page);
+      continue;
+    }
+
+    // O separador entra na conta. `limitChars`, no extrator nativo, mede só o texto das páginas e
+    // depois junta com `\n\n` — o resultado passa do teto por dois caracteres por página, o que
+    // nunca doeu mas também nunca foi de propósito.
+    const separator = total > 0 ? 2 : 0;
+    const remaining = maxChars - total - separator;
+
+    if (remaining <= 0) {
+      truncated = true;
+      break;
+    }
+    if (page.text.length <= remaining) {
+      pages.push(page);
+      total += separator + page.text.length;
+      continue;
+    }
+    pages.push({ pageNumber: page.pageNumber, text: page.text.slice(0, remaining) });
+    total += separator + remaining;
+    truncated = true;
+    break;
+  }
 
   const text = pages
     .map((page) => page.text)
     .filter((entry) => entry.length > 0)
     .join('\n\n');
 
-  return { text, pages, charCount: text.length };
+  return { text, pages, charCount: text.length, truncated };
 }

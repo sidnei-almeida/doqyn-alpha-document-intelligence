@@ -203,3 +203,36 @@ describe('o OCR completa o texto nativo, não o substitui', () => {
     );
   });
 });
+
+describe('a soma não escapa do teto de caracteres', () => {
+  it('corta no limite e marca truncado', () => {
+    /**
+     * `extractTextFromPdf` corta o nativo em PDF_ANALYSIS_MAX_INPUT_CHARS e o OCR corta o dele por
+     * conta própria, mas a soma não passava por corte nenhum — e o teto existe para segurar custo
+     * e não estourar a janela de contexto da Groq.
+     */
+    const merged = mergeNativeAndOcrPages(
+      [
+        { pageNumber: 1, text: 'a'.repeat(60) },
+        { pageNumber: 2, text: 'b'.repeat(60) },
+        { pageNumber: 3, text: 'c'.repeat(60) },
+      ],
+      [],
+      100,
+    );
+
+    assert.equal(merged.charCount <= 100, true, `passou do teto: ${merged.charCount}`);
+    assert.ok(merged.truncated);
+    // A primeira página inteira cabe; a segunda entra pela metade e a terceira nem começa.
+    assert.deepEqual(
+      merged.pages.map((page) => page.pageNumber),
+      [1, 2],
+    );
+  });
+
+  it('abaixo do teto nada é cortado', () => {
+    const merged = mergeNativeAndOcrPages([{ pageNumber: 1, text: 'curto' }], [], 100);
+    assert.equal(merged.truncated, false);
+    assert.equal(merged.text, 'curto');
+  });
+});
