@@ -51,6 +51,7 @@ import { createTokenBudget } from '../utils/tokenBudget.js';
 import { refineExtraction } from './extractionRefinementLoop.js';
 import { resolveExpiryProvenance } from '../utils/expiryProvenance.js';
 import { recordDocumentExpiryProvenance } from '../../metrics/prometheus.js';
+import { isUncategorizedCategory } from '../../../shared/systemCategory.js';
 import { reviewFailedClassification } from './classificationReviewAgent.js';
 import { suggestCategoryForDocument } from './categorySuggestionAgent.js';
 import { getTenantUploadPolicy } from '../../services/settings/uploadPolicySettings.js';
@@ -458,6 +459,28 @@ export async function analyzePdfBuffer(input: {
   }
 
   const documentClassRules = rulesLoad.rules;
+
+  /**
+   * "Sem categoria" não é uma pasta que o modelo possa escolher.
+   *
+   * Ela é o destino de fracasso — onde o documento cai quando ninguém soube classificá-lo —, e
+   * estava indo ao classificador como se fosse uma prateleira legítima, com a descrição
+   * "Documentos que chegaram sem classificação. Reclassifique quando souber onde eles moram."
+   * Lida como opção, essa frase descreve perfeitamente qualquer documento difícil: o modelo
+   * arquivava ali com confiança e o assunto morria.
+   *
+   * O custo era duplo. O documento não ganhava nome nem metadado, porque a regra padrão dessa
+   * pasta não descreve nada; e a proposta de categoria nova nunca era pedida, porque do ponto de
+   * vista do código a classificação tinha dado certo. Um currículo virava "Sem categoria" em vez
+   * de virar a pasta "Currículos" que faltava.
+   *
+   * Fora da lista, ela volta a ser o que é: para onde a confirmação manda quem sobrou, e uma pasta
+   * que alguém escolhe à mão. O classificador não a vê mais.
+   */
+  const classifiableRules = documentClassRules.filter(
+    (rule) => !isUncategorizedCategory({ id: rule.id, name: rule.name }),
+  );
+
   timer.mark('rulesLoad');
 
   if (rulesLoad.usedMockFallback) {
@@ -496,7 +519,7 @@ export async function analyzePdfBuffer(input: {
 
   const classificationChunks = selectChunksForClassification({
     chunks,
-    classes: documentClassRules,
+    classes: classifiableRules,
   });
 
   logs.push(
@@ -511,16 +534,17 @@ export async function analyzePdfBuffer(input: {
   pipelineInfo('analyzePdf', 'pré-classificação', {
     jobId,
     rulesCount: documentClassRules.length,
+    classifiableRulesCount: classifiableRules.length,
     rulesSource: rulesLoad.source,
     chunksCount,
     classificationChunks: classificationChunks.length,
-    classNames: documentClassRules.map((r) => r.name),
+    classNames: classifiableRules.map((r) => r.name),
   });
 
   groqCalled = true;
   let classification = await analysisProvider.classify({
     chunks: classificationChunks,
-    classes: documentClassRules,
+    classes: classifiableRules,
     context: {
       requestId: context.requestId,
       jobId,
@@ -530,6 +554,32 @@ export async function analyzePdfBuffer(input: {
     },
   });
   timer.mark('classification');
+
+  /**
+   * Cinto de segurança: "Sem categoria" nunca é resposta de classificação.
+   *
+   * O modelo não a recebe mais na lista, e `classifyDocumentWithRules` recusa id fora das
+   * permitidas — então isto não deveria disparar. Existe porque a alternativa, se disparar, é o
+   * documento ser dado como classificado e perder tanto a extração quanto a proposta de pasta
+   * nova, que é exatamente o defeito que a filtragem veio corrigir. Cair aqui é um bug em outro
+   * lugar, e o log diz isso com todas as letras.
+   */
+  if (classification.classId && isUncategorizedCategory({ id: classification.classId })) {
+    logger.warn('classificador devolveu a pasta de sistema; tratando como sem classe', {
+      requestId: context.requestId,
+      jobId,
+      companyId: input.companyId,
+      classId: classification.classId,
+    });
+
+    classification = {
+      ...classification,
+      classId: null,
+      className: null,
+      requiresReview: true,
+      reason: 'Nenhuma categoria configurada serve para este documento.',
+    };
+  }
 
   pipelineInfo('analyzePdf', 'classificação concluída', {
     jobId,
@@ -607,7 +657,7 @@ export async function analyzePdfBuffer(input: {
   ) {
     const review = await reviewFailedClassification({
       chunks: classificationChunks,
-      classes: documentClassRules,
+      classes: classifiableRules,
       classification,
       context: {
         requestId: context.requestId,
@@ -690,7 +740,7 @@ export async function analyzePdfBuffer(input: {
       skip: Boolean(classification.classId),
       companyId: input.companyId,
       chunks: classificationChunks,
-      classes: documentClassRules,
+      classes: classifiableRules,
       classification,
       context: {
         requestId: context.requestId,
