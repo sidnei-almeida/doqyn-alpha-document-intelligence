@@ -12,9 +12,12 @@ import {
   clampAutoDelaySeconds,
 } from '../uploadConstants';
 import {
+  CATEGORY_SUGGESTION_DESCRIPTION_KEYS,
+  CATEGORY_SUGGESTION_LABEL_KEYS,
   NAMING_POLICY_DESCRIPTION_KEYS,
   NAMING_POLICY_LABEL_KEYS,
 } from '../utils/reviewWorkflowSettings';
+import { CATEGORY_SUGGESTION_MODES, type CategorySuggestionMode } from '@shared/uploadPolicy';
 import { useTranslation } from 'react-i18next';
 
 interface ReviewWorkflowSettingsPanelProps {
@@ -136,6 +139,65 @@ function NamingPolicyOptions({
             compact ? 'settings-choice-item--compact' : 'settings-choice-item',
             !compact && value === policy && 'settings-choice-item--active',
             compact && value === policy && 'settings-choice-item--compact-active',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * O que fazer quando nenhuma categoria configurada serve.
+ *
+ * Três escolhas e não um interruptor porque o meio-termo é o caso comum: a maioria quer ver a
+ * proposta antes de a pasta existir. Ligar/desligar obrigaria a escolher entre "a IA cria pasta
+ * sozinha" e "a IA não ajuda", e quase ninguém quer nenhum dos dois.
+ */
+function CategorySuggestionOptions({
+  value,
+  onChange,
+  compact = false,
+}: {
+  value: CategorySuggestionMode;
+  onChange: (mode: CategorySuggestionMode) => void;
+  compact?: boolean;
+  size?: 'compact' | 'comfortable';
+}) {
+  const { t } = useTranslation('documentSend');
+
+  return (
+    <div
+      className={cn('settings-choice-list', compact && 'settings-choice-list--compact')}
+      role="radiogroup"
+      aria-label={t('reviewWorkflowSettingsPanel.categoriaSugeridaPelaIa')}
+    >
+      {CATEGORY_SUGGESTION_MODES.map((mode) => (
+        <Radio
+          key={mode}
+          name="category-suggestion-mode"
+          checked={value === mode}
+          onChange={() => onChange(mode)}
+          label={
+            compact ? (
+              <span className="settings-choice-item__inline">
+                <span className="settings-choice-item__label">
+                  {t(CATEGORY_SUGGESTION_LABEL_KEYS[mode])}
+                </span>
+                <span className="settings-choice-item__sep" aria-hidden>
+                  —
+                </span>
+                <span className="settings-choice-item__hint">
+                  {t(CATEGORY_SUGGESTION_DESCRIPTION_KEYS[mode])}
+                </span>
+              </span>
+            ) : (
+              t(CATEGORY_SUGGESTION_LABEL_KEYS[mode])
+            )
+          }
+          wrapperClassName={cn(
+            compact ? 'settings-choice-item--compact' : 'settings-choice-item',
+            !compact && value === mode && 'settings-choice-item--active',
+            compact && value === mode && 'settings-choice-item--compact-active',
           )}
         />
       ))}
@@ -398,6 +460,12 @@ export function ReviewWorkflowSettingsPanel({
       <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.sugestoesDaIa')}>
         <AiSuggestionControls settings={settings} patch={patch} />
       </CollapsibleSettingsSection>
+      <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.categoriaSugeridaPelaIa')}>
+        <CategorySuggestionOptions
+          value={settings.categorySuggestionMode}
+          onChange={(mode) => patch({ categorySuggestionMode: mode })}
+        />
+      </CollapsibleSettingsSection>
       <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.uploadEmLote')}>
         <BatchControls settings={settings} patch={patch} />
       </CollapsibleSettingsSection>
@@ -444,6 +512,19 @@ export function ReviewWorkflowSettingsPanel({
           <NamingPolicyOptions
             value={settings.defaultNamingPolicy}
             onChange={(policy) => patch({ defaultNamingPolicy: policy })}
+            compact
+            size="comfortable"
+          />
+        </SettingsFieldGroup>
+
+        <SettingsFieldGroup
+          title={t('reviewWorkflowSettingsPanel.categoriaSugeridaPelaIa2')}
+          description={t('reviewWorkflowSettingsPanel.oQueFazerQuandoNenhumaCategoria')}
+          className="settings-field-group--fill"
+        >
+          <CategorySuggestionOptions
+            value={settings.categorySuggestionMode}
+            onChange={(mode) => patch({ categorySuggestionMode: mode })}
             compact
             size="comfortable"
           />

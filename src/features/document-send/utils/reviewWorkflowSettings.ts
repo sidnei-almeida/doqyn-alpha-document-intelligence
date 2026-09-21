@@ -5,7 +5,11 @@ import type {
   PerItemNamingChoice,
   WorkflowReviewSettings,
 } from '../types/reviewWorkflowSettings';
-import { DEFAULT_TENANT_UPLOAD_POLICY, normalizeTenantUploadPolicy } from '@shared/uploadPolicy';
+import {
+  DEFAULT_TENANT_UPLOAD_POLICY,
+  normalizeTenantUploadPolicy,
+  type CategorySuggestionMode,
+} from '@shared/uploadPolicy';
 import type { DocumentNamingMode } from './resolveDocumentNaming';
 import { previewFinalFileName } from './resolveDocumentNaming';
 import { MIN_CLASSIFICATION_CONFIDENCE } from '../uploadConstants';
@@ -153,4 +157,16 @@ export const NAMING_POLICY_DESCRIPTION_KEYS: Record<DefaultNamingPolicy, string>
   ai_suggested: 'documentSend:namingPolicy.description.aiSuggested',
   ask_each_file: 'documentSend:namingPolicy.description.askEachFile',
   manual_required: 'documentSend:namingPolicy.description.manualRequired',
+};
+
+export const CATEGORY_SUGGESTION_LABEL_KEYS: Record<CategorySuggestionMode, string> = {
+  off: 'documentSend:categorySuggestion.label.off',
+  suggest: 'documentSend:categorySuggestion.label.suggest',
+  auto_create: 'documentSend:categorySuggestion.label.autoCreate',
+};
+
+export const CATEGORY_SUGGESTION_DESCRIPTION_KEYS: Record<CategorySuggestionMode, string> = {
+  off: 'documentSend:categorySuggestion.description.off',
+  suggest: 'documentSend:categorySuggestion.description.suggest',
+  auto_create: 'documentSend:categorySuggestion.description.autoCreate',
 };

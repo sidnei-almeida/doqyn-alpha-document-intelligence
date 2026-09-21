@@ -25,6 +25,19 @@ type ApiProcessingLogItem = {
   status: 'done' | 'active' | 'pending' | 'error';
 };
 
+/**
+ * Pasta que a IA propõe quando nenhuma das configuradas serve.
+ *
+ * Não é classe: é um rascunho de classe, sem id e sem regra. Vira pasta de verdade quando alguém
+ * clica na revisão, ou na confirmação quando o tenant escolheu `auto_create`.
+ */
+export type SuggestedCategory = {
+  name: string;
+  description: string;
+  keywords: string[];
+  reason: string;
+};
+
 type ClassificationResult = {
   classId: string | null;
   className: string | null;
@@ -34,6 +47,7 @@ type ClassificationResult = {
   evidence: EvidenceSnippet[];
   errorCode?: string;
   reviewReason?: string;
+  suggestedCategory?: SuggestedCategory | null;
 };
 
 type ExtractedMetadataField = {

@@ -82,6 +82,13 @@ export function ReviewDrawer() {
   const uploadDestination = item.context?.categoryName;
   const aiClassId = raw.classification.classId;
   const aiClassName = raw.classification.className ?? metadata.documentType;
+  /**
+   * A pasta que a IA propôs criar, quando nenhuma das configuradas serviu.
+   *
+   * Some assim que alguém escolhe uma categoria: a proposta responde "nenhuma serve", e depois da
+   * escolha essa frase deixou de ser verdade.
+   */
+  const suggestedCategory = manualCategory ? null : (raw.classification.suggestedCategory ?? null);
   const hasCategoryMismatch = Boolean(
     item.context?.categoryId && aiClassId && item.context.categoryId !== aiClassId,
   );
@@ -218,7 +225,9 @@ export function ReviewDrawer() {
                 {fulfillsRequest
                   ? (item.context?.categoryName ?? t('reviewDrawer.category.fromRequest'))
                   : (manualCategory?.name ??
-                    (aiClassId ? aiClassName : t('reviewDrawer.category.unclassified')))}
+                    (aiClassId
+                      ? aiClassName
+                      : (suggestedCategory?.name ?? t('reviewDrawer.category.unclassified'))))}
               </p>
               <p className="mt-0.5 text-micro text-doqyn-muted">
                 {fulfillsRequest
@@ -227,7 +236,9 @@ export function ReviewDrawer() {
                     ? t('reviewDrawer.categoryHint.manual')
                     : aiClassId
                       ? t('reviewDrawer.categoryHint.ai')
-                      : t('reviewDrawer.categoryHint.pick')}
+                      : suggestedCategory
+                        ? t('reviewDrawer.categoryHint.suggested')
+                        : t('reviewDrawer.categoryHint.pick')}
               </p>
             </div>
 
@@ -247,6 +258,8 @@ export function ReviewDrawer() {
               <CategoryQuickPicker
                 selectedClassId={manualCategory?.id}
                 suggestedClassId={aiClassId}
+                suggestion={suggestedCategory}
+                canCreateCategory={isDocumentAdmin}
                 onSelect={handlePickCategory}
               />
             </div>

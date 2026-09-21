@@ -84,7 +84,7 @@ const EMPTY_NAMES = new Set([
 function normalizeForComparison(value: string): string {
   return value
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
@@ -106,7 +106,8 @@ function parseName(raw: unknown, classes: DocumentClassRule[]): string | null {
   if (!slug) return null;
 
   const collides = classes.some(
-    (entry) => normalizeForComparison(entry.name) === comparable || slugifyName(entry.name) === slug,
+    (entry) =>
+      normalizeForComparison(entry.name) === comparable || slugifyName(entry.name) === slug,
   );
   if (collides) return null;
 
@@ -119,7 +120,9 @@ function parseDescription(raw: unknown): string | null {
   const text = raw.replace(/\s+/g, ' ').trim();
   if (text.length < DESCRIPTION_MIN_CHARS) return null;
 
-  return text.length <= DESCRIPTION_MAX_CHARS ? text : `${text.slice(0, DESCRIPTION_MAX_CHARS).trimEnd()}…`;
+  return text.length <= DESCRIPTION_MAX_CHARS
+    ? text
+    : `${text.slice(0, DESCRIPTION_MAX_CHARS).trimEnd()}…`;
 }
 
 function parseKeywords(raw: unknown, name: string): string[] {

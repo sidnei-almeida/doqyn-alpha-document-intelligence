@@ -304,9 +304,9 @@ function withGroqRequestTimeout<T>(promise: Promise<T>, timeoutMs: number): Prom
  */
 function modelForOperation(operation: string): string {
   switch (operation) {
-    case 'document_classification':
     // A proposta de categoria é trabalho de classificação: ler o documento e dizer em que
     // prateleira ele mora. Segue o mesmo modelo, não o genérico.
+    case 'document_classification':
     case 'category_suggestion':
       return getGroqClassifierModel();
     case 'metadata_extraction':

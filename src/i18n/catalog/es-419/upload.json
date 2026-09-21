@@ -5,7 +5,13 @@
     "filtrarCategorias": "Filtrar categorías",
     "filtrarCategorias2": "Filtrar categorías",
     "nenhumaCategoriaComEsse": "Ninguna categoría con ese nombre.",
-    "nenhumaCategoriaConfiguradaCrie": "Ninguna categoría configurada. Crea una en Reglas antes de clasificar a mano."
+    "nenhumaCategoriaConfiguradaCrie": "Ninguna categoría configurada. Crea una en Reglas antes de clasificar a mano.",
+    "suggestion": {
+      "eyebrow": "Categoría sugerida por la IA",
+      "createButton": "Crear categoría «{{name}}»",
+      "adminOnly": "Solo quien administra documentos puede crear categorías. Elige una de las existentes.",
+      "createFailed": "No se pudo crear la categoría. Inténtalo de nuevo."
+    }
   },
   "quickFieldsEditor": {
     "camposDoDocumento": "Campos del documento",
@@ -53,7 +59,8 @@
       "fromRequest": "La eligió quien solicitó el documento. No se puede cambiar aquí.",
       "manual": "La elegiste tú. La elección de la IA queda registrada en la auditoría.",
       "ai": "Sugerida por el análisis automático.",
-      "pick": "Elige la categoría para guardar este documento."
+      "pick": "Elige la categoría para guardar este documento.",
+      "suggested": "Ninguna categoría existente sirve. La IA propuso una abajo."
     }
   },
   "uploadDropOverlay": {

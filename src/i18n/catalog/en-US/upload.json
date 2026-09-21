@@ -5,7 +5,13 @@
     "filtrarCategorias": "Filter categories",
     "filtrarCategorias2": "Filter categories",
     "nenhumaCategoriaComEsse": "No category with that name.",
-    "nenhumaCategoriaConfiguradaCrie": "No categories set up. Create one under Rules before classifying by hand."
+    "nenhumaCategoriaConfiguradaCrie": "No categories set up. Create one under Rules before classifying by hand.",
+    "suggestion": {
+      "eyebrow": "Category suggested by the AI",
+      "createButton": "Create category “{{name}}”",
+      "adminOnly": "Only document admins can create categories. Pick one of the existing ones.",
+      "createFailed": "Couldn't create the category. Try again."
+    }
   },
   "quickFieldsEditor": {
     "camposDoDocumento": "Document fields",
@@ -52,7 +58,8 @@
       "fromRequest": "Chosen by whoever requested the document. It can't be changed here.",
       "manual": "Chosen by you. The AI's choice stays in the audit log.",
       "ai": "Suggested by the automatic analysis.",
-      "pick": "Choose the category to save this document."
+      "pick": "Choose the category to save this document.",
+      "suggested": "No existing category fits. The AI proposed one below."
     }
   },
   "uploadDropOverlay": {

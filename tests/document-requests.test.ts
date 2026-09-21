@@ -287,7 +287,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
     assert.ok(client.split('documentRequestId: options?.documentRequestId').length === 3);
   });
 
-  it('a categoria pode vir de três lugares, e as guardas conhecem os três', () => {
+  it('a categoria pode vir de quatro lugares, e as guardas conhecem todos', () => {
     const guard = read('src/features/document-send/services/normalizeConfirmPayload.ts');
     const drawer = read('src/features/upload/review/ReviewDrawer.tsx');
     const submit = read('server/services/documentUploadApprovalService.ts');
@@ -296,12 +296,30 @@ describe('requisitar documento — o que a revisão apontou', () => {
     assert.ok(guard.includes('fallback?.manualClassId'));
     assert.ok(guard.includes('fallback?.documentRequestId'));
     assert.ok(drawer.includes('!fulfillsRequest'));
-    // Mesma ordem do confirm: pedido > escolha humana > IA.
-    assert.ok(
-      submit.includes(
-        'fulfilledRequest?.categoryId ?? data.manualClassId?.trim() ?? data.classification.classId',
-      ),
-    );
+
+    /**
+     * A ordem, não o texto da linha.
+     *
+     * O `assert` antigo casava a expressão inteira como string e quebrou quando o Prettier a
+     * quebrou em quatro linhas — sem que nada de comportamento tivesse mudado. O que importa é a
+     * precedência: pedido > escolha humana > IA > pasta criada pela IA. A pasta criada entra por
+     * último porque é o que sobra quando nenhuma das três decisões existiu.
+     */
+    const order = [
+      'fulfilledRequest?.categoryId',
+      'data.manualClassId?.trim()',
+      'data.classification.classId',
+      'autoCreatedClassId',
+    ];
+
+    let cursor = submit.indexOf('const effectiveClassId');
+    assert.ok(cursor >= 0, 'a resolução da categoria de destino sumiu do envio para aprovação');
+
+    for (const term of order) {
+      const at = submit.indexOf(term, cursor);
+      assert.ok(at > cursor, `"${term}" fora de ordem na resolução da categoria`);
+      cursor = at;
+    }
   });
 
   it('pedir é o ato de autorização: cumprir dispensa permissão na categoria de destino', () => {

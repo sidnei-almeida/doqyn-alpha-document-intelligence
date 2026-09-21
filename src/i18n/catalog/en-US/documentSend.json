@@ -55,6 +55,9 @@
     "aplicarEstaConfiguracaoAos": "Apply this setting to the next files in the batch",
     "ativarModoAutomatico": "Turn on automatic mode",
     "aumentarSegundos": "Increase seconds",
+    "autoSummary": "Auto · {{seconds}}s",
+    "categoriaSugeridaPelaIa": "Category suggested by the AI",
+    "categoriaSugeridaPelaIa2": "Category suggested by the AI",
     "comportamentoAoEnviarVarios": "Behavior when uploading several files at once.",
     "configuracoesDaRevisao": "Review settings",
     "configuracoesDaRevisao2": "Review settings",
@@ -73,6 +76,7 @@
     "nomesSaoSanitizadosSem": "Names are sanitized (no slashes or path traversal), capped at about 180 characters and forced to the .pdf extension. Tax IDs do not go into the suggested name automatically while the protection is on.",
     "nomesSaoSanitizadosSem2": "Names are sanitized (no slashes or path traversal), capped at about 180 characters and forced to the .pdf extension. Tax IDs do not go into the suggested name automatically while the protection is on.",
     "nuncaIncluirCpfCnpj": "Never include a tax ID in the suggested name",
+    "oQueFazerQuandoNenhumaCategoria": "What to do when no configured category fits the document.",
     "pararParaRevisaoQuando": "Stop for review when there is a conflict",
     "permitirIaSugerirNome": "Let the AI suggest a standardized name",
     "politicaDeNomeacaoPadrao": "Default naming policy",
@@ -86,8 +90,7 @@
     "sugestoesDaIa": "AI suggestions",
     "sugestoesDaIa2": "AI suggestions",
     "uploadEmLote": "Batch upload",
-    "uploadEmLote2": "Batch upload",
-    "autoSummary": "Auto · {{seconds}}s"
+    "uploadEmLote2": "Batch upload"
   },
   "confidenceBadge": {
     "high": "High confidence",
@@ -127,5 +130,17 @@
     "saveFailed": "Couldn't save the document.",
     "approvalFailed": "Couldn't send the document for approval.",
     "updateFailed": "Couldn't update the document."
+  },
+  "categorySuggestion": {
+    "label": {
+      "off": "Don't suggest",
+      "suggest": "Suggest at review",
+      "autoCreate": "Create automatically"
+    },
+    "description": {
+      "off": "the document goes to \"Uncategorized\" and someone reclassifies it later",
+      "suggest": "the AI proposes the folder and whoever reviews decides whether it is created",
+      "autoCreate": "the AI creates the folder on save, without anyone looking"
+    }
   }
 }

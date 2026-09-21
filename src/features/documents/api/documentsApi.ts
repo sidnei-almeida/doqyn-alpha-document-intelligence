@@ -134,6 +134,42 @@ export async function fetchCategoryFields(categoryId: string): Promise<CategoryF
   return data.fields ?? [];
 }
 
+/**
+ * Cria a categoria que a IA propôs, direto da revisão.
+ *
+ * A rota de criação é de administrador (`withAdminMongoApi`), então quem não administra vê a
+ * proposta como texto e escolhe entre as pastas existentes. Chamar mesmo assim devolveria 403 —
+ * quem chama esconde o botão antes.
+ */
+export async function createDocumentCategoryFromSuggestion(input: {
+  name: string;
+  description: string;
+  keywords?: string[];
+}): Promise<{ id: string; name: string }> {
+  const response = await authFetch('/api/document-categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: input.name,
+      description: input.description,
+      keywords: input.keywords ?? [],
+    }),
+  });
+
+  if (!response.ok) {
+    throw await parseDocumentApiError(response);
+  }
+
+  const data = (await response.json()) as { category?: { id: string; name: string } };
+
+  // Resposta sem id é falha de contrato, não texto de tela: quem chama já traduz o erro genérico.
+  if (!data.category?.id) {
+    throw new Error('CATEGORY_CREATED_WITHOUT_ID');
+  }
+
+  return data.category;
+}
+
 export async function fetchDocumentCategories(): Promise<
   Array<{ id: string; name: string; description?: string; slug?: string }>
 > {

@@ -57,6 +57,9 @@
     "aplicarEstaConfiguracaoAos": "Aplicar esta configuración a los próximos archivos del lote",
     "ativarModoAutomatico": "Activar el modo automático",
     "aumentarSegundos": "Aumentar segundos",
+    "autoSummary": "Auto · {{seconds}} s",
+    "categoriaSugeridaPelaIa": "Categoría sugerida por la IA",
+    "categoriaSugeridaPelaIa2": "Categoría sugerida por la IA",
     "comportamentoAoEnviarVarios": "Comportamiento al subir varios archivos a la vez.",
     "configuracoesDaRevisao": "Configuración de la revisión",
     "configuracoesDaRevisao2": "Configuración de la revisión",
@@ -75,6 +78,7 @@
     "nomesSaoSanitizadosSem": "Los nombres se sanean (sin barras ni path traversal), se limitan a unos 180 caracteres y se fuerzan a la extensión .pdf. Los documentos fiscales no entran automáticamente en el nombre sugerido mientras la protección está activa.",
     "nomesSaoSanitizadosSem2": "Los nombres se sanean (sin barras ni path traversal), se limitan a unos 180 caracteres y se fuerzan a la extensión .pdf. Los documentos fiscales no entran automáticamente en el nombre sugerido mientras la protección está activa.",
     "nuncaIncluirCpfCnpj": "Nunca incluir el documento fiscal en el nombre sugerido",
+    "oQueFazerQuandoNenhumaCategoria": "Qué hacer cuando ninguna categoría configurada sirve para el documento.",
     "pararParaRevisaoQuando": "Parar para revisión cuando haya conflicto",
     "permitirIaSugerirNome": "Permitir que la IA sugiera un nombre estandarizado",
     "politicaDeNomeacaoPadrao": "Política de nomenclatura predeterminada",
@@ -88,8 +92,7 @@
     "sugestoesDaIa": "Sugerencias de la IA",
     "sugestoesDaIa2": "Sugerencias de la IA",
     "uploadEmLote": "Subida en lote",
-    "uploadEmLote2": "Subida en lote",
-    "autoSummary": "Auto · {{seconds}} s"
+    "uploadEmLote2": "Subida en lote"
   },
   "confidenceBadge": {
     "high": "Alta confianza",
@@ -129,5 +132,17 @@
     "saveFailed": "No se pudo guardar el documento.",
     "approvalFailed": "No se pudo enviar el documento para aprobación.",
     "updateFailed": "No se pudo actualizar el documento."
+  },
+  "categorySuggestion": {
+    "label": {
+      "off": "No sugerir",
+      "suggest": "Sugerir en la revisión",
+      "autoCreate": "Crear automáticamente"
+    },
+    "description": {
+      "off": "el documento va a \"Sin categoría\" y alguien lo reclasifica después",
+      "suggest": "la IA propone la carpeta y quien revisa decide si nace",
+      "autoCreate": "la IA crea la carpeta al guardar, sin que nadie la vea"
+    }
   }
 }
