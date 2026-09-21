@@ -100,10 +100,15 @@ describe('document upload approval', () => {
 
   it('auditoria lista envios de documento pendentes', () => {
     const pendingApi = read('src/features/audit/api/pendingApprovalsApi.ts');
-    // A listagem por tipo virou uma só, `listPendingApprovals`, e o tipo entrou no conjunto de
-    // `DOCUMENT_KINDS` — que é o que separa recusar um envio de recusar a pessoa.
-    assert.ok(pendingApi.includes('document_upload'));
+    // Eram três origens fundidas no navegador. Hoje `/api/approval-requests` devolve uma lista só,
+    // e as três espécies dela são todas de documento — não há mais um `isDocumentApproval` para
+    // separar envio de pessoa, porque pedido de acesso deixou de entrar por aqui.
     assert.ok(pendingApi.includes('listPendingApprovals'));
-    assert.ok(pendingApi.includes('isDocumentApproval'));
+    assert.ok(pendingApi.includes("'/api/approval-requests'"));
+    for (const kind of ['document_upload', 'document_download', 'document_share']) {
+      assert.ok(pendingApi.includes(kind), `a lista precisa conhecer "${kind}"`);
+    }
+    // O envio carrega a carga que a tela de revisão mostra antes de decidir.
+    assert.ok(pendingApi.includes('documentUpload'));
   });
 });

@@ -21,12 +21,19 @@ describe('toolbar da Biblioteca', () => {
     assert.ok(toolbar.includes('BulkSelectionToolbar'));
   });
 
-  it('ViewModeToggle alterna entre grade e lista com aria-pressed', () => {
+  it('ViewModeToggle alterna entre grade e lista, e nomeia a vista atual', () => {
     const toggle = readSrc('features/library/components/ViewModeToggle.tsx');
-    assert.ok(toggle.includes('SegmentedIconToggle'));
-    assert.ok(toggle.includes("'grid'"));
-    assert.ok(toggle.includes("'list'"));
-    assert.ok(toggle.includes('aria-label="Modo de visualização"'));
+    const modes = readSrc('features/library/utils/libraryViewMode.ts');
+
+    // Eram dois botões com régua embaixo do ativo, e `aria-pressed` dizia qual. Virou uma chave
+    // de um glifo só: não há mais dois estados para marcar, há um estado e o próximo. O que a
+    // régua marcava passou para o rótulo acessível, que precisa nomear os dois.
+    assert.equal(toggle.includes('aria-pressed'), false);
+    assert.ok(toggle.includes('nextViewMode'));
+    assert.ok(toggle.includes('aria-label={label}'));
+    assert.ok(toggle.includes('current:') && toggle.includes('next:'));
+    assert.ok(modes.includes("'grid'"));
+    assert.ok(modes.includes("'list'"));
   });
 
   it('SortMenu oferece ordenação com direção na URL', () => {

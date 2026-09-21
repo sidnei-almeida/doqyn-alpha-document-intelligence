@@ -48,13 +48,13 @@ describe('shell drive-inspired do workspace', () => {
     // Base uniforme atrás de sidebar+topbar: shell (sidebar) segue o chrome nos dois temas
     const darkShell = tokens.match(/\[data-theme='dark'\][\s\S]*?--bg-shell:\s*var\(--bg-chrome\)/);
     assert.ok(darkShell, 'sidebar deve compartilhar o fundo base do chrome em dark');
-    const lightChrome = tokens.match(
-      /\[data-theme='light'\][\s\S]*?--bg-chrome:\s*var\(--color-surface\)/,
-    );
+    // No claro a casca deixou de ser `--color-surface`: contra a folha branca do painel, aquele
+    // cinza não dizia onde uma camada terminava, e a casca ganhou um degrau próprio. O que a
+    // guarda protege é a regra, não o token — sidebar segue o chrome, aqui como no escuro.
     const lightShell = tokens.match(
-      /\[data-theme='light'\][\s\S]*?--bg-shell:\s*var\(--color-surface\)/,
+      /\[data-theme='light'\][\s\S]*?--bg-shell:\s*var\(--bg-chrome\)/,
     );
-    assert.ok(lightChrome && lightShell, 'sidebar e topbar devem usar --color-surface em light');
+    assert.ok(lightShell, 'sidebar deve compartilhar o fundo base do chrome em light');
 
     const lightCanvas = tokens.match(
       /\[data-theme='light'\][\s\S]*?--bg-canvas:\s*var\(--color-background\)/,

@@ -22,9 +22,10 @@ describe('Auditoria B.7 — Vision OCR + pipeline debug + modelo Groq', () => {
     assert.ok(source.includes('summarizeError'));
     assert.ok(source.includes('previewText'));
     assert.ok(source.includes('bufferMeta'));
-    assert.ok(
-      source.includes('TEMPORÁRIO') || source.includes('temporário') || source.includes('Desligar'),
-    );
+    // Era um marcador de "lembrar de tirar". Virou coisa melhor: um portão que `NODE_ENV=production`
+    // fecha mesmo com a variável ligada, porque o rastro imprime conteúdo do documento.
+    assert.ok(source.includes("process.env.NODE_ENV === 'production'"));
+    assert.ok(source.includes('isPipelineDebugEnabled'));
   });
 
   it('OCR / extractor / groq / worker emitem logs AI_PIPELINE_DEBUG', () => {

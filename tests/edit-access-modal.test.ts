@@ -159,10 +159,18 @@ describe('consistência global de checkboxes', () => {
     assert.equal(source.includes('type="checkbox"'), false);
   });
 
-  it('ApproveApprovalDialog reutiliza AccessFormSections', () => {
-    const source = readSrc('features/audit/components/ApproveApprovalDialog.tsx');
-    assert.ok(source.includes('AccessFormSections'));
-    assert.equal(source.includes('type="checkbox"'), false);
+  it('quem monta formulário de acesso reutiliza AccessFormSections', () => {
+    // `ApproveApprovalDialog` virou `PendingApprovalReviewDialog` e deixou de montar formulário:
+    // é ler e decidir, sem caixa para marcar. O reuso ficou entre os dois diálogos que ainda
+    // pedem acesso, e a proibição do checkbox cru vale para o sucessor do mesmo jeito.
+    for (const file of ['EditAccessDialog', 'InviteMemberDialog']) {
+      const source = readSrc(`features/users/components/${file}.tsx`);
+      assert.ok(source.includes('AccessFormSections'), `${file} deveria reusar AccessFormSections`);
+      assert.equal(source.includes('type="checkbox"'), false);
+    }
+
+    const review = readSrc('features/audit/components/PendingApprovalReviewDialog.tsx');
+    assert.equal(review.includes('type="checkbox"'), false);
   });
 
   it('GovernanceDetailDialog usa Checkbox nas permissões', () => {
