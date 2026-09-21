@@ -33,6 +33,9 @@ import {
 } from './r2BucketProvisioner.js';
 import { markTenantBucketReady } from '../../services/tenantStorageConfigService.js';
 import type { R2Config } from '../storageConfig.js';
+import { mirrorObject, readMirroredObject } from '../mirror/mirrorStorage.js';
+import { logger } from '../../utils/logger.js';
+import { isStorageMirrorEnabled } from '../mirror/mirrorConfig.js';
 
 async function streamToBuffer(body: unknown): Promise<Buffer> {
   if (!body) return Buffer.alloc(0);
@@ -210,23 +213,52 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
 
     const bucket = this.resolveReadBucket(tenantId, bucketAlias, storageScope);
 
-    const result = await this.runtimeClient.send(
-      new GetObjectCommand({
-        Bucket: bucket,
-        Key: storageKey,
-      }),
-    );
+    try {
+      const result = await this.runtimeClient.send(
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: storageKey,
+        }),
+      );
 
-    const buffer = await streamToBuffer(result.Body);
+      const buffer = await streamToBuffer(result.Body);
 
-    return {
-      buffer,
-      storageKey,
-      sizeBytes: buffer.length,
-      bucket,
-      etag: result.ETag ?? undefined,
-      contentType: result.ContentType ?? undefined,
-    };
+      return {
+        buffer,
+        storageKey,
+        sizeBytes: buffer.length,
+        bucket,
+        etag: result.ETag ?? undefined,
+        contentType: result.ContentType ?? undefined,
+      };
+    } catch (error) {
+      /**
+       * O R2 não respondeu — tenta o espelho antes de desistir.
+       *
+       * É aqui que o espelho paga por si: quem chegou neste ponto já passou pela checagem de
+       * tenant e de permissão do documento, então servir do espelho não abre porta nenhuma que o
+       * caminho normal não abrisse. Uma camada acima seria diferente, e é por isso que este
+       * fallback mora dentro do provedor.
+       *
+       * Sem espelho configurado, ou com o objeto ausente nele, o erro original sobe como sempre —
+       * a falha não pode virar "documento não encontrado", que é diagnóstico errado.
+       */
+      const mirrored = await readMirroredObject(bucket, storageKey);
+      if (!mirrored) throw error;
+
+      logger.warn('documento servido pelo espelho: leitura no R2 falhou', {
+        tenantId,
+        storageKey,
+        reason: error instanceof Error ? error.message : 'unknown',
+      });
+
+      return {
+        buffer: mirrored,
+        storageKey,
+        sizeBytes: mirrored.length,
+        bucket,
+      };
+    }
   }
 
   async storeDocumentPreview(input: StoreDocumentPreviewInput): Promise<StoredDocumentPreview> {
@@ -257,6 +289,8 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       }),
     );
 
+    await this.mirrorDerived(bucket, storageKey, input.buffer, 'application/pdf', input.tenantId);
+
     return {
       storageKey,
       sizeBytes: input.buffer.length,
@@ -265,6 +299,40 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
       etag: result.ETag ?? undefined,
       contentType: 'application/pdf',
     };
+  }
+
+  /**
+   * Espelha um derivado (preview, miniatura) sem deixar a falha subir.
+   *
+   * Diferente da versão do documento, preview é dado derivado: se o espelho perder um, ele se
+   * refaz a partir do original. Por isso aqui não há fila nem retry — derrubar a geração do
+   * preview, que é o que o usuário está esperando na tela, para salvar uma cópia que se reconstrói
+   * seria trocar o certo pelo duvidoso.
+   */
+  private async mirrorDerived(
+    bucket: string,
+    objectKey: string,
+    buffer: Buffer,
+    contentType: string,
+    tenantId: string,
+  ): Promise<void> {
+    if (!isStorageMirrorEnabled()) return;
+
+    await mirrorObject({
+      bucket,
+      objectKey,
+      body: buffer,
+      contentType,
+      tenantId,
+      versionId: objectKey,
+    }).catch((error: unknown) => {
+      logger.warn('derivado não espelhado', {
+        tenantId,
+        bucket,
+        objectKey,
+        reason: error instanceof Error ? error.message : 'unknown',
+      });
+    });
   }
 
   async storePreviewAsset(input: StorePreviewAssetInput): Promise<StoredDocumentPreview> {
@@ -284,6 +352,14 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
         Body: input.buffer,
         ContentType: input.contentType,
       }),
+    );
+
+    await this.mirrorDerived(
+      bucket,
+      input.objectKey,
+      input.buffer,
+      input.contentType,
+      input.tenantId,
     );
 
     return {
@@ -601,11 +677,7 @@ export class R2StorageProvider implements StagingCapableStorageProvider {
 
     const hash = createHash('sha256');
     if (!result.Body) {
-      throw new ServiceError(
-        'Arquivo de staging vazio.',
-        'STAGING_FILE_NOT_FOUND',
-        400,
-      );
+      throw new ServiceError('Arquivo de staging vazio.', 'STAGING_FILE_NOT_FOUND', 400);
     }
 
     for await (const chunk of result.Body as AsyncIterable<Uint8Array>) {

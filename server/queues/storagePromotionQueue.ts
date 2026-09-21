@@ -28,6 +28,14 @@ const QUEUE_NAME = 'document-storage-promotion';
 export const STORAGE_PROMOTION_JOB_NAMES = {
   promote: 'promote',
   cleanup: 'cleanup-staging',
+  /**
+   * Cópia para o segundo storage, depois que a versão já está no endereço definitivo.
+   *
+   * Mora nesta fila, e não numa própria, porque é o mesmo assunto — onde o arquivo está — e assim
+   * herda a política de retry e de descarte que já foi pensada aqui. O espelho é sempre o último
+   * da sequência: só faz sentido copiar o que já ficou de pé.
+   */
+  mirror: 'mirror',
 } as const;
 
 let queue: Queue<StoragePromotionJobPayload> | null = null;
@@ -93,7 +101,9 @@ async function getStoragePromotionQueue(): Promise<Queue<StoragePromotionJobPayl
   return queue;
 }
 
-export async function enqueueStoragePromotionJob(payload: StoragePromotionJobPayload): Promise<void> {
+export async function enqueueStoragePromotionJob(
+  payload: StoragePromotionJobPayload,
+): Promise<void> {
   const promotionQueue = await getStoragePromotionQueue();
   if (!promotionQueue) {
     throw new Error('Fila de promoção de storage indisponível.');
@@ -101,6 +111,21 @@ export async function enqueueStoragePromotionJob(payload: StoragePromotionJobPay
 
   await promotionQueue.add(STORAGE_PROMOTION_JOB_NAMES.promote, payload, {
     jobId: `promote-${payload.versionId}`,
+  });
+}
+
+/**
+ * Enfileira a cópia para o espelho. Silenciosa quando a fila não existe.
+ *
+ * Diferente das outras duas, esta não lança: o espelho é conveniência, e não poder enfileirá-lo
+ * não pode derrubar um caminho que já entregou o documento ao acervo.
+ */
+export async function enqueueStorageMirrorJob(payload: StoragePromotionJobPayload): Promise<void> {
+  const promotionQueue = await getStoragePromotionQueue();
+  if (!promotionQueue) return;
+
+  await promotionQueue.add(STORAGE_PROMOTION_JOB_NAMES.mirror, payload, {
+    jobId: `mirror-${payload.versionId}`,
   });
 }
 

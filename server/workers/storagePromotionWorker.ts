@@ -5,8 +5,11 @@ import { R2StorageProvider } from '../storage/r2/r2StorageProvider.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { logger } from '../utils/logger.js';
 import { onShutdown } from '../runtime/shutdown.js';
+import { isStorageMirrorEnabled } from '../storage/mirror/mirrorConfig.js';
+import { mirrorObject } from '../storage/mirror/mirrorStorage.js';
 import {
   enqueueStagingCleanupJob,
+  enqueueStorageMirrorJob,
   startStoragePromotionWorker,
   STORAGE_PROMOTION_JOB_NAMES,
   type StoragePromotionJobPayload,
@@ -84,7 +87,69 @@ export async function promoteStagedVersionFile(
     });
   });
 
+  /**
+   * O espelho entra por último, e só depois que o endereço definitivo já está gravado.
+   *
+   * Antes disso não há o que copiar: o arquivo ainda é provisório e pode ser descartado. Falhar
+   * aqui não desfaz a promoção — o documento já está no acervo e servido pelo R2; o que se perde é
+   * a cópia, e a fila tenta de novo.
+   */
+  if (isStorageMirrorEnabled()) {
+    await enqueueStorageMirrorJob(payload).catch((error: unknown) => {
+      logger.warn('espelho não agendado', {
+        versionId: payload.versionId,
+        reason: error instanceof Error ? error.message : 'unknown',
+      });
+    });
+  }
+
   return 'promoted';
+}
+
+/**
+ * Copia a versão já promovida para o segundo storage.
+ *
+ * Lê do R2 e grava no espelho. Não toca no Mongo: o espelho não é o endereço de ninguém, é uma
+ * segunda cópia no mesmo endereço lógico, e inventar estado sobre ela seria mais uma coisa para
+ * ficar errada sem que ninguém percebesse.
+ */
+export async function mirrorPromotedVersion(
+  payload: StoragePromotionJobPayload,
+): Promise<'mirrored' | 'already_present' | 'skipped_too_large' | 'disabled' | 'skipped'> {
+  const provider = getR2Provider();
+  if (!provider) return 'skipped';
+  if (!isStorageMirrorEnabled()) return 'disabled';
+
+  const { documentVersions } = await getTenantCollections(payload.tenantId, {
+    userId: payload.ownerUserId,
+  });
+  const version = (await documentVersions.findOne({
+    _id: payload.versionId,
+    documentId: payload.documentId,
+  } as Record<string, unknown>)) as MongoDocumentVersion | null;
+
+  // Versão apagada ou já reapontada entre a promoção e o espelho: não há o que copiar, e copiar o
+  // que ninguém referencia só ocuparia disco do espelho para sempre.
+  if (!version || version.storage?.primary?.objectKey !== payload.destinationKey) {
+    return 'skipped';
+  }
+
+  const file = await provider.readDocumentVersion(
+    payload.destinationKey,
+    payload.tenantId,
+    payload.bucket,
+  );
+
+  return mirrorObject({
+    // O bucket que o R2 resolveu para este tenant viaja no payload desde a promoção: PJ tem o seu,
+    // PF divide o compartilhado. O espelho usa o mesmo nome, e é isso que preserva a fronteira.
+    bucket: payload.bucket,
+    objectKey: payload.destinationKey,
+    body: file.buffer,
+    contentType: payload.contentType ?? file.contentType,
+    tenantId: payload.tenantId,
+    versionId: payload.versionId,
+  });
 }
 
 /**
@@ -114,6 +179,18 @@ async function processStoragePromotionJob(job: Job<StoragePromotionJobPayload>):
 
   if (job.name === STORAGE_PROMOTION_JOB_NAMES.cleanup) {
     await cleanupPromotedStaging(payload);
+    return;
+  }
+
+  if (job.name === STORAGE_PROMOTION_JOB_NAMES.mirror) {
+    const outcome = await mirrorPromotedVersion(payload);
+    logger.info('storage mirror job completed', {
+      requestId: payload.requestId,
+      documentId: payload.documentId,
+      versionId: payload.versionId,
+      outcome,
+      durationMs: Date.now() - startedAt,
+    });
     return;
   }
 
