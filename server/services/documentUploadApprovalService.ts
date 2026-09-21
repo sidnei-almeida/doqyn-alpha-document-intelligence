@@ -15,6 +15,7 @@ import {
 } from './confirmAnalysisService.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { assertCanSubmitToCategory } from './categoryUploadPermission.js';
+import { resolveAutoCreatedCategoryId } from './categoryAutoCreateService.js';
 import { resolveRequestForFulfillment } from './requests/documentRequestService.js';
 
 function uploadApprovalsCollection() {
@@ -52,8 +53,29 @@ export async function submitDocumentUploadForApproval(input: {
     ? await resolveRequestForFulfillment(tenantId, input.ctx.userId, data.documentRequestId.trim())
     : null;
 
+  /**
+   * Em `auto_create`, quem envia não escolhe pasta — a IA propôs uma e o tenant já disse que
+   * aceita. A pasta nasce aqui, e não só na aprovação, porque o registro de aprovação precisa de
+   * categoria para rotear a governança: sem ela o aprovador não é encontrado.
+   *
+   * O par desta chamada está em `confirmAnalysisService`, com o mesmo `resolveAutoCreatedCategoryId`.
+   * Separar os dois faria o envio aprovado cair em categoria diferente da que a revisão mostrou.
+   */
+  const autoCreatedClassId =
+    fulfilledRequest?.categoryId || data.manualClassId?.trim() || data.classification.classId
+      ? undefined
+      : await resolveAutoCreatedCategoryId({
+          tenantId,
+          userId: input.ctx.userId,
+          suggestion: data.classification.suggestedCategory,
+          requestId: input.ctx.requestId,
+        });
+
   const effectiveClassId =
-    fulfilledRequest?.categoryId ?? data.manualClassId?.trim() ?? data.classification.classId;
+    fulfilledRequest?.categoryId ??
+    data.manualClassId?.trim() ??
+    data.classification.classId ??
+    autoCreatedClassId;
 
   if (!effectiveClassId) {
     throw new ConfirmAnalysisError(

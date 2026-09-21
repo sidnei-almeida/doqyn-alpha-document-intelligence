@@ -43,6 +43,7 @@ export function serializeDocumentCategory(category: MongoDocumentCategory) {
     iconKey: category.iconKey ?? 'file-text',
     color: category.color ?? 'neutral',
     sortOrder: category.sortOrder ?? 0,
+    createdByAi: category.createdByAi ?? false,
     notifyOnUpdate: category.notifyOnUpdate ?? false,
     notifyGroups: category.notifyGroups ?? [],
     scope: category.scope,
@@ -82,6 +83,8 @@ export async function createDocumentCategory(
     slug?: string;
     sortOrder?: number;
     scope?: 'global' | 'tenant';
+    /** Marca a pasta como criada pela IA — é o que o teto de criação automática conta. */
+    createdByAi?: boolean;
   },
 ) {
   const name = input.name?.trim();
@@ -133,6 +136,7 @@ export async function createDocumentCategory(
       negativeKeywords: input.negativeKeywords ?? [],
       examples: input.examples ?? [],
       sortOrder: input.sortOrder ?? 0,
+      ...(input.createdByAi ? { createdByAi: true } : {}),
       notifyOnUpdate: false,
       notifyGroups: [],
       createdBy: userId,

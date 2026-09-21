@@ -341,6 +341,13 @@ export type MongoDocumentCategory = {
   notifyOnUpdate?: boolean;
   notifyGroups?: string[];
   scope?: 'global' | 'tenant';
+  /**
+   * Pasta que a IA criou sozinha (`categorySuggestionMode: 'auto_create'`).
+   *
+   * É o que o teto de criação automática conta. Também distingue, para quem for arrumar a
+   * taxonomia depois, o que alguém decidiu do que apareceu no caminho de um upload.
+   */
+  createdByAi?: boolean;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;

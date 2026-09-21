@@ -38,6 +38,7 @@ import { ServiceError } from '../utils/serviceErrors.js';
 import { resolveStorageFileNames, type NamingMode } from '../utils/resolveStorageFileNames.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
 import { ensureUncategorizedCategory } from './documentCategoriesService.js';
+import { resolveAutoCreatedCategoryId } from './categoryAutoCreateService.js';
 import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
@@ -65,6 +66,19 @@ const evidenceSchema = z.object({
   snippet: z.string(),
 });
 
+/**
+ * Proposta de categoria vinda da análise.
+ *
+ * Só é lida quando o tenant está em `auto_create` e ninguém escolheu pasta. Vem do cliente, então
+ * `createCategoryFromSuggestion` revalida tudo que importa — nome, slug, teto — antes de escrever.
+ */
+const suggestedCategorySchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  keywords: z.array(z.string()).optional().default([]),
+  reason: z.string().optional().default(''),
+});
+
 const classificationSchema = z.object({
   classId: z.string().nullable(),
   className: z.string().nullable(),
@@ -72,6 +86,7 @@ const classificationSchema = z.object({
   requiresReview: z.boolean(),
   reason: z.string(),
   evidence: z.array(evidenceSchema).optional().default([]),
+  suggestedCategory: suggestedCategorySchema.nullish(),
 });
 
 /**
@@ -277,17 +292,35 @@ export async function confirmAnalysisPersistence(input: {
   // A escolha humana vence a da IA: quem revisou viu o documento.
   const manualClassId = fulfilledRequest?.categoryId ?? (data.manualClassId?.trim() || undefined);
 
+  /**
+   * A pasta que a IA propôs, quando o tenant escolheu criar sozinho.
+   *
+   * Vem antes de "Sem categoria" de propósito: a proposta é o que a IA leu do documento, e a
+   * pasta genérica é o que sobra quando não se leu nada. Falhar aqui não custa o documento —
+   * `createCategoryFromSuggestion` devolve `null` e o fallback de sempre assume.
+   */
+  const autoCreatedClassId =
+    manualClassId || data.classification.classId
+      ? undefined
+      : await resolveAutoCreatedCategoryId({
+          tenantId,
+          userId: ownerUserId ?? input.user.id,
+          suggestion: data.classification.suggestedCategory,
+          requestId: input.ctx.requestId,
+        });
+
   // Sem classe da IA e sem escolha humana, o documento ia para "Sem categoria" em vez de ser
   // recusado. Recusar custava o documento inteiro: o binário já está no R2 e o registro em Mongo só
   // nasce aqui, então o arquivo ficava no bucket sem existir para ninguém. Numa pasta ele aparece
   // na Biblioteca e pode ser reclassificado depois.
   const fallbackClassId =
-    manualClassId || data.classification.classId
+    manualClassId || data.classification.classId || autoCreatedClassId
       ? undefined
       : await ensureUncategorizedCategory(tenantId, ownerUserId ?? input.user.id);
 
   const classId = requireConfirmClassification({
-    classId: manualClassId ?? data.classification.classId ?? fallbackClassId ?? null,
+    classId:
+      manualClassId ?? data.classification.classId ?? autoCreatedClassId ?? fallbackClassId ?? null,
     // Categoria escolhida à mão encerra a dúvida da classificação; o que a extração pediu de
     // revisão continua valendo.
     requiresReview: manualClassId ? false : data.classification.requiresReview,
