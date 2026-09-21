@@ -16,6 +16,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/auth/useAuth';
 import { canConfirmDocumentMetadata } from '@/lib/documentAdminAccess';
+import { emptyDocumentReason } from '@/features/document-send/services/emptyDocument';
 import { useUploadQueueContext } from '../uploadQueueContext';
 import { CategoryQuickPicker } from './CategoryQuickPicker';
 import { QuickFieldsEditor } from './QuickFieldsEditor';
@@ -27,8 +28,15 @@ import { useTranslation } from 'react-i18next';
 export function ReviewDrawer() {
   const { t } = useTranslation('upload');
 
-  const { items, reviewItemId, reviewSettings, closeReview, confirmReview, setItemNamingChoice } =
-    useUploadQueueContext();
+  const {
+    items,
+    reviewItemId,
+    reviewSettings,
+    closeReview,
+    confirmReview,
+    removeItem,
+    setItemNamingChoice,
+  } = useUploadQueueContext();
   const { hasAnyRole } = useAuth();
   const isDocumentAdmin = canConfirmDocumentMetadata(hasAnyRole);
 
@@ -89,6 +97,14 @@ export function ReviewDrawer() {
    * escolha essa frase deixou de ser verdade.
    */
   const suggestedCategory = manualCategory ? null : (raw.classification.suggestedCategory ?? null);
+  /**
+   * A folha voltou vazia — e a tela precisa dizer isso antes de qualquer outra coisa.
+   *
+   * Sem texto não há classe, resumo nem nome sugerido, então a gaveta abria com todos os campos
+   * em branco e o nome original no lugar do sugerido, sem nada explicando o porquê. Quem enviou
+   * uma página em branco por engano só descobria abrindo a Biblioteca.
+   */
+  const emptyReason = emptyDocumentReason(raw);
   const hasCategoryMismatch = Boolean(
     item.context?.categoryId && aiClassId && item.context.categoryId !== aiClassId,
   );
@@ -218,6 +234,30 @@ export function ReviewDrawer() {
       }
     >
       <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        {emptyReason && (
+          <div className="mb-3 flex gap-2 border-l-2 border-doqyn-warning py-0.5 pl-2.5">
+            <Icon
+              name="warning"
+              size={ICON_SIZE.sm}
+              className="mt-0.5 shrink-0 text-doqyn-warning"
+            />
+            <div className="min-w-0">
+              <p className="text-caption font-medium text-doqyn-warning">
+                {t('emptyDocument.title')}
+              </p>
+              <p className="mt-0.5 text-micro leading-relaxed text-doqyn-muted">
+                {t(
+                  emptyReason === 'VISION_OCR_FAILED'
+                    ? 'emptyDocument.bodyOcr'
+                    : 'emptyDocument.bodyNoText',
+                  { pages: raw.textExtraction.pageCount ?? 1 },
+                )}
+              </p>
+              <p className="mt-1 text-micro text-doqyn-subtle">{t('emptyDocument.choice')}</p>
+            </div>
+          </div>
+        )}
+
         {/* Primeiro bloco da tela de propósito: sem categoria não há o que confirmar, e quem
               revisa um lote precisa resolver isso num clique, não caçando o campo. */}
         <div
@@ -405,7 +445,17 @@ export function ReviewDrawer() {
             {t('reviewDrawer.umAdministradorRevisaraOs')}
           </p>
         )}
-        <div className="mt-3 flex justify-end gap-2">
+        <div className="mt-3 flex items-center justify-end gap-2">
+          {/* Descartar é a saída que faltava: "deixar para depois" mantém o arquivo na fila, e
+              quem mandou errado não tinha como desfazer sem salvar antes. */}
+          <button
+            type="button"
+            onClick={() => removeItem(item.id)}
+            className="mr-auto rounded-[4px] px-2 py-1 text-caption font-medium text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-danger"
+            data-testid="upload-review-discard"
+          >
+            {t('reviewDrawer.descartarEnvio')}
+          </button>
           <Button type="button" variant="secondary" size="sm" onClick={closeReview}>
             {t('reviewDrawer.deixarParaDepois')}
           </Button>

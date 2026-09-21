@@ -162,16 +162,26 @@ function QueueRow({
           <Icon name="replay" size={ICON_SIZE.sm} />
         </button>
       )}
-      {(item.status === 'done' ||
-        item.status === 'error' ||
-        item.status === 'ai_paused' ||
-        item.status === 'still_running' ||
-        item.status === 'awaiting_approval') && (
+      {/**
+       * Sair vale em qualquer ponto, menos durante a gravação.
+       *
+       * Antes o "x" só aparecia quando o arquivo já tinha terminado — quem percebia o engano na
+       * fila ou no meio da análise não tinha para onde ir, e a única saída era esperar o documento
+       * entrar no acervo para então apagá-lo. `removeItem` já aborta a análise em curso; o que
+       * faltava era a porta. `confirming` fica de fora porque ali a escrita já começou, e parar no
+       * meio deixaria versão sem documento.
+       */}
+      {item.status !== 'confirming' && (
         <button
           type="button"
           onClick={() => removeItem(item.id)}
           className="shrink-0 rounded-[4px] p-1 text-doqyn-muted hover:bg-doqyn-surface-hover hover:text-doqyn-text"
-          aria-label={t('uploadQueueDrawer.removerDaFila')}
+          aria-label={t(
+            isUploadInProgress(item.status) || item.status === 'review'
+              ? 'uploadQueueDrawer.cancelarEnvio'
+              : 'uploadQueueDrawer.removerDaFila',
+          )}
+          data-testid={`upload-queue-cancel-${item.id}`}
         >
           <Icon name="close" size={ICON_SIZE.sm} />
         </button>
