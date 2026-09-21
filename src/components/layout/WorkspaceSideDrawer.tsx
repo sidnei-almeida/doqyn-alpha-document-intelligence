@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useOverlayLayer, useStableCallback } from '@/components/ui/overlayStack';
 import { Icon } from '@/components/ui/Icon';
 import { IconButton } from '@/components/ui/IconButton';
@@ -35,6 +36,13 @@ export type WorkspaceSideDrawerProps = {
  * O cabeçalho fala a mesma língua das páginas: rótulo de registro em cima,
  * nome em seguida. O respiro é o mesmo do resto do sistema, para que a gaveta
  * não pareça uma tela apertada colada na lateral.
+ *
+ * A gaveta nasce em `document.body`, como o `Modal`, e não onde o React a
+ * declara. No tema `standard` o shell inteiro fica sob `chrome-dark`, que
+ * reaplica a paleta grafite; uma gaveta declarada lá dentro herdava o grafite e
+ * contradizia o painel de papel ao lado dela. No portal ela pousa sob a paleta
+ * padrão do documento, que é a do painel — e nos temas claro e escuro nada
+ * muda, porque lá as duas camadas já usam a mesma paleta.
  */
 export function WorkspaceSideDrawer({
   open = true,
@@ -75,7 +83,7 @@ export function WorkspaceSideDrawer({
 
   const handleOverlayClick = onOverlayClick ?? onClose;
 
-  return (
+  return createPortal(
     <div
       className={cn(
         'modal-overlay-scrim fixed inset-0 flex justify-end backdrop-blur-[1px]',
@@ -90,7 +98,9 @@ export function WorkspaceSideDrawer({
         className={cn(
           // O fundo é o da página, não uma superfície elevada: a gaveta é um
           // pedaço do mesmo documento, aberto pela lateral.
-          'drawer-enter-right flex h-full w-full flex-col overflow-hidden border-l border-doqyn-border bg-doqyn-bg shadow-modal',
+          // `color` é reancorado aqui de propósito: no portal a gaveta herda o
+          // texto do `body`, e cada fronteira de paleta precisa redizer o seu.
+          'drawer-enter-right flex h-full w-full flex-col overflow-hidden border-l border-doqyn-border bg-doqyn-bg text-doqyn-text shadow-modal',
           maxWidthClass,
         )}
         aria-label={ariaLabel ?? title}
@@ -138,6 +148,7 @@ export function WorkspaceSideDrawer({
           </div>
         ) : null}
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }

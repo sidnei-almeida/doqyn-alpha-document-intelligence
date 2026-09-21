@@ -222,10 +222,11 @@ export function ReviewDrawer() {
               revisa um lote precisa resolver isso num clique, não caçando o campo. */}
         <div
           className={cn(
-            'mb-3 rounded-[4px] border px-3 py-2.5',
-            needsManualCategory
-              ? 'border-doqyn-warning-border bg-doqyn-warning-bg'
-              : 'border-doqyn-border-subtle',
+            // Régua de acento, não preenchimento: o bloco continua papel nos três temas, e o fio
+            // de 2px à esquerda é o que diz "falta resolver a pasta". O painel inteiro em âmbar
+            // gritava mais alto que o próprio conteúdo, e num tema claro virava outra superfície.
+            'mb-3 rounded-[4px] border border-doqyn-border-subtle px-3 py-2.5',
+            needsManualCategory && 'border-l-2 border-l-doqyn-warning',
           )}
         >
           <div className="flex items-start justify-between gap-2">
@@ -241,7 +242,12 @@ export function ReviewDrawer() {
                       ? aiClassName
                       : (suggestedCategory?.name ?? t('reviewDrawer.category.unclassified'))))}
               </p>
-              <p className="mt-0.5 text-micro text-doqyn-muted">
+              <p
+                className={cn(
+                  'mt-0.5 text-micro',
+                  needsManualCategory ? 'text-doqyn-warning' : 'text-doqyn-muted',
+                )}
+              >
                 {fulfillsRequest
                   ? t('reviewDrawer.categoryHint.fromRequest')
                   : manualCategory
@@ -249,7 +255,9 @@ export function ReviewDrawer() {
                     : aiClassId
                       ? t('reviewDrawer.categoryHint.ai')
                       : suggestionResolvesCategory
-                        ? t('reviewDrawer.categoryHint.willCreate', { name: suggestedCategory?.name ?? '' })
+                        ? t('reviewDrawer.categoryHint.willCreate', {
+                            name: suggestedCategory?.name ?? '',
+                          })
                         : suggestedCategory
                           ? t('reviewDrawer.categoryHint.suggested')
                           : t('reviewDrawer.categoryHint.pick')}
@@ -312,7 +320,9 @@ export function ReviewDrawer() {
         </div>
 
         {hasCategoryMismatch && (
-          <div className="mb-3 flex gap-2 rounded-[4px] border border-doqyn-warning-border bg-doqyn-warning-bg px-3 py-2">
+          // Mesma régua do bloco da categoria: o aviso é um fio à esquerda e texto âmbar. Dois
+          // retângulos âmbar preenchidos na mesma gaveta liam como erro de tela, não como aviso.
+          <div className="mb-3 flex gap-2 border-l-2 border-doqyn-warning py-0.5 pl-2.5">
             <Icon
               name="warning"
               size={ICON_SIZE.sm}
@@ -327,7 +337,7 @@ export function ReviewDrawer() {
         )}
 
         {reasons.length > 0 && (
-          <div className="mb-3 flex gap-2 rounded-[4px] border border-doqyn-warning-border bg-doqyn-warning-bg px-3 py-2">
+          <div className="mb-3 flex gap-2 border-l-2 border-doqyn-warning py-0.5 pl-2.5">
             <Icon
               name="warning"
               size={ICON_SIZE.sm}

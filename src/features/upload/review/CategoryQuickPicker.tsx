@@ -94,31 +94,32 @@ export function CategoryQuickPicker({
    * já descartou.
    */
   const suggestionBlock = suggestion ? (
-    <div className="mb-2.5 rounded-[4px] border border-doqyn-border-subtle bg-doqyn-surface px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-doqyn-muted">
+    // Linha, não caixa: a proposta é um trecho pautado acima da lista, marcado por um fio de
+    // acento à esquerda. Como caixa preenchida dentro de outra caixa ela virava um terceiro
+    // plano de superfície, e no tema claro não havia tom que a separasse sem gritar.
+    <div className="mb-2.5 border-l-2 border-doqyn-primary py-0.5 pl-2.5">
+      <p className="text-eyebrow uppercase text-doqyn-subtle">
         {t('categoryQuickPicker.suggestion.eyebrow')}
       </p>
-      <p className="mt-0.5 text-[12px] font-medium text-doqyn-text">{suggestion.name}</p>
-      <p className="mt-0.5 text-[11px] leading-relaxed text-doqyn-muted">
-        {suggestion.description}
-      </p>
+      <p className="mt-0.5 text-caption font-medium text-doqyn-text">{suggestion.name}</p>
+      <p className="mt-0.5 text-micro leading-relaxed text-doqyn-muted">{suggestion.description}</p>
       {canCreateCategory ? (
         <button
           type="button"
           onClick={() => void handleCreateSuggested()}
           disabled={creating}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] border border-doqyn-primary px-2.5 py-1 text-[12px] font-medium text-doqyn-text transition-colors hover:bg-doqyn-primary/10 disabled:opacity-60"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] border border-doqyn-border-subtle px-2.5 py-1 text-caption font-medium text-doqyn-text transition-colors hover:border-doqyn-primary hover:bg-doqyn-surface-hover disabled:opacity-60"
           data-testid="category-quick-pick-create-suggested"
         >
           {creating ? (
             <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
           ) : (
-            <Icon name="create_new_folder" size={ICON_SIZE.xs} />
+            <Icon name="create_new_folder" size={ICON_SIZE.xs} className="text-doqyn-primary" />
           )}
           {t('categoryQuickPicker.suggestion.createButton', { name: suggestion.name })}
         </button>
       ) : (
-        <p className="mt-1.5 text-[10px] text-doqyn-muted">
+        <p className="mt-1.5 text-micro text-doqyn-subtle">
           {t('categoryQuickPicker.suggestion.adminOnly')}
         </p>
       )}
@@ -133,9 +134,7 @@ export function CategoryQuickPicker({
 
   if (isLoading) {
     return (
-      <p className="text-[11px] text-doqyn-muted">
-        {t('categoryQuickPicker.carregandoCategorias')}
-      </p>
+      <p className="text-micro text-doqyn-muted">{t('categoryQuickPicker.carregandoCategorias')}</p>
     );
   }
 
@@ -159,7 +158,7 @@ export function CategoryQuickPicker({
           value={term}
           onChange={(event) => setTerm(event.target.value)}
           placeholder={t('categoryQuickPicker.filtrarCategorias')}
-          className="mb-2 w-full rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-2.5 py-1.5 text-[12px] text-doqyn-text placeholder:text-doqyn-subtle"
+          className="mb-2 w-full rounded-[4px] border border-doqyn-border-subtle bg-doqyn-bg px-2.5 py-1.5 text-caption text-doqyn-text placeholder:text-doqyn-subtle"
           aria-label={t('categoryQuickPicker.filtrarCategorias2')}
         />
       )}
@@ -181,7 +180,7 @@ export function CategoryQuickPicker({
               aria-selected={isSelected}
               onClick={() => onSelect(category.id, category.name)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] transition-colors',
+                'inline-flex items-center gap-1.5 rounded-[4px] border px-2.5 py-1 text-caption transition-colors',
                 isSelected
                   ? 'border-doqyn-primary bg-doqyn-primary/10 font-medium text-doqyn-text'
                   : 'border-doqyn-border-subtle text-doqyn-muted hover:border-doqyn-primary/40 hover:text-doqyn-text',
@@ -193,7 +192,7 @@ export function CategoryQuickPicker({
               )}
               {category.name}
               {isSuggested && !isSelected && (
-                <span className="text-doqyn-accent text-[10px] uppercase tracking-wide">IA</span>
+                <span className="text-eyebrow uppercase text-doqyn-primary">IA</span>
               )}
             </button>
           );

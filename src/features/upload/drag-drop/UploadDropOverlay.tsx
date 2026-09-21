@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from 'react-i18next';
 
@@ -5,20 +6,25 @@ type UploadDropOverlayProps = {
   isDragging: boolean;
 };
 
-/** Overlay fullscreen exibido apenas enquanto o usuário arrasta arquivos sobre a janela. */
+/**
+ * Overlay fullscreen exibido apenas enquanto o usuário arrasta arquivos sobre a janela.
+ *
+ * Nasce em `document.body`: dentro do shell ele herdava o grafite de `chrome-dark` e, no tema
+ * `standard`, cobria o painel de papel com uma folha escura.
+ */
 export function UploadDropOverlay({ isDragging }: UploadDropOverlayProps) {
   const { t } = useTranslation('upload');
 
   if (!isDragging) return null;
 
-  return (
+  return createPortal(
     <div
       className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center bg-doqyn-bg/80 backdrop-blur-sm"
       role="presentation"
       data-testid="upload-drop-overlay"
     >
-      <div className="overlay-scale-in flex flex-col items-center gap-4 rounded-2xl border border-doqyn-border-subtle bg-doqyn-surface px-12 py-10 text-center shadow-dropdown">
-        <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-doqyn-accent-active text-doqyn-on-accent">
+      <div className="overlay-scale-in flex flex-col items-center gap-4 rounded-[12px] border border-doqyn-border-subtle bg-doqyn-surface px-12 py-10 text-center shadow-dropdown">
+        <span className="flex h-14 w-14 items-center justify-center rounded-[8px] bg-doqyn-accent-active text-doqyn-on-accent">
           <Icon name="cloud_upload" size={28} />
         </span>
         <div>
@@ -30,6 +36,7 @@ export function UploadDropOverlay({ isDragging }: UploadDropOverlayProps) {
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

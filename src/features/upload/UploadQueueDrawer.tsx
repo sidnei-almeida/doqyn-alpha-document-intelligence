@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AiReadingGlyph } from '@/components/ui/AiReadingGlyph';
 import { Icon } from '@/components/ui/Icon';
 import { Link } from 'react-router-dom';
@@ -261,10 +262,13 @@ export function UploadQueueDrawer() {
     return t('uploadQueueDrawer.filaDeUpload');
   })();
 
-  return (
+  // Como o `Modal` e a gaveta lateral, a fila nasce em `document.body`. Declarada dentro do
+  // shell ela caía sob `chrome-dark` e, no tema `standard`, vinha grafite enquanto o painel
+  // atrás dela era papel.
+  return createPortal(
     <section
       className={cn(
-        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-surface shadow-modal',
+        'queue-drawer-enter fixed bottom-5 right-5 z-[80] w-[380px] overflow-hidden rounded-[4px] border border-doqyn-border bg-doqyn-surface text-doqyn-text shadow-modal',
         leaving && 'queue-drawer-leave',
       )}
       aria-label={t('uploadQueueDrawer.filaDeUpload')}
@@ -356,6 +360,7 @@ export function UploadQueueDrawer() {
           />
         ))}
       </ul>
-    </section>
+    </section>,
+    document.body,
   );
 }
