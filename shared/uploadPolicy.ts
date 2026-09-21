@@ -8,6 +8,19 @@
 
 export type UploadNamingPolicy = 'original' | 'ai_suggested' | 'ask_each_file' | 'manual_required';
 
+/**
+ * O que fazer quando nenhuma categoria configurada serve para o documento.
+ *
+ * `off` é o comportamento anterior: sem classe, o documento cai em "Sem categoria" e alguém
+ * reclassifica depois. `suggest` faz a IA propor uma categoria nova — nome, descrição e palavras-
+ * chave — e a proposta vira um botão na revisão. `auto_create` cria a categoria na confirmação,
+ * sem passar por ninguém.
+ *
+ * O padrão é `suggest` de propósito: taxonomia que cresce sozinha vira dez pastas quase iguais, e
+ * o classificador passa a competir com as próprias duplicatas.
+ */
+export type CategorySuggestionMode = 'off' | 'suggest' | 'auto_create';
+
 export type TenantUploadPolicy = {
   autoReviewEnabled: boolean;
   autoAcceptDelaySeconds: number;
@@ -20,6 +33,7 @@ export type TenantUploadPolicy = {
 
   aiMetadataEnabled: boolean;
   aiClassificationEnabled: boolean;
+  categorySuggestionMode: CategorySuggestionMode;
   preventSensitiveDataInFileName: boolean;
 
   applyToBatch: boolean;
@@ -43,6 +57,7 @@ export const DEFAULT_TENANT_UPLOAD_POLICY: TenantUploadPolicy = {
 
   aiMetadataEnabled: true,
   aiClassificationEnabled: true,
+  categorySuggestionMode: 'suggest',
   preventSensitiveDataInFileName: true,
 
   applyToBatch: false,
@@ -57,8 +72,20 @@ const NAMING_POLICIES: readonly UploadNamingPolicy[] = [
   'manual_required',
 ];
 
+export const CATEGORY_SUGGESTION_MODES: readonly CategorySuggestionMode[] = [
+  'off',
+  'suggest',
+  'auto_create',
+];
+
 export function isUploadNamingPolicy(value: unknown): value is UploadNamingPolicy {
   return typeof value === 'string' && (NAMING_POLICIES as readonly string[]).includes(value);
+}
+
+export function isCategorySuggestionMode(value: unknown): value is CategorySuggestionMode {
+  return (
+    typeof value === 'string' && (CATEGORY_SUGGESTION_MODES as readonly string[]).includes(value)
+  );
 }
 
 export function clampUploadAutoDelaySeconds(value: number): number {
@@ -100,6 +127,9 @@ export function normalizeTenantUploadPolicy(
 
     aiMetadataEnabled: pickBoolean(raw.aiMetadataEnabled, base.aiMetadataEnabled),
     aiClassificationEnabled: pickBoolean(raw.aiClassificationEnabled, base.aiClassificationEnabled),
+    categorySuggestionMode: isCategorySuggestionMode(raw.categorySuggestionMode)
+      ? raw.categorySuggestionMode
+      : base.categorySuggestionMode,
     preventSensitiveDataInFileName: pickBoolean(
       raw.preventSensitiveDataInFileName,
       base.preventSensitiveDataInFileName,
