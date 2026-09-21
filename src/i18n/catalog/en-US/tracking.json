@@ -146,6 +146,7 @@
     "filtrarPorEsteRequest": "Filter by this request",
     "filtrarPorEsteUsuario": "Filter by this user",
     "idDaVersao": "Version ID",
+    "idDoDocumento": "Document ID",
     "metadados": "Metadata",
     "request": "Request",
     "sessao": "Session",

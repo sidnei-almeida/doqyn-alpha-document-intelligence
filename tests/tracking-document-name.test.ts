@@ -137,8 +137,9 @@ describe('tracking UI — coluna Documento', () => {
     join(process.cwd(), 'src/features/tracking/components/TrackingDocumentCell.tsx'),
     'utf8',
   );
-  const drawerSource = readFileSync(
-    join(process.cwd(), 'src/features/tracking/components/TrackingEventDetailsDrawer.tsx'),
+  // A gaveta lateral virou um painel que abre embaixo da própria linha.
+  const detailSource = readFileSync(
+    join(process.cwd(), 'src/features/tracking/components/TrackingEventLogDetail.tsx'),
     'utf8',
   );
 
@@ -155,8 +156,8 @@ describe('tracking UI — coluna Documento', () => {
     assert.doesNotMatch(cellSource, /title=\{name\}/);
   });
 
-  it('drawer mostra nome completo sem depender só de documentId', () => {
-    assert.match(drawerSource, /event\.document\.name/);
-    assert.match(drawerSource, /break-words/);
+  it('detalhe mostra nome completo sem depender só de documentId', () => {
+    assert.match(detailSource, /event\.document\.name/);
+    assert.match(detailSource, /break-words/);
   });
 });

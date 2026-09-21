@@ -94,10 +94,16 @@ export function TrackingEventLogDetail({
           label={t('trackingEventLogDetail.ator')}
           value={event.actor.email ?? event.actor.userId}
         />
-        <DetailField
-          label={t('trackingEventLogDetail.documento')}
-          value={event.document.documentId ?? '—'}
-        />
+        {/* O nome, não o id: a gaveta antiga já mostrava o nome, e a troca por
+            este painel trouxe de volta o `doc_...` que não diz nada a quem lê a
+            trilha. O id continua logo abaixo, para quem precisa dele. */}
+        <DetailField label={t('trackingEventLogDetail.documento')} value={event.document.name} />
+        {event.document.documentId ? (
+          <DetailField
+            label={t('trackingEventLogDetail.idDoDocumento')}
+            value={event.document.documentId}
+          />
+        ) : null}
         {event.versionId ? (
           <DetailField label={t('trackingEventLogDetail.idDaVersao')} value={event.versionId} />
         ) : null}
