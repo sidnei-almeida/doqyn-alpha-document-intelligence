@@ -39,6 +39,7 @@ import { resolveStorageFileNames, type NamingMode } from '../utils/resolveStorag
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
 import { ensureUncategorizedCategory } from './documentCategoriesService.js';
 import { resolveAutoCreatedCategoryId } from './categoryAutoCreateService.js';
+import { isUncategorizedCategory } from '../../shared/systemCategory.js';
 import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
@@ -293,6 +294,24 @@ export async function confirmAnalysisPersistence(input: {
   const manualClassId = fulfilledRequest?.categoryId ?? (data.manualClassId?.trim() || undefined);
 
   /**
+   * "Sem categoria" vinda da IA não conta como classificação.
+   *
+   * Ela é o destino de fracasso, e enquanto o classificador a via como prateleira legítima o
+   * documento voltava da análise com `classId` preenchido. Isso bastava para desligar a criação
+   * automática aqui — o tenant escolhia `auto_create`, a IA tinha proposto uma pasta, e mesmo
+   * assim o documento era arquivado na pasta genérica sem que nada fosse criado. O classificador
+   * já não a recebe, mas análise antiga, ainda parada na fila do navegador, chega com ela.
+   */
+  const aiClassId =
+    data.classification.classId &&
+    !isUncategorizedCategory({
+      id: data.classification.classId,
+      name: data.classification.className,
+    })
+      ? data.classification.classId
+      : null;
+
+  /**
    * A pasta que a IA propôs, quando o tenant escolheu criar sozinho.
    *
    * Vem antes de "Sem categoria" de propósito: a proposta é o que a IA leu do documento, e a
@@ -300,7 +319,7 @@ export async function confirmAnalysisPersistence(input: {
    * `createCategoryFromSuggestion` devolve `null` e o fallback de sempre assume.
    */
   const autoCreatedClassId =
-    manualClassId || data.classification.classId
+    manualClassId || aiClassId
       ? undefined
       : await resolveAutoCreatedCategoryId({
           tenantId,
@@ -314,13 +333,12 @@ export async function confirmAnalysisPersistence(input: {
   // nasce aqui, então o arquivo ficava no bucket sem existir para ninguém. Numa pasta ele aparece
   // na Biblioteca e pode ser reclassificado depois.
   const fallbackClassId =
-    manualClassId || data.classification.classId || autoCreatedClassId
+    manualClassId || aiClassId || autoCreatedClassId
       ? undefined
       : await ensureUncategorizedCategory(tenantId, ownerUserId ?? input.user.id);
 
   const classId = requireConfirmClassification({
-    classId:
-      manualClassId ?? data.classification.classId ?? autoCreatedClassId ?? fallbackClassId ?? null,
+    classId: manualClassId ?? aiClassId ?? autoCreatedClassId ?? fallbackClassId ?? null,
     // Categoria escolhida à mão encerra a dúvida da classificação; o que a extração pediu de
     // revisão continua valendo.
     requiresReview: manualClassId ? false : data.classification.requiresReview,

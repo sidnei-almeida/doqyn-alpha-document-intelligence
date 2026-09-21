@@ -16,6 +16,7 @@ import {
 import { ServiceError } from '../utils/serviceErrors.js';
 import { assertCanSubmitToCategory } from './categoryUploadPermission.js';
 import { resolveAutoCreatedCategoryId } from './categoryAutoCreateService.js';
+import { isUncategorizedCategory } from '../../shared/systemCategory.js';
 import { resolveRequestForFulfillment } from './requests/documentRequestService.js';
 
 function uploadApprovalsCollection() {
@@ -61,8 +62,20 @@ export async function submitDocumentUploadForApproval(input: {
    * O par desta chamada está em `confirmAnalysisService`, com o mesmo `resolveAutoCreatedCategoryId`.
    * Separar os dois faria o envio aprovado cair em categoria diferente da que a revisão mostrou.
    */
+  // "Sem categoria" é destino de fracasso, não classificação: com ela contando como classe, o
+  // envio em `auto_create` pulava a criação e ia parar na pasta genérica. Mesma regra do par em
+  // `confirmAnalysisService`.
+  const aiClassId =
+    data.classification.classId &&
+    !isUncategorizedCategory({
+      id: data.classification.classId,
+      name: data.classification.className,
+    })
+      ? data.classification.classId
+      : null;
+
   const autoCreatedClassId =
-    fulfilledRequest?.categoryId || data.manualClassId?.trim() || data.classification.classId
+    fulfilledRequest?.categoryId || data.manualClassId?.trim() || aiClassId
       ? undefined
       : await resolveAutoCreatedCategoryId({
           tenantId,
@@ -72,10 +85,7 @@ export async function submitDocumentUploadForApproval(input: {
         });
 
   const effectiveClassId =
-    fulfilledRequest?.categoryId ??
-    data.manualClassId?.trim() ??
-    data.classification.classId ??
-    autoCreatedClassId;
+    fulfilledRequest?.categoryId ?? data.manualClassId?.trim() ?? aiClassId ?? autoCreatedClassId;
 
   if (!effectiveClassId) {
     throw new ConfirmAnalysisError(

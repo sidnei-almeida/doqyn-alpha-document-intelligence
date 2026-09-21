@@ -305,10 +305,13 @@ describe('requisitar documento — o que a revisão apontou', () => {
      * precedência: pedido > escolha humana > IA > pasta criada pela IA. A pasta criada entra por
      * último porque é o que sobra quando nenhuma das três decisões existiu.
      */
+    // A classe da IA entra pela variável `aiClassId`, e não direto de `data`: ela é
+    // `classification.classId` menos a pasta de sistema, que é destino de fracasso e não
+    // classificação. Com "Sem categoria" contando como classe, `auto_create` nunca criava nada.
     const order = [
       'fulfilledRequest?.categoryId',
       'data.manualClassId?.trim()',
-      'data.classification.classId',
+      'aiClassId',
       'autoCreatedClassId',
     ];
 

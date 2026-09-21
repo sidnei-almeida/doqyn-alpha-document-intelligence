@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import {
   AI_CATEGORY_AUTO_CREATE_LIMIT,
@@ -201,4 +204,28 @@ describe('a política do tenant é quem autoriza a escrita', () => {
 
     assert.equal(id, undefined);
   });
+});
+
+describe('"Sem categoria" não desliga a criação automática', () => {
+  const read = (path: string) =>
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', path), 'utf8');
+
+  /**
+   * O classificador já não recebe a pasta de sistema, mas análise antiga — a que ficou parada na
+   * fila do navegador antes da troca — ainda chega com ela em `classId`. Enquanto os dois
+   * caminhos de confirmação liam isso como classe, o tenant em `auto_create` via a proposta na
+   * revisão, confirmava, e o documento ia para a pasta genérica sem que nada fosse criado.
+   */
+  for (const path of [
+    'server/services/confirmAnalysisService.ts',
+    'server/services/documentUploadApprovalService.ts',
+  ]) {
+    it(`descarta a pasta de sistema antes de decidir a categoria em ${path}`, () => {
+      const source = read(path);
+      assert.ok(source.includes('isUncategorizedCategory'), path);
+      assert.ok(source.includes('const aiClassId'), path);
+      // A decisão passa pela variável filtrada, nunca mais direto do payload.
+      assert.ok(!/\|\| data\.classification\.classId\b/.test(source), path);
+    });
+  }
 });
