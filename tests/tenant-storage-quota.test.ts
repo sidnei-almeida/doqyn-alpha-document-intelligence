@@ -172,6 +172,23 @@ describe('cota de armazenamento — onde está ligada', () => {
   });
 });
 
+describe('cota de armazenamento — a soma é do espaço, não de um usuário', () => {
+  it('recorta por tenantId cru, nunca pelo filtro de propriedade', () => {
+    const service = read('server/services/tenantStorageQuotaService.ts');
+    const block = service.slice(
+      service.indexOf('export async function sumTenantStoredBytes'),
+      service.indexOf('export async function addTenantStoredBytes'),
+    );
+
+    // `tenantScopeFilterFromContext` é filtro de propriedade: em tenant PF ele exige `ownerUserId`
+    // e estoura `OWNER_USER_REQUIRED`. Foi assim que a reconciliação morreu no primeiro PF em
+    // produção, e é o que o portão devolveria a um PF no teto — 400 confuso em vez de recusa.
+    assert.equal(block.includes('tenantScopeFilterFromContext'), false);
+    assert.ok(block.includes('$match: { tenantId }'));
+    assert.equal(service.includes("from '../tenancy/tenantQuery.js'"), false);
+  });
+});
+
 describe('cota de armazenamento — o erro que chega na tela', () => {
   it('é ServiceError 413 com código próprio', () => {
     const service = read('server/services/tenantStorageQuotaService.ts');

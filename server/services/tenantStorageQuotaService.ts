@@ -2,7 +2,6 @@ import { REGISTRY_COLLECTIONS } from '../db/constants.js';
 import { getDb, isMongoNativeConfigured } from '../db/mongoClient.js';
 import type { MongoTenant } from '../db/types.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
-import { tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { logger } from '../utils/logger.js';
 
@@ -77,14 +76,21 @@ export async function readTenantStoredBytes(tenantId: string): Promise<number> {
   return typeof stored === 'number' && Number.isFinite(stored) && stored > 0 ? stored : 0;
 }
 
-/** Soma exata dos originais guardados. É a referência: o contador responde a ela, não o contrário. */
+/**
+ * Soma exata dos originais guardados. É a referência: o contador responde a ela, não o contrário.
+ *
+ * Recorta por `tenantId` cru, e não por `tenantScopeFilterFromContext`. Aquele filtro é de
+ * propriedade: em tenant PF ele exige `ownerUserId` e estoura com `OWNER_USER_REQUIRED` quando não
+ * recebe um. A cota é do espaço inteiro, não de um usuário dentro dele — e `tenantId` é gravado em
+ * toda versão por `applyDocumentOwnershipOnInsert`, nos dois modos de armazenamento.
+ */
 export async function sumTenantStoredBytes(tenantId: string): Promise<number> {
   if (!isMongoNativeConfigured()) return 0;
 
   const collections = await getTenantCollections(tenantId, {});
   const rows = await collections.documentVersions
     .aggregate<{ originalBytes?: number }>([
-      { $match: tenantScopeFilterFromContext(collections.storage) as Record<string, unknown> },
+      { $match: { tenantId } },
       {
         $group: {
           _id: null,
