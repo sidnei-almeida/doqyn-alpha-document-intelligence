@@ -40,7 +40,6 @@
     { "file": "src/components/ui/Textarea.tsx", "text": "Textarea", "reason": "displayName de componente" },
 
     { "file": "src/components/brand/AuthBrandLogo.tsx", "text": "DOQYN", "reason": "marca" },
-    { "file": "src/components/brand/SidebarBrandLogo.tsx", "text": "DOQYN", "reason": "marca" },
     { "file": "src/components/brand/DoqynLogo.tsx", "text": "<jsx> DOQYN", "reason": "marca" },
     { "file": "src/components/brand/DoqynLogo.tsx", "text": "DOQYN", "reason": "marca" },
     { "file": "src/components/brand/DoqynLogo.tsx", "text": "SHARE. CONTROL. TRUST.", "reason": "tagline da marca, igual em todo idioma" },
