@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { emptyDocumentReason } from '../src/features/document-send/services/emptyDocument.js';
+import { mergeNativeAndOcrPages } from '../server/ai/services/documentTextExtractor.js';
 import { resolveQueueAnalysisAction } from '../src/features/upload/queue/uploadQueueCore.js';
 import { analysisHasResolvableCategory } from '../src/features/document-send/services/normalizeConfirmPayload.js';
 import {
@@ -152,5 +153,53 @@ describe('sair do envio', () => {
     assert.ok(review.includes('removeItem(item.id)'));
     // E explica a folha vazia em vez de abrir com todos os campos em branco.
     assert.ok(review.includes('emptyDocument.title'));
+  });
+});
+
+describe('o OCR completa o texto nativo, não o substitui', () => {
+  const nativas = [
+    { pageNumber: 1, text: 'Segue contrato de aluguel assinado em 2021.' },
+    { pageNumber: 2, text: '' },
+    { pageNumber: 25, text: 'CLÁUSULA DÉCIMA — do reajuste anual pelo IGP-M.' },
+  ];
+
+  it('página que o OCR não alcançou mantém o texto que já tinha', () => {
+    /**
+     * O OCR para no teto de `VISION_OCR_MAX_PAGES`. Devolvendo só o texto dele, um PDF de trinta
+     * páginas com fotos no começo e contrato digitado na página 25 saía do OCR menor do que
+     * entrou — e a cláusula sumia do documento.
+     */
+    const merged = mergeNativeAndOcrPages(nativas, [
+      { pageNumber: 1, text: 'Segue contrato de aluguel assinado em 2021. RECIBO DE ALUGUEL' },
+      { pageNumber: 2, text: 'CONTRATO DE LOCAÇÃO — fotografado' },
+    ]);
+
+    assert.match(merged.text, /CLÁUSULA DÉCIMA/);
+    assert.match(merged.text, /RECIBO DE ALUGUEL/);
+    assert.match(merged.text, /fotografado/);
+    assert.equal(merged.charCount, merged.text.length);
+  });
+
+  it('o OCR vence na página em que leu, porque leu a página inteira renderizada', () => {
+    const merged = mergeNativeAndOcrPages(
+      [{ pageNumber: 1, text: 'bilhete digitado' }],
+      [{ pageNumber: 1, text: 'bilhete digitado + tudo o que estava na foto' }],
+    );
+
+    assert.equal(merged.pages.length, 1);
+    assert.match(merged.text, /tudo o que estava na foto/);
+  });
+
+  it('página em que o OCR não tirou nada não apaga o nativo', () => {
+    const merged = mergeNativeAndOcrPages(nativas, [{ pageNumber: 1, text: '   ' }]);
+    assert.match(merged.text, /Segue contrato de aluguel/);
+  });
+
+  it('as páginas saem em ordem, mesmo com o OCR chegando fora dela', () => {
+    const merged = mergeNativeAndOcrPages(nativas, [{ pageNumber: 2, text: 'foto da página 2' }]);
+    assert.deepEqual(
+      merged.pages.map((page) => page.pageNumber),
+      [1, 2, 25],
+    );
   });
 });

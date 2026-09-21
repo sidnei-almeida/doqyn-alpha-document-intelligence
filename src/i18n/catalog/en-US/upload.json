@@ -127,6 +127,10 @@
     "title": "The analysis found no text in this document.",
     "bodyOcr": "OCR ran on {{pages}} page(s) and returned nothing. It may be a blank, very light, or low-resolution scan.",
     "bodyNoText": "No text was read from {{pages}} page(s). It may be a blank page, or an image with no OCR available.",
-    "choice": "With no text there is no classification, summary, or suggested name. Save it anyway, or discard the upload."
+    "choice": "With no text there is no classification, summary, or suggested name. Save it anyway, or discard the upload.",
+    "titleNoText": "The analysis found no text in this document.",
+    "titleTooLittle": "The analysis read too little text to classify this document.",
+    "bodyTooLittle": "{{chars}} character(s) were read across {{pages}} page(s) — below the minimum to classify. The document looks like a photo or scan, and OCR did not return the rest.",
+    "choiceTooLittle": "The little that was read is not enough for classification, summary, or a suggested name. Save it anyway, or discard the upload."
   }
 }

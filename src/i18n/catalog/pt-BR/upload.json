@@ -127,6 +127,10 @@
     "title": "A análise não encontrou texto neste documento.",
     "bodyOcr": "O OCR foi tentado nas {{pages}} página(s) e não devolveu nada. Pode ser digitalização em branco, muito clara ou de baixa resolução.",
     "bodyNoText": "Nenhum texto foi lido nas {{pages}} página(s). Pode ser folha em branco, ou uma imagem sem OCR disponível.",
-    "choice": "Sem texto não há classificação, resumo nem nome sugerido. Salve assim mesmo, ou descarte o envio."
+    "choice": "Sem texto não há classificação, resumo nem nome sugerido. Salve assim mesmo, ou descarte o envio.",
+    "titleNoText": "A análise não encontrou texto neste documento.",
+    "titleTooLittle": "A análise leu pouco texto para classificar este documento.",
+    "bodyTooLittle": "Foram lidos {{chars}} caractere(s) em {{pages}} página(s) — abaixo do mínimo para classificar. O documento parece ser foto ou digitalização, e o OCR não devolveu o resto.",
+    "choiceTooLittle": "O pouco que foi lido não sustenta classificação, resumo nem nome sugerido. Salve assim mesmo, ou descarte o envio."
   }
 }

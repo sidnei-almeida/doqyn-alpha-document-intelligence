@@ -105,6 +105,8 @@ export function ReviewDrawer() {
    * uma página em branco por engano só descobria abrindo a Biblioteca.
    */
   const emptyReason = emptyDocumentReason(raw);
+  /** Leu alguma coisa, só não o bastante — é outro diagnóstico, e outra frase. */
+  const hasSomeText = raw.textExtraction.charCount > 0;
   const hasCategoryMismatch = Boolean(
     item.context?.categoryId && aiClassId && item.context.categoryId !== aiClassId,
   );
@@ -242,18 +244,33 @@ export function ReviewDrawer() {
               className="mt-0.5 shrink-0 text-doqyn-warning"
             />
             <div className="min-w-0">
+              {/**
+               * Folha em branco e documento fotografado são diagnósticos diferentes.
+               *
+               * Um contrato fotografado com um bilhete digitado em cima — "o valor foi atualizado
+               * em 2022 conforme conversa pelo whats abaixo" — chega aqui com uma centena de
+               * caracteres, abaixo do mínimo para classificar. Dizer "não encontrei texto" nesse
+               * caso é mentira, e joga fora justamente a frase que o humano escreveu.
+               */}
               <p className="text-caption font-medium text-doqyn-warning">
-                {t('emptyDocument.title')}
+                {t(hasSomeText ? 'emptyDocument.titleTooLittle' : 'emptyDocument.titleNoText')}
               </p>
               <p className="mt-0.5 text-micro leading-relaxed text-doqyn-muted">
-                {t(
-                  emptyReason === 'VISION_OCR_FAILED'
-                    ? 'emptyDocument.bodyOcr'
-                    : 'emptyDocument.bodyNoText',
-                  { pages: raw.textExtraction.pageCount ?? 1 },
-                )}
+                {hasSomeText
+                  ? t('emptyDocument.bodyTooLittle', {
+                      chars: raw.textExtraction.charCount,
+                      pages: raw.textExtraction.pageCount ?? 1,
+                    })
+                  : t(
+                      emptyReason === 'VISION_OCR_FAILED'
+                        ? 'emptyDocument.bodyOcr'
+                        : 'emptyDocument.bodyNoText',
+                      { pages: raw.textExtraction.pageCount ?? 1 },
+                    )}
               </p>
-              <p className="mt-1 text-micro text-doqyn-subtle">{t('emptyDocument.choice')}</p>
+              <p className="mt-1 text-micro text-doqyn-subtle">
+                {t(hasSomeText ? 'emptyDocument.choiceTooLittle' : 'emptyDocument.choice')}
+              </p>
             </div>
           </div>
         )}

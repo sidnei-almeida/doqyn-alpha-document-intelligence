@@ -132,6 +132,10 @@
     "title": "El análisis no encontró texto en este documento.",
     "bodyOcr": "Se intentó OCR en {{pages}} página(s) y no devolvió nada. Puede ser un escaneo en blanco, muy claro o de baja resolución.",
     "bodyNoText": "No se leyó ningún texto en {{pages}} página(s). Puede ser una hoja en blanco, o una imagen sin OCR disponible.",
-    "choice": "Sin texto no hay clasificación, resumen ni nombre sugerido. Guárdalo igual, o descarta el envío."
+    "choice": "Sin texto no hay clasificación, resumen ni nombre sugerido. Guárdalo igual, o descarta el envío.",
+    "titleNoText": "El análisis no encontró texto en este documento.",
+    "titleTooLittle": "El análisis leyó muy poco texto para clasificar este documento.",
+    "bodyTooLittle": "Se leyeron {{chars}} carácter(es) en {{pages}} página(s) — por debajo del mínimo para clasificar. El documento parece una foto o un escaneo, y el OCR no devolvió el resto.",
+    "choiceTooLittle": "Lo poco que se leyó no alcanza para clasificación, resumen ni nombre sugerido. Guárdalo igual, o descarta el envío."
   }
 }

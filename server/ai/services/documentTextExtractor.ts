@@ -246,11 +246,27 @@ export async function extractTextFromDocumentPdf(
       pagesProcessed: ocr.pagesProcessed,
     });
 
+    /**
+     * O OCR completa o texto nativo; não o substitui.
+     *
+     * Devolver só `ocr.text` fazia o documento encolher depois do OCR. Nas páginas rasterizadas
+     * não se perdia nada — o OCR relê do pixel o que estava na camada de texto —, mas o OCR para
+     * no teto de `VISION_OCR_MAX_PAGES`, e dali para a frente o texto nativo ia junto para o lixo.
+     * Num PDF de trinta páginas com fotos no começo e contrato digitado na página 25, o que
+     * sobrava era menos do que havia antes de chamar o OCR. O rótulo `pdf_parse+google_vision` já
+     * prometia a soma; agora ele diz a verdade.
+     *
+     * Por página, o OCR vence quando trouxe algo: ele leu a página inteira renderizada, então o
+     * que ele devolve contém o nativo daquela página. Página que o OCR não alcançou, ou de que
+     * não tirou nada, fica com o texto nativo.
+     */
+    const merged = mergeNativeAndOcrPages(native.pages, ocr.pages);
+
     return {
-      text: ocr.text,
-      pages: ocr.pages,
-      pageCount: ocr.pageCount || pageCountHint,
-      charCount: ocr.charCount,
+      text: merged.text,
+      pages: merged.pages,
+      pageCount: ocr.pageCount || native.pageCount || pageCountHint,
+      charCount: merged.charCount,
       truncated: ocr.truncated || native.truncated,
       source,
       ocrFallbackUsed: true,
@@ -413,4 +429,35 @@ export async function extractTextFromDocument(
     return extractTextFromDocumentPdf(fileBuffer, deps);
   }
   return extractTextFromDocumentPdf(fileBuffer, deps);
+}
+
+/**
+ * Junta o que o OCR leu com o que a camada de texto já tinha, página a página.
+ *
+ * Exportada para o teste cobrir o caso do teto de páginas sem subir Vision nem Ghostscript.
+ */
+export function mergeNativeAndOcrPages(
+  nativePages: readonly { pageNumber: number; text: string }[],
+  ocrPages: readonly { pageNumber: number; text: string }[],
+): { text: string; pages: { pageNumber: number; text: string }[]; charCount: number } {
+  const byPage = new Map<number, string>();
+
+  for (const page of nativePages) {
+    byPage.set(page.pageNumber, page.text ?? '');
+  }
+  for (const page of ocrPages) {
+    // Só sobrescreve quando o OCR trouxe algo: página em que ele falhou não apaga o nativo.
+    if (page.text?.trim()) byPage.set(page.pageNumber, page.text);
+  }
+
+  const pages = [...byPage.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([pageNumber, text]) => ({ pageNumber, text }));
+
+  const text = pages
+    .map((page) => page.text)
+    .filter((entry) => entry.length > 0)
+    .join('\n\n');
+
+  return { text, pages, charCount: text.length };
 }
