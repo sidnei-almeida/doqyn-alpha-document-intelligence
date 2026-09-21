@@ -139,6 +139,10 @@ describe('cota de armazenamento — onde está ligada', () => {
     assert.ok(script.includes("includes('--apply')"));
     assert.ok(script.includes('setTenantStoredBytes'));
     assert.ok(script.includes('sumTenantStoredBytes'));
+    // Fecha Mongo E Redis: resolver o tenant abre um socket de cache que segura o processo de pé
+    // depois do relatório pronto — foi o que fez a primeira execução em produção pendurar.
+    assert.ok(script.includes('closeMongoConnection()'));
+    assert.ok(script.includes('closeRedis()'));
     assert.ok(read('package.json').includes('storage:reconcile'));
     // `tsx` é devDependency e a imagem de produção instala com `--omit=dev`: script que não entra
     // no bundle não tem como rodar na VPS, que é justamente onde a reconciliação importa.

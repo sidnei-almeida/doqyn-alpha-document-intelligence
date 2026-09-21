@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
+import { closeRedis } from '../server/redis/redisClient.js';
 import type { MongoTenant, MongoTenantUsage } from '../server/db/types.js';
 import {
   readStorageQuotaBytes,
@@ -85,4 +86,9 @@ async function main() {
   console.log(diverged === 0 ? 'OK.\n' : apply ? 'Reconciliado.\n' : 'Rode com --apply.\n');
 }
 
-await main().finally(() => closeMongoConnection());
+// Fechar o Redis também, não só o Mongo: `getTenantCollections` resolve o tenant pelo cache, e o
+// socket que ele abre segura o processo de pé depois do relatório pronto.
+await main().finally(async () => {
+  await closeMongoConnection();
+  await closeRedis();
+});
