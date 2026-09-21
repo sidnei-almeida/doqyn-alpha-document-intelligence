@@ -483,6 +483,23 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        /**
+         * Recusa por política: o tenant disse que folha sem texto não entra no acervo.
+         *
+         * Termina como erro na fila porque é o estado terminal que já mostra o motivo e oferece
+         * remover — mas o texto diz "recusado", não "falhou": nada quebrou aqui. O arquivo
+         * provisório nunca é promovido e expira sozinho.
+         */
+        if (action === 'reject') {
+          dispatch({
+            type: 'error',
+            id: next.id,
+            message: i18n.t('upload:emptyDocument.rejectedByPolicy'),
+          });
+          tryPumpQueue();
+          return;
+        }
+
         // Os dois casos abaixo estacionam o arquivo e **seguem com o lote**. O que espera decisão
         // humana sai da esteira; quem está limpo não paga por ele.
         if (action === 'open_review') {

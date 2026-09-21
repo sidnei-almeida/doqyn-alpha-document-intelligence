@@ -9,6 +9,7 @@ import {
   DEFAULT_TENANT_UPLOAD_POLICY,
   normalizeTenantUploadPolicy,
   type CategorySuggestionMode,
+  type EmptyDocumentMode,
 } from '@shared/uploadPolicy';
 import type { DocumentNamingMode } from './resolveDocumentNaming';
 import { previewFinalFileName } from './resolveDocumentNaming';
@@ -163,6 +164,18 @@ export const CATEGORY_SUGGESTION_LABEL_KEYS: Record<CategorySuggestionMode, stri
   off: 'documentSend:categorySuggestion.label.off',
   suggest: 'documentSend:categorySuggestion.label.suggest',
   auto_create: 'documentSend:categorySuggestion.label.autoCreate',
+};
+
+export const EMPTY_DOCUMENT_LABEL_KEYS: Record<EmptyDocumentMode, string> = {
+  review: 'documentSend:reviewWorkflowSettings.emptyDocument.review',
+  auto_save: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_save',
+  auto_reject: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_reject',
+};
+
+export const EMPTY_DOCUMENT_DESCRIPTION_KEYS: Record<EmptyDocumentMode, string> = {
+  review: 'documentSend:reviewWorkflowSettings.emptyDocument.reviewHint',
+  auto_save: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_saveHint',
+  auto_reject: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_rejectHint',
 };
 
 export const CATEGORY_SUGGESTION_DESCRIPTION_KEYS: Record<CategorySuggestionMode, string> = {

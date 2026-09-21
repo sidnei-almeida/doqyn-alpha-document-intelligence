@@ -13,6 +13,7 @@ import {
   shouldPauseForReview,
 } from '../../document-send/utils/reviewWorkflowSettings';
 import type { PostAnalysisAction } from '../config/uploadAutoConfirm';
+import { emptyDocumentReason } from '@/features/document-send/services/emptyDocument';
 import type { UploadQueueItem, UploadQueueItemAnalysis } from '../types';
 import type { BulkUploadItem } from '../../document-send/types/bulk';
 import { analysisFailureMessage, needsManualReviewConfirmation } from './uploadQueueAnalysis';
@@ -371,6 +372,36 @@ export function resolveQueueAnalysisAction(
 
   if (raw.status === 'failed') {
     return 'fail';
+  }
+
+  /**
+   * Documento vazio decide antes de tudo o mais.
+   *
+   * Sem texto não há classe, resumo nem nome sugerido — os testes que vêm depois iam todos dar
+   * "falta alguma coisa" e mandar para a revisão, onde a tela não dizia o que tinha acontecido.
+   * Aqui a política do tenant responde de uma vez: perguntar, salvar assim mesmo, ou recusar.
+   */
+  if (emptyDocumentReason(raw)) {
+    if (settings.emptyDocumentMode === 'auto_reject') return 'reject';
+
+    /**
+     * `auto_save` não vence a política de nomeação.
+     *
+     * Quem exige nome escolhido a cada arquivo já disse que nenhum documento entra sem alguém
+     * digitar o nome, e a folha em branco é o caso em que a IA menos tem o que sugerir. Salvando
+     * direto, a confirmação recusava por nome inválido e o item terminava como erro — pior que a
+     * revisão, porque não explicava nada.
+     */
+    const namingNeedsHuman =
+      settings.aiRenameEnabled &&
+      (policyRequiresPerItemChoice(settings.defaultNamingPolicy) ||
+        settings.defaultNamingPolicy === 'manual_required');
+
+    if (settings.emptyDocumentMode === 'auto_save' && !namingNeedsHuman) {
+      return 'auto_confirm';
+    }
+
+    return 'open_review';
   }
 
   const pauseInput = { metadata, rawAnalysis: raw };

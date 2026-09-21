@@ -142,5 +142,17 @@
       "suggest": "the AI proposes the folder and whoever reviews decides whether it is created",
       "autoCreate": "the AI creates the folder on save, without anyone looking"
     }
+  },
+  "reviewWorkflowSettings": {
+    "emptyDocument": {
+      "label": "Document with no text",
+      "hint": "What to do when the analysis reads nothing — blank page, failed scan, image with no OCR.",
+      "review": "Ask on review",
+      "reviewHint": "Review opens with an explanation, and the reviewer saves or discards.",
+      "auto_save": "Save anyway",
+      "auto_saveHint": "Goes into “Uncategorized”, without asking.",
+      "auto_reject": "Reject automatically",
+      "auto_rejectHint": "Never enters the library; the reason stays in the queue."
+    }
   }
 }

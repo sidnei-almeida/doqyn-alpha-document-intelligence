@@ -1,6 +1,7 @@
 import type { AnalyzePdfResponse } from './analyzePdf';
 import type { CategorySuggestionMode } from '@shared/uploadPolicy';
 import { commonPhrase } from '@/i18n/commonPhrase';
+import { emptyDocumentReason } from './emptyDocument';
 
 /**
  * Estrutura mínima aceita por confirmAnalysisSchema quando a IA retorna
@@ -60,7 +61,15 @@ export function analysisHasResolvableCategory(
      * `resolveAutoCreatedCategoryId`. Aqui só deixamos o pedido chegar até lá.
      */
     (fallback?.categorySuggestionMode === 'auto_create' &&
-      Boolean(payload.classification.suggestedCategory?.name?.trim()))
+      Boolean(payload.classification.suggestedCategory?.name?.trim())) ||
+    /**
+     * A quinta origem: documento vazio não tem pasta para ter.
+     *
+     * Sem texto, a IA não classifica e não há proposta a criar — exigir categoria aqui deixaria a
+     * folha em branco presa numa decisão que ninguém consegue tomar com informação. O servidor já
+     * tem o destino certo para ela: "Sem categoria", que é reversível e aparece na Biblioteca.
+     */
+    emptyDocumentReason(payload) !== null
   );
 }
 

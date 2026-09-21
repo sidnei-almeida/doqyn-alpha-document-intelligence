@@ -40,6 +40,8 @@ import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/version
 import { ensureUncategorizedCategory } from './documentCategoriesService.js';
 import { resolveAutoCreatedCategoryId } from './categoryAutoCreateService.js';
 import { isUncategorizedCategory } from '../../shared/systemCategory.js';
+import { MIN_TEXT_CHARS } from '../ai/constants.js';
+import { getTenantUploadPolicy } from './settings/uploadPolicySettings.js';
 import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
@@ -289,6 +291,38 @@ export async function confirmAnalysisPersistence(input: {
   const fulfilledRequest = data.documentRequestId?.trim()
     ? await resolveRequestForFulfillment(tenantId, ownerUserId, data.documentRequestId.trim())
     : null;
+
+  /**
+   * Documento sem texto, num tenant que escolheu recusá-lo, não entra — e essa decisão é relida
+   * aqui, no servidor.
+   *
+   * A fila já barra o envio antes de chegar aqui, mas quem barra é o navegador, com a política
+   * que ele tinha em mãos: aba velha aberta desde antes da troca, ou requisição montada fora da
+   * tela, passariam. Mesma razão pela qual `resolveAutoCreatedCategoryId` relê a política — é ela
+   * que autoriza a escrita.
+   *
+   * O sinal é a contagem de caracteres declarada, porque abaixo de `MIN_TEXT_CHARS` a análise
+   * sempre aborta antes de classificar: não existe documento classificado com menos que isso. Vale
+   * dizer que o payload inteiro vem do cliente, então isto fecha a aba desatualizada e o erro de
+   * cliente, não um payload forjado de propósito — para esse, nada no confirm é verificável hoje.
+   */
+  if (data.textExtraction.charCount < MIN_TEXT_CHARS) {
+    let emptyDocumentMode;
+    try {
+      emptyDocumentMode = (await getTenantUploadPolicy(tenantId)).emptyDocumentMode;
+    } catch {
+      // Falha de leitura não recusa: na dúvida o documento entra, que é reversível.
+      emptyDocumentMode = undefined;
+    }
+
+    if (emptyDocumentMode === 'auto_reject') {
+      throw new ConfirmAnalysisError(
+        'Este documento voltou sem texto e a política da empresa não aceita arquivo vazio.',
+        'EMPTY_DOCUMENT_REJECTED',
+        422,
+      );
+    }
+  }
 
   // A escolha humana vence a da IA: quem revisou viu o documento.
   const manualClassId = fulfilledRequest?.categoryId ?? (data.manualClassId?.trim() || undefined);

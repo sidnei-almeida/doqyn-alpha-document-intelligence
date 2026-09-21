@@ -61,7 +61,8 @@
       "pick": "Choose the category to save this document.",
       "suggested": "No existing category fits. The AI proposed one below.",
       "willCreate": "No existing folder fits. The AI will create “{{name}}” on save."
-    }
+    },
+    "descartarEnvio": "Discard upload"
   },
   "uploadDropOverlay": {
     "aIaAnalisaraClassificara": "The AI will analyze, classify and prepare the document for review before saving it to the Library.",
@@ -107,7 +108,8 @@
       "processed_other": "{{count}} documents processed",
       "errors_one": "{{count}} upload failed",
       "errors_other": "{{count}} uploads failed"
-    }
+    },
+    "cancelarEnvio": "Cancel upload"
   },
   "provider": {
     "savedIn": "Saved in {{category}}.",
@@ -119,5 +121,12 @@
     "reviewReady": "Analysis complete. Review and confirm to save to the Library.",
     "analyzeFailed": "Error analyzing the document."
   },
-  "policySaveFailed": "Couldn't save the policy."
+  "policySaveFailed": "Couldn't save the policy.",
+  "emptyDocument": {
+    "rejectedByPolicy": "Rejected: the document came back with no text and your company policy does not accept empty files.",
+    "title": "The analysis found no text in this document.",
+    "bodyOcr": "OCR ran on {{pages}} page(s) and returned nothing. It may be a blank, very light, or low-resolution scan.",
+    "bodyNoText": "No text was read from {{pages}} page(s). It may be a blank page, or an image with no OCR available.",
+    "choice": "With no text there is no classification, summary, or suggested name. Save it anyway, or discard the upload."
+  }
 }

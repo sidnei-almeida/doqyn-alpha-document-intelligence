@@ -144,5 +144,17 @@
       "suggest": "la IA propone la carpeta y quien revisa decide si nace",
       "autoCreate": "la IA crea la carpeta al guardar, sin que nadie la vea"
     }
+  },
+  "reviewWorkflowSettings": {
+    "emptyDocument": {
+      "label": "Documento sin texto",
+      "hint": "Qué hacer cuando el análisis no lee nada — hoja en blanco, escaneo fallido, imagen sin OCR.",
+      "review": "Preguntar en la revisión",
+      "reviewHint": "La revisión abre explicando, y quien revisa guarda o descarta.",
+      "auto_save": "Guardar igual",
+      "auto_saveHint": "Entra en «Sin categoría», sin preguntar.",
+      "auto_reject": "Rechazar automáticamente",
+      "auto_rejectHint": "No entra al acervo; el motivo queda en la cola."
+    }
   }
 }

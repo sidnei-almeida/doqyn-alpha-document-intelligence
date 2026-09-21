@@ -14,10 +14,17 @@ import {
 import {
   CATEGORY_SUGGESTION_DESCRIPTION_KEYS,
   CATEGORY_SUGGESTION_LABEL_KEYS,
+  EMPTY_DOCUMENT_DESCRIPTION_KEYS,
+  EMPTY_DOCUMENT_LABEL_KEYS,
   NAMING_POLICY_DESCRIPTION_KEYS,
   NAMING_POLICY_LABEL_KEYS,
 } from '../utils/reviewWorkflowSettings';
-import { CATEGORY_SUGGESTION_MODES, type CategorySuggestionMode } from '@shared/uploadPolicy';
+import {
+  CATEGORY_SUGGESTION_MODES,
+  EMPTY_DOCUMENT_MODES,
+  type CategorySuggestionMode,
+  type EmptyDocumentMode,
+} from '@shared/uploadPolicy';
 import { useTranslation } from 'react-i18next';
 
 interface ReviewWorkflowSettingsPanelProps {
@@ -192,6 +199,71 @@ function CategorySuggestionOptions({
               </span>
             ) : (
               t(CATEGORY_SUGGESTION_LABEL_KEYS[mode])
+            )
+          }
+          wrapperClassName={cn(
+            compact ? 'settings-choice-item--compact' : 'settings-choice-item',
+            !compact && value === mode && 'settings-choice-item--active',
+            compact && value === mode && 'settings-choice-item--compact-active',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * O que fazer com a folha que voltou vazia.
+ *
+ * Mora ao lado da proposta de categoria porque as duas respondem à mesma pergunta — o que o
+ * produto faz quando a IA não soube dizer nada —, e quem configura uma vai querer decidir a outra
+ * na mesma sentada.
+ */
+function EmptyDocumentOptions({
+  value,
+  onChange,
+  compact = false,
+}: {
+  value: EmptyDocumentMode;
+  onChange: (mode: EmptyDocumentMode) => void;
+  compact?: boolean;
+}) {
+  const { t } = useTranslation('documentSend');
+
+  return (
+    <div
+      className={cn('settings-choice-list', compact && 'settings-choice-list--compact')}
+      role="radiogroup"
+      aria-label={t('reviewWorkflowSettings.emptyDocument.label')}
+    >
+      {EMPTY_DOCUMENT_MODES.map((mode) => (
+        <Radio
+          key={mode}
+          name="empty-document-mode"
+          checked={value === mode}
+          onChange={() => onChange(mode)}
+          label={
+            compact ? (
+              <span className="settings-choice-item__inline">
+                <span className="settings-choice-item__label">
+                  {t(EMPTY_DOCUMENT_LABEL_KEYS[mode])}
+                </span>
+                <span className="settings-choice-item__sep" aria-hidden>
+                  —
+                </span>
+                <span className="settings-choice-item__hint">
+                  {t(EMPTY_DOCUMENT_DESCRIPTION_KEYS[mode])}
+                </span>
+              </span>
+            ) : (
+              <span>
+                <span className="settings-choice-item__label">
+                  {t(EMPTY_DOCUMENT_LABEL_KEYS[mode])}
+                </span>
+                <span className="mt-0.5 block text-micro text-doqyn-muted">
+                  {t(EMPTY_DOCUMENT_DESCRIPTION_KEYS[mode])}
+                </span>
+              </span>
             )
           }
           wrapperClassName={cn(
@@ -466,6 +538,15 @@ export function ReviewWorkflowSettingsPanel({
           onChange={(mode) => patch({ categorySuggestionMode: mode })}
         />
       </CollapsibleSettingsSection>
+      <CollapsibleSettingsSection title={t('reviewWorkflowSettings.emptyDocument.label')}>
+        <p className="mb-2 text-micro leading-relaxed text-doqyn-muted">
+          {t('reviewWorkflowSettings.emptyDocument.hint')}
+        </p>
+        <EmptyDocumentOptions
+          value={settings.emptyDocumentMode}
+          onChange={(mode) => patch({ emptyDocumentMode: mode })}
+        />
+      </CollapsibleSettingsSection>
       <CollapsibleSettingsSection title={t('reviewWorkflowSettingsPanel.uploadEmLote')}>
         <BatchControls settings={settings} patch={patch} />
       </CollapsibleSettingsSection>
@@ -527,6 +608,18 @@ export function ReviewWorkflowSettingsPanel({
             onChange={(mode) => patch({ categorySuggestionMode: mode })}
             compact
             size="comfortable"
+          />
+        </SettingsFieldGroup>
+
+        <SettingsFieldGroup
+          title={t('reviewWorkflowSettings.emptyDocument.label')}
+          description={t('reviewWorkflowSettings.emptyDocument.hint')}
+          className="settings-field-group--fill"
+        >
+          <EmptyDocumentOptions
+            value={settings.emptyDocumentMode}
+            onChange={(mode) => patch({ emptyDocumentMode: mode })}
+            compact
           />
         </SettingsFieldGroup>
 

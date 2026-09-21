@@ -142,5 +142,17 @@
       "suggest": "a IA propõe a pasta e quem revisa decide se ela nasce",
       "autoCreate": "a IA cria a pasta sozinha ao salvar, sem passar por ninguém"
     }
+  },
+  "reviewWorkflowSettings": {
+    "emptyDocument": {
+      "label": "Documento sem texto",
+      "hint": "O que fazer quando a análise não lê nada — folha em branco, digitalização falhada, imagem sem OCR.",
+      "review": "Perguntar na revisão",
+      "reviewHint": "A revisão abre explicando, e quem revisa salva ou descarta.",
+      "auto_save": "Salvar assim mesmo",
+      "auto_saveHint": "Entra em «Sem categoria», sem perguntar.",
+      "auto_reject": "Recusar automaticamente",
+      "auto_rejectHint": "Não entra no acervo; o motivo fica na fila."
+    }
   }
 }

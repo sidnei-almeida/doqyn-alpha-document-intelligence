@@ -61,7 +61,8 @@
       "pick": "Escolha a categoria para salvar este documento.",
       "suggested": "Nenhuma categoria existente serve. A IA propôs uma abaixo.",
       "willCreate": "Nenhuma pasta existente serve. A IA vai criar «{{name}}» ao salvar."
-    }
+    },
+    "descartarEnvio": "Descartar envio"
   },
   "uploadDropOverlay": {
     "aIaAnalisaraClassificara": "A IA analisará, classificará e preparará o documento para revisão antes de salvá-lo na\n            Biblioteca.",
@@ -107,7 +108,8 @@
       "processed_other": "{{count}} documentos processados",
       "errors_one": "{{count}} upload com erro",
       "errors_other": "{{count}} uploads com erro"
-    }
+    },
+    "cancelarEnvio": "Cancelar envio"
   },
   "provider": {
     "savedIn": "Salvo em {{category}}.",
@@ -119,5 +121,12 @@
     "reviewReady": "Análise concluída. Revise e confirme para salvar na Biblioteca.",
     "analyzeFailed": "Erro ao analisar o documento."
   },
-  "policySaveFailed": "Não foi possível salvar a política."
+  "policySaveFailed": "Não foi possível salvar a política.",
+  "emptyDocument": {
+    "rejectedByPolicy": "Recusado: o documento voltou sem texto e a política da empresa não aceita arquivo vazio.",
+    "title": "A análise não encontrou texto neste documento.",
+    "bodyOcr": "O OCR foi tentado nas {{pages}} página(s) e não devolveu nada. Pode ser digitalização em branco, muito clara ou de baixa resolução.",
+    "bodyNoText": "Nenhum texto foi lido nas {{pages}} página(s). Pode ser folha em branco, ou uma imagem sem OCR disponível.",
+    "choice": "Sem texto não há classificação, resumo nem nome sugerido. Salve assim mesmo, ou descarte o envio."
+  }
 }
