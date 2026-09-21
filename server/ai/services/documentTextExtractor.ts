@@ -8,7 +8,7 @@ import {
   previewText,
 } from '../utils/pipelineDebug.js';
 import type { ExtractedPdfText } from '../types/documentAi.types.js';
-import { getPdfAnalysisMaxPages } from '../utils/aiConfig.js';
+import { getPdfAnalysisMaxInputChars, getPdfAnalysisMaxPages } from '../utils/aiConfig.js';
 import { recordVisionOcrRequest } from '../../metrics/prometheus.js';
 import { isImageAnalysisMimeType, isPdfAnalysisMimeType } from '../constants.js';
 import {
@@ -246,12 +246,28 @@ export async function extractTextFromDocumentPdf(
       pagesProcessed: ocr.pagesProcessed,
     });
 
+    /**
+     * O OCR completa o texto nativo; não o substitui.
+     *
+     * Devolver só `ocr.text` fazia o documento encolher depois do OCR. Nas páginas rasterizadas
+     * não se perdia nada — o OCR relê do pixel o que estava na camada de texto —, mas o OCR para
+     * no teto de `VISION_OCR_MAX_PAGES`, e dali para a frente o texto nativo ia junto para o lixo.
+     * Num PDF de trinta páginas com fotos no começo e contrato digitado na página 25, o que
+     * sobrava era menos do que havia antes de chamar o OCR. O rótulo `pdf_parse+google_vision` já
+     * prometia a soma; agora ele diz a verdade.
+     *
+     * Por página, o OCR vence quando trouxe algo: ele leu a página inteira renderizada, então o
+     * que ele devolve contém o nativo daquela página. Página que o OCR não alcançou, ou de que
+     * não tirou nada, fica com o texto nativo.
+     */
+    const merged = mergeNativeAndOcrPages(native.pages, ocr.pages);
+
     return {
-      text: ocr.text,
-      pages: ocr.pages,
-      pageCount: ocr.pageCount || pageCountHint,
-      charCount: ocr.charCount,
-      truncated: ocr.truncated || native.truncated,
+      text: merged.text,
+      pages: merged.pages,
+      pageCount: ocr.pageCount || native.pageCount || pageCountHint,
+      charCount: merged.charCount,
+      truncated: ocr.truncated || native.truncated || merged.truncated,
       source,
       ocrFallbackUsed: true,
       ocrAttempted: true,
@@ -413,4 +429,80 @@ export async function extractTextFromDocument(
     return extractTextFromDocumentPdf(fileBuffer, deps);
   }
   return extractTextFromDocumentPdf(fileBuffer, deps);
+}
+
+/**
+ * Junta o que o OCR leu com o que a camada de texto já tinha, página a página.
+ *
+ * Exportada para o teste cobrir o caso do teto de páginas sem subir Vision nem Ghostscript.
+ */
+export function mergeNativeAndOcrPages(
+  nativePages: readonly { pageNumber: number; text: string }[],
+  ocrPages: readonly { pageNumber: number; text: string }[],
+  maxChars: number = getPdfAnalysisMaxInputChars(),
+): {
+  text: string;
+  pages: { pageNumber: number; text: string }[];
+  charCount: number;
+  truncated: boolean;
+} {
+  const byPage = new Map<number, string>();
+
+  for (const page of nativePages) {
+    byPage.set(page.pageNumber, page.text ?? '');
+  }
+  for (const page of ocrPages) {
+    // Só sobrescreve quando o OCR trouxe algo: página em que ele falhou não apaga o nativo.
+    if (page.text?.trim()) byPage.set(page.pageNumber, page.text);
+  }
+
+  const ordered = [...byPage.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([pageNumber, text]) => ({ pageNumber, text }));
+
+  /**
+   * O teto de caracteres tem de ser reaplicado aqui.
+   *
+   * `extractTextFromPdf` corta o texto nativo em `PDF_ANALYSIS_MAX_INPUT_CHARS`, e o OCR corta o
+   * dele por conta própria — mas a soma dos dois não passava por corte nenhum. Somar sem reaplicar
+   * o teto deixava a entrada do modelo crescer até o dobro do limite, que é o limite que existe
+   * justamente para segurar custo e não estourar a janela de contexto da Groq.
+   */
+  const pages: { pageNumber: number; text: string }[] = [];
+  let total = 0;
+  let truncated = false;
+
+  for (const page of ordered) {
+    if (page.text.length === 0) {
+      pages.push(page);
+      continue;
+    }
+
+    // O separador entra na conta. `limitChars`, no extrator nativo, mede só o texto das páginas e
+    // depois junta com `\n\n` — o resultado passa do teto por dois caracteres por página, o que
+    // nunca doeu mas também nunca foi de propósito.
+    const separator = total > 0 ? 2 : 0;
+    const remaining = maxChars - total - separator;
+
+    if (remaining <= 0) {
+      truncated = true;
+      break;
+    }
+    if (page.text.length <= remaining) {
+      pages.push(page);
+      total += separator + page.text.length;
+      continue;
+    }
+    pages.push({ pageNumber: page.pageNumber, text: page.text.slice(0, remaining) });
+    total += separator + remaining;
+    truncated = true;
+    break;
+  }
+
+  const text = pages
+    .map((page) => page.text)
+    .filter((entry) => entry.length > 0)
+    .join('\n\n');
+
+  return { text, pages, charCount: text.length, truncated };
 }

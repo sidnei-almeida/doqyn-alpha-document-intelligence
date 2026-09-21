@@ -1,9 +1,12 @@
+import { commonPhrase } from '@/i18n/commonPhrase';
+import { formatNumber } from '@/i18n/formats';
 import {
   ALLOWED_FILE_EXTENSIONS,
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
   MAX_FILES_PER_BATCH,
-  UPLOAD_ERROR_MESSAGES,
+  UPLOAD_ERROR_KEYS,
 } from '../uploadConstants';
 
 export type FileValidationResult = { valid: true; files: File[] } | { valid: false; error: string };
@@ -29,25 +32,32 @@ export function validateUploadFiles(incoming: File[], existingCount = 0): FileVa
   const total = existingCount + incoming.length;
 
   if (total > MAX_FILES_PER_BATCH) {
-    return { valid: false, error: UPLOAD_ERROR_MESSAGES.tooManyFiles };
+    return {
+      valid: false,
+      error: commonPhrase(UPLOAD_ERROR_KEYS.tooManyFiles, { count: MAX_FILES_PER_BATCH }),
+    };
   }
 
   for (const file of incoming) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      return { valid: false, error: UPLOAD_ERROR_MESSAGES.fileTooLarge };
+      return {
+        valid: false,
+        error: commonPhrase(UPLOAD_ERROR_KEYS.fileTooLarge, { size: MAX_FILE_SIZE_MB }),
+      };
     }
 
     if (!isAllowedType(file)) {
-      return { valid: false, error: UPLOAD_ERROR_MESSAGES.unsupportedFormat };
+      return { valid: false, error: commonPhrase(UPLOAD_ERROR_KEYS.unsupportedFormat) };
     }
   }
 
   return { valid: true, files: incoming };
 }
 
+/** Casas fixas como antes; o separador decimal é o do idioma (`toFixed` só escreve ponto). */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${formatNumber(bytes / 1024, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} KB`;
   }
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  return `${formatNumber(bytes / 1024 / 1024, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MB`;
 }

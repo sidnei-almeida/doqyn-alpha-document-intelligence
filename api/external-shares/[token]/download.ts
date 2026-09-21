@@ -6,6 +6,7 @@ import {
 } from '../../../server/services/sharing/externalDocumentShareService.js';
 import { readExternalShareDocumentDownload } from '../../../server/services/sharing/externalDocumentSharePreviewService.js';
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
+import { buildContentDisposition } from '../../../server/utils/contentDisposition.js';
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../../server/utils/sanitizeAuditMetadata.js';
 
@@ -34,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.external_share_downloaded',
-          description: 'Download externo do documento compartilhado.',
           documentId: access.grant.documentId,
           metadata: sanitizeAuditMetadata(
             buildExternalShareTrackingMetadata(access.grant, {
@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.setHeader('Content-Type', file.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.fileName)}"`);
+    res.setHeader('Content-Disposition', buildContentDisposition('attachment', file.fileName));
     res.setHeader('Cache-Control', 'private, no-store');
     return res.status(200).send(file.buffer);
   } catch (error) {

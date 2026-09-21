@@ -8,6 +8,35 @@
 
 export type UploadNamingPolicy = 'original' | 'ai_suggested' | 'ask_each_file' | 'manual_required';
 
+/**
+ * O que fazer quando nenhuma categoria configurada serve para o documento.
+ *
+ * `off` é o comportamento anterior: sem classe, o documento cai em "Sem categoria" e alguém
+ * reclassifica depois. `suggest` faz a IA propor uma categoria nova — nome, descrição e palavras-
+ * chave — e a proposta vira um botão na revisão. `auto_create` cria a categoria na confirmação,
+ * sem passar por ninguém.
+ *
+ * O padrão é `suggest` de propósito: taxonomia que cresce sozinha vira dez pastas quase iguais, e
+ * o classificador passa a competir com as próprias duplicatas.
+ */
+export type CategorySuggestionMode = 'off' | 'suggest' | 'auto_create';
+
+/**
+ * O que fazer com o documento de que não se extraiu texto nenhum.
+ *
+ * Folha em branco, digitalização falhada, PDF que só tem imagem e voltou vazio do OCR: a análise
+ * não tem o que classificar nem o que resumir, e antes isso passava calado — o arquivo era salvo
+ * com o nome original, sem resumo e sem categoria, como se estivesse tudo certo.
+ *
+ * - `review` (padrão): a revisão abre dizendo que a folha veio vazia, e quem revisa decide entre
+ *   salvar assim mesmo e descartar. É o único modo que pergunta.
+ * - `auto_save`: salva sem perguntar, em "Sem categoria". Para quem arquiva digitalização em lote
+ *   e prefere resolver depois, na Biblioteca.
+ * - `auto_reject`: não salva. O item termina recusado na fila, com o motivo à vista; o arquivo
+ *   provisório nunca é promovido e expira sozinho.
+ */
+export type EmptyDocumentMode = 'review' | 'auto_save' | 'auto_reject';
+
 export type TenantUploadPolicy = {
   autoReviewEnabled: boolean;
   autoAcceptDelaySeconds: number;
@@ -20,6 +49,8 @@ export type TenantUploadPolicy = {
 
   aiMetadataEnabled: boolean;
   aiClassificationEnabled: boolean;
+  categorySuggestionMode: CategorySuggestionMode;
+  emptyDocumentMode: EmptyDocumentMode;
   preventSensitiveDataInFileName: boolean;
 
   applyToBatch: boolean;
@@ -43,6 +74,9 @@ export const DEFAULT_TENANT_UPLOAD_POLICY: TenantUploadPolicy = {
 
   aiMetadataEnabled: true,
   aiClassificationEnabled: true,
+  categorySuggestionMode: 'suggest',
+  // Perguntar é o padrão: salvar folha em branco sem avisar foi exatamente o que se quis corrigir.
+  emptyDocumentMode: 'review',
   preventSensitiveDataInFileName: true,
 
   applyToBatch: false,
@@ -57,8 +91,30 @@ const NAMING_POLICIES: readonly UploadNamingPolicy[] = [
   'manual_required',
 ];
 
+export const CATEGORY_SUGGESTION_MODES: readonly CategorySuggestionMode[] = [
+  'off',
+  'suggest',
+  'auto_create',
+];
+
+export const EMPTY_DOCUMENT_MODES: readonly EmptyDocumentMode[] = [
+  'review',
+  'auto_save',
+  'auto_reject',
+];
+
 export function isUploadNamingPolicy(value: unknown): value is UploadNamingPolicy {
   return typeof value === 'string' && (NAMING_POLICIES as readonly string[]).includes(value);
+}
+
+export function isCategorySuggestionMode(value: unknown): value is CategorySuggestionMode {
+  return (
+    typeof value === 'string' && (CATEGORY_SUGGESTION_MODES as readonly string[]).includes(value)
+  );
+}
+
+export function isEmptyDocumentMode(value: unknown): value is EmptyDocumentMode {
+  return typeof value === 'string' && (EMPTY_DOCUMENT_MODES as readonly string[]).includes(value);
 }
 
 export function clampUploadAutoDelaySeconds(value: number): number {
@@ -100,6 +156,12 @@ export function normalizeTenantUploadPolicy(
 
     aiMetadataEnabled: pickBoolean(raw.aiMetadataEnabled, base.aiMetadataEnabled),
     aiClassificationEnabled: pickBoolean(raw.aiClassificationEnabled, base.aiClassificationEnabled),
+    categorySuggestionMode: isCategorySuggestionMode(raw.categorySuggestionMode)
+      ? raw.categorySuggestionMode
+      : base.categorySuggestionMode,
+    emptyDocumentMode: isEmptyDocumentMode(raw.emptyDocumentMode)
+      ? raw.emptyDocumentMode
+      : base.emptyDocumentMode,
     preventSensitiveDataInFileName: pickBoolean(
       raw.preventSensitiveDataInFileName,
       base.preventSensitiveDataInFileName,

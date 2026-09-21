@@ -1,0 +1,74 @@
+{
+  "notice": "Este texto es una versión preliminar para el entorno de desarrollo y debe ser revisado jurídicamente antes de su uso en producción.",
+  "section": {
+    "about": {
+      "title": "1. Sobre DOQYN",
+      "p1": "DOQYN es una plataforma de inteligencia documental dirigida a empresas y usuarios individuales, con funciones de organización, análisis, gobernanza y auditoría de documentos.",
+      "p2": "Al utilizar DOQYN, aceptas estos Términos y Condiciones de Uso en la versión vigente al momento del registro o de la solicitud de acceso."
+    },
+    "eligibility": {
+      "title": "2. Elegibilidad y responsabilidad del usuario",
+      "p1": "Declaras tener capacidad legal para aceptar estos términos y para proporcionar información verdadera, completa y actualizada.",
+      "p2": "Es tu responsabilidad mantener correctos tus datos de contacto y proteger tus credenciales de acceso."
+    },
+    "company-access": {
+      "title": "3. Registro de empresa y solicitud de acceso",
+      "p1": "Las empresas pueden ser registradas por administradores autorizados. Los usuarios que solicitan acceso a una empresa existente dependen de la aprobación administrativa.",
+      "p2": "La información incorrecta o incompleta puede retrasar o impedir la habilitación del acceso."
+    },
+    "individual": {
+      "title": "4. Uso individual",
+      "p1": "Los usuarios persona física pueden crear un acceso individual para gestionar documentos personales conforme a las reglas de la plataforma.",
+      "p2": "El uso debe respetar la legislación aplicable y los permisos concedidos dentro del espacio de trabajo."
+    },
+    "documents": {
+      "title": "5. Subida, análisis y almacenamiento de documentos",
+      "p1": "Los documentos subidos a la plataforma pueden ser procesados, clasificados, versionados y puestos a disposición conforme a los permisos definidos para tu cuenta u organización.",
+      "p2": "Eres responsable del contenido que subes y de la autorización para tratarlo en la plataforma."
+    },
+    "ai": {
+      "title": "6. Uso de funciones de inteligencia artificial",
+      "p1": "DOQYN puede utilizar funciones automatizadas y de inteligencia artificial para apoyar el análisis, la clasificación y la extracción de información documental.",
+      "p2": "Los resultados automatizados deben revisarse cuando sea necesario. No sustituyen el análisis humano especializado en todos los casos."
+    },
+    "governance": {
+      "title": "7. Permisos, grupos y gobernanza documental",
+      "p1": "El acceso a documentos, grupos y funcionalidades se controla mediante roles, permisos y políticas definidos por los administradores de la organización.",
+      "p2": "Los cambios de acceso pueden ser auditados con fines operativos y de cumplimiento."
+    },
+    "responsibility": {
+      "title": "8. Responsabilidades sobre los documentos subidos",
+      "p1": "Garantizas tener el derecho o la autorización para subir, compartir y tratar los documentos puestos a disposición en DOQYN.",
+      "p2": "Queda prohibido el uso de la plataforma para contenido ilícito, fraudulento o que viole derechos de terceros."
+    },
+    "security": {
+      "title": "9. Seguridad de la cuenta",
+      "p1": "Mantén tu contraseña en secreto y notifica a la organización o al soporte en caso de sospecha de uso indebido.",
+      "p2": "Las medidas de seguridad se adoptan de forma proporcional, sin garantía de protección absoluta contra todos los riesgos."
+    },
+    "limitations": {
+      "title": "10. Limitaciones de uso",
+      "p1": "Está prohibido intentar eludir los controles de acceso, explotar vulnerabilidades, sobrecargar la plataforma o utilizarla fuera de las finalidades previstas.",
+      "p2": "DOQYN puede imponer límites operativos razonables para preservar la estabilidad y la seguridad."
+    },
+    "suspension": {
+      "title": "11. Suspensión o bloqueo del acceso",
+      "p1": "El acceso puede ser suspendido o bloqueado en caso de violación de estos términos, riesgo de seguridad, exigencia legal o decisión administrativa de la organización.",
+      "p2": "Los registros relevantes pueden conservarse para auditoría conforme a la política aplicable."
+    },
+    "audit": {
+      "title": "12. Auditoría y registros operativos",
+      "p1": "Los eventos relevantes de registro, solicitud de acceso, aprobaciones, cambios y operaciones críticas pueden registrarse para su trazabilidad.",
+      "p2": "Estos registros buscan apoyar la gobernanza, el soporte y el cumplimiento operativo."
+    },
+    "changes": {
+      "title": "13. Cambios en los términos",
+      "p1": "Estos términos pueden actualizarse. Cuando haya una nueva versión, la aceptación podrá solicitarse nuevamente en los flujos de registro, acceso o uso de la plataforma.",
+      "p2": "La versión aceptada y la fecha de aceptación pueden registrarse con fines de auditoría."
+    },
+    "contact": {
+      "title": "14. Contacto",
+      "p1": "Para dudas sobre estos términos o sobre el uso de la plataforma, utiliza los canales oficiales de soporte o contacto informados por tu organización o por DOQYN."
+    }
+  }
+}

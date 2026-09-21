@@ -1,0 +1,66 @@
+{
+  "notification": {
+    "eyebrow": {
+      "document_expiring": "Expiry",
+      "document_created": "New document",
+      "document_updated": "Document updated",
+      "signature_required": "Signature",
+      "document_shared": "Sharing",
+      "access_approved": "Access granted",
+      "access_rejected": "Access declined",
+      "approval_requested": "Approval pending",
+      "approval_decided": "Approval decided",
+      "document_requested": "Document requested",
+      "document_request_fulfilled": "Request fulfilled",
+      "inbound_share_received": "Received from outside",
+      "inbound_share_accepted": "Delivery accepted",
+      "inbound_share_declined": "Delivery declined",
+      "member_joined": "Joined the company"
+    },
+    "eyebrowFallback": "Notice",
+    "action": {
+      "signature_required": "Open to sign",
+      "member_joined": "View in Users",
+      "approval_requested": "Review request",
+      "document_requested": "See what was requested",
+      "document_expiring": "Open document"
+    },
+    "actionFallback": "Open in DOQYN",
+    "row": {
+      "document": "Document",
+      "category": "Category",
+      "actor": "By"
+    },
+    "expiry": {
+      "validUntil": "Valid until {{date}}",
+      "expiredOn": "Expired on {{date}}"
+    },
+    "preferencesHint": "Rather not get notices by email? Adjust your notification preferences in the app.",
+    "footNote": "You received this email because you follow this document on DOQYN, or because the notice is addressed to your account.",
+    "footNoteAccount": "You received this email because the notice is addressed to your DOQYN account.",
+    "uncategorized": "Uncategorized"
+  },
+  "externalGuest": {
+    "share": {
+      "eyebrow": "Sharing",
+      "title": "{{senderName}} shared a document with you",
+      "action": "Open document"
+    },
+    "row": {
+      "sharedBy": "Shared by",
+      "expiresAt": "Expires on",
+      "permission": "Permission",
+      "requestedBy": "Requested by"
+    },
+    "permission": {
+      "viewOnly": "View only",
+      "viewAndDownload": "View and download"
+    },
+    "signature": {
+      "eyebrow": "Signature",
+      "title": "{{senderName}} requested your signature on a document",
+      "action": "Open to sign"
+    },
+    "footNote": "You received this email because this address was given in a DOQYN invite. If you weren't expecting it, you can ignore it — no access was granted beyond the link above."
+  }
+}

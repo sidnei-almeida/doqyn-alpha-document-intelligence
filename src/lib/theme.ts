@@ -5,16 +5,23 @@ export const THEME_STORAGE_KEY = 'doqyn-theme';
 
 export const THEMES: Theme[] = ['standard', 'light', 'dark'];
 
-export const THEME_LABELS: Record<Theme, string> = {
-  standard: 'Padrão',
-  light: 'Claro',
-  dark: 'Escuro',
+/**
+ * Rótulo e descrição saíram daqui para o catálogo, e ficaram as **chaves**.
+ *
+ * "Padrão", "Claro" e "Escuro" são texto de tela: aparecem no seletor de Configurações e no
+ * tooltip do alternador. O que sobra neste módulo é o que não se traduz — a lista de temas, o
+ * ícone de cada um, e qual paleta cada um resolve.
+ */
+export const THEME_LABEL_KEYS: Record<Theme, string> = {
+  standard: 'components:theme.standardLabel',
+  light: 'components:theme.lightLabel',
+  dark: 'components:theme.darkLabel',
 };
 
-export const THEME_HINTS: Record<Theme, string> = {
-  standard: 'Casca grafite, painel de papel',
-  light: 'Casca cinza-clara, painel de papel',
-  dark: 'Casca quase preta, painel grafite',
+export const THEME_HINT_KEYS: Record<Theme, string> = {
+  standard: 'components:theme.standardHint',
+  light: 'components:theme.lightHint',
+  dark: 'components:theme.darkHint',
 };
 
 export const THEME_ICONS: Record<Theme, string> = {

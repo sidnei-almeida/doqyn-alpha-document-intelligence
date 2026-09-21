@@ -1,0 +1,132 @@
+{
+  "metric": {
+    "documentsLabel": "Documentos",
+    "documentsSubtext": "+{{count}} en los últimos {{days}} días",
+    "analysisLabel": "En análisis",
+    "analysisSubtext": "procesamiento en curso",
+    "reviewLabel": "Esperando revisión",
+    "reviewSubtext": "confirmación manual",
+    "processedLabel": "Procesados",
+    "processedSubtext_one": "{{count}} vista previa lista",
+    "processedSubtext_many": "{{count}} vistas previas listas",
+    "processedSubtext_other": "{{count}} vistas previas listas",
+    "errorsLabel": "Errores",
+    "errorsSubtext_one": "{{count}} documento afectado",
+    "errorsSubtext_many": "{{count}} documentos afectados",
+    "errorsSubtext_other": "{{count}} documentos afectados",
+    "eventsLabel": "Eventos",
+    "eventsSubtext": "{{views}} · {{downloads}}",
+    "previewCount_one": "{{count}} vista previa",
+    "previewCount_many": "{{count}} vistas previas",
+    "previewCount_other": "{{count}} vistas previas",
+    "downloadCount_one": "{{count}} descarga",
+    "downloadCount_many": "{{count}} descargas",
+    "downloadCount_other": "{{count}} descargas"
+  },
+  "overviewEnvironmentHealthCard": {
+    "atencao": "Atención",
+    "bucket": "Bucket",
+    "categorias": "Categorías",
+    "regrasDeIa": "Reglas de IA",
+    "restrito": "Restringido",
+    "saudeDoAmbiente": "Salud del espacio de trabajo",
+    "storage": "Almacenamiento",
+    "managedByAdmin": "Configuración administrada por el administrador",
+    "subtitle": "Integridad operativa",
+    "storageOk": "Almacenamiento configurado",
+    "storageMissing": "No disponible en el entorno. Contacta al soporte",
+    "categoriesOk": "Categorías activas en el entorno",
+    "categoriesAction": "Crea o activa categorías",
+    "awaitingAdmin": "Esperando la configuración del administrador",
+    "rulesAction": "Reglas",
+    "extractionOk": "Extracción configurada en el entorno",
+    "extractionAction": "Activa reglas de análisis",
+    "uploadAiAction": "Carga e IA"
+  },
+  "overviewGovernancePanel": {
+    "acesso": "Acceso",
+    "categorias": "Categorías",
+    "extracao": "Extracción",
+    "governancaDocumental": "Gobernanza documental",
+    "grupos": "Grupos",
+    "pendencias": "Pendientes",
+    "usuarios": "Usuarios",
+    "subtitle": "Categorías, reglas y acceso del entorno",
+    "openRulesMap": "Abrir mapa de reglas",
+    "usersWaiting": "usuarios esperando",
+    "hintRegrasAtivas": "reglas activas",
+    "hintAtivos": "activos"
+  },
+  "overviewHeaderActions": {
+    "irParaBiblioteca": "Ir a la Biblioteca"
+  },
+  "overviewPeriodSelector": {
+    "periodoDoPainel": "Período del panel"
+  },
+  "overviewQuickAccessPanel": {
+    "acessoRapido": "Acceso rápido",
+    "subtitle": "Gobernanza y configuración en un clic",
+    "links": {
+      "rules": {
+        "label": "Reglas y categorías",
+        "description": "Mapa de acceso y extracción"
+      },
+      "users": {
+        "label": "Usuarios y grupos",
+        "description": "Miembros y permisos"
+      },
+      "uploadAi": {
+        "label": "Carga e IA",
+        "description": "Revisión y nombres"
+      },
+      "settings": {
+        "label": "Configuración de la cuenta",
+        "description": "Perfil, tema y seguridad"
+      },
+      "preferences": {
+        "label": "Preferencias",
+        "description": "Tema y experiencia"
+      },
+      "account": {
+        "label": "Mi cuenta",
+        "description": "Perfil e identidad"
+      }
+    }
+  },
+  "overviewRecentActivityPanel": {
+    "atividadeRecente": "Actividad reciente",
+    "cadaAberturaDownloadE": "Cada apertura, descarga y subida entra aquí apenas ocurre.",
+    "nenhumaAtividadeNoPeriodo": "Ninguna actividad en el período",
+    "userFallback": "Usuario",
+    "subtitle": "Visualizaciones, descargas y seguimiento",
+    "viewTracking": "Ver tracking"
+  },
+  "overviewRecentDocumentsPanel": {
+    "documentosRecentes": "Documentos recientes",
+    "nenhumDocumentoEnviadoAinda": "Ningún documento subido todavía",
+    "oPrimeiroEnvioComeca": "La primera subida empieza a contar las métricas y la actividad de este panel.",
+    "tracking": "Rastreo",
+    "visualizar": "Ver",
+    "documentFallback": "Documento",
+    "subtitle": "Últimas cargas y actualizaciones del entorno",
+    "viewAll": "Ver todos"
+  },
+  "overviewStoragePanel": {
+    "downloads": "Descargas",
+    "nenhumErroRecenteNo": "Ningún error reciente en el período.",
+    "originais": "Originales",
+    "previews": "Vistas previas",
+    "storageEErrosRecentes": "Almacenamiento y errores recientes",
+    "tamanhoTotal": "Tamaño total",
+    "documentFallback": "Documento",
+    "subtitle": "Uso de archivos e incidentes en el período",
+    "openTracking": "Abrir tracking",
+    "inPeriod": "en el período",
+    "hintArquivos": "archivos",
+    "hintGerados": "generados",
+    "hintNoBucket": "en el bucket"
+  },
+  "overviewSummaryStrip": {
+    "resumoDoPeriodo": "Resumen del período"
+  }
+}

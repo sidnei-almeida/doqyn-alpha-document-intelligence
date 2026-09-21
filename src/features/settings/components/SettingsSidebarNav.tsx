@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { SettingsNavItem, SettingsSectionId } from '../settingsSections';
+import { useTranslation } from 'react-i18next';
 
 type SettingsSidebarNavProps = {
   active: SettingsSectionId;
@@ -10,8 +11,13 @@ type SettingsSidebarNavProps = {
 };
 
 export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarNavProps) {
+  const { t } = useTranslation('settings');
+
   return (
-    <nav className="settings-sidebar-nav" aria-label="Seções de configurações">
+    <nav
+      className="settings-sidebar-nav"
+      aria-label={t('settingsSidebarNav.secoesDeConfiguracoes')}
+    >
       <ul className="settings-sidebar-nav__list">
         {items.map((item) => {
           const isActive = item.id === active;
@@ -30,9 +36,11 @@ export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarN
                   className={cn('shrink-0', isActive && 'text-doqyn-accent-active')}
                 />
                 <span className="min-w-0 text-left">
-                  <span className="block text-[13px] font-medium leading-tight">{item.label}</span>
+                  <span className="block text-[13px] font-medium leading-tight">
+                    {t(item.labelKey)}
+                  </span>
                   <span className="mt-0.5 block text-[11px] text-doqyn-muted">
-                    {item.description}
+                    {t(item.descriptionKey)}
                   </span>
                 </span>
               </button>
@@ -41,7 +49,11 @@ export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarN
         })}
       </ul>
 
-      <div className="settings-tabs-nav" role="tablist" aria-label="Seções de configurações">
+      <div
+        className="settings-tabs-nav"
+        role="tablist"
+        aria-label={t('settingsSidebarNav.secoesDeConfiguracoes2')}
+      >
         {items.map((item) => {
           const isActive = item.id === active;
           return (
@@ -53,7 +65,7 @@ export function SettingsSidebarNav({ active, items, onSelect }: SettingsSidebarN
               onClick={() => onSelect(item.id)}
               className={cn('settings-tab-item', isActive && 'settings-tab-item--active')}
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           );
         })}

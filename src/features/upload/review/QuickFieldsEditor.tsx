@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { fetchCategoryFields } from '@/features/documents/api/documentsApi';
 import type { ExtractedMetadata } from '@/features/document-send/types';
 import { buildQuickFieldRows } from './quickFieldRows';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Campos do documento, prontos para conferir e corrigir antes de salvar.
@@ -32,6 +33,8 @@ export function QuickFieldsEditor({
   overrides: Record<string, string>;
   onChange: (key: string, value: string) => void;
 }) {
+  const { t } = useTranslation('upload');
+
   const { data: categoryFields = [], isLoading } = useQuery({
     queryKey: ['category-fields', categoryId],
     queryFn: () => fetchCategoryFields(categoryId as string),
@@ -45,14 +48,16 @@ export function QuickFieldsEditor({
   );
 
   if (isLoading && rows.length === 0) {
-    return <p className="text-[11px] text-doqyn-muted">Carregando campos da categoria…</p>;
+    return (
+      <p className="text-[11px] text-doqyn-muted">
+        {t('quickFieldsEditor.carregandoCamposDaCategoria')}
+      </p>
+    );
   }
 
   if (rows.length === 0) {
     return (
-      <p className="text-[11px] text-doqyn-muted">
-        Esta categoria não tem campos configurados. O documento salva assim mesmo.
-      </p>
+      <p className="text-[11px] text-doqyn-muted">{t('quickFieldsEditor.estaCategoriaNaoTem')}</p>
     );
   }
 
@@ -62,11 +67,11 @@ export function QuickFieldsEditor({
     <div>
       <div className="mb-2 flex items-center justify-between">
         <p className="text-[10px] font-medium uppercase tracking-wide text-doqyn-muted">
-          Campos do documento
+          {t('quickFieldsEditor.camposDoDocumento')}
         </p>
         {missingRequired > 0 && (
           <p className="text-[11px] text-doqyn-warning">
-            {missingRequired} obrigatório{missingRequired > 1 ? 's' : ''} em branco
+            {t('quickFieldsEditor.missingRequired', { count: missingRequired })}
           </p>
         )}
       </div>
@@ -93,7 +98,7 @@ export function QuickFieldsEditor({
                   type={inputTypeFor(row.type)}
                   value={row.value}
                   onChange={(event) => onChange(row.key, event.target.value)}
-                  placeholder={isMissing ? 'Preencher' : '—'}
+                  placeholder={t(isMissing ? 'quickFieldsEditor.fill' : 'quickFieldsEditor.empty')}
                   className={cn(
                     'w-full rounded-md border bg-doqyn-bg px-2 py-1 text-[12px] text-doqyn-text placeholder:text-doqyn-subtle',
                     isMissing ? 'border-doqyn-warning-border' : 'border-doqyn-border-subtle',
@@ -103,7 +108,7 @@ export function QuickFieldsEditor({
                 {row.fromAi && (
                   <span
                     className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px] uppercase tracking-wide text-doqyn-subtle"
-                    title="Valor extraído pela IA"
+                    title={t('quickFieldsEditor.valorExtraidoPelaIa')}
                   >
                     IA
                   </span>
@@ -115,8 +120,8 @@ export function QuickFieldsEditor({
       </div>
 
       <p className="mt-2 flex items-center gap-1 text-[10px] text-doqyn-subtle">
-        <Icon name="info" size={ICON_SIZE.xs} />O que você digitar entra como preenchimento manual
-        na auditoria.
+        <Icon name="info" size={ICON_SIZE.xs} />
+        {t('quickFieldsEditor.oQueVoceDigitar')}
       </p>
     </div>
   );

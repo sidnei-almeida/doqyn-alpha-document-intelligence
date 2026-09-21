@@ -1,0 +1,169 @@
+{
+  "accessFormSections": {
+    "defineOQueA": "Define lo que la persona administra. Es uno solo, y no se acumulan.",
+    "eACaixaDo": "Es la bandeja de la campana. No se apaga.",
+    "grupos": "Grupos",
+    "nenhumGrupoCriadoAinda": "Ningún grupo creado todavía.",
+    "noApp": "En la app",
+    "notificacoes": "Notificaciones",
+    "oQueAvisar": "Qué avisar",
+    "osAvisosSaemDo": "Los avisos salen del acceso: solo llega lo que la persona ya alcanza por los grupos, o lo que es de ella.",
+    "osMesmosGruposDe": "Los mismos grupos de Reglas. Son ellos los que deciden qué categorías alcanza la persona.",
+    "papelNaPlataforma": "Rol en la plataforma",
+    "porOnde": "Por dónde",
+    "semGrupoAPessoa": "Sin grupo, la persona no alcanza ninguna categoría. Crea uno en Reglas y vuelve aquí.",
+    "openRules": "Abrir Reglas",
+    "peopleCount_one": "{{count}} persona",
+    "peopleCount_many": "{{count}} personas",
+    "peopleCount_other": "{{count}} personas",
+    "groupFallbackDescription": "Grupo documental de gobernanza",
+    "events": {
+      "documentCreated": "Documento nuevo en la categoría",
+      "documentUpdated": "Nueva versión de un documento",
+      "documentRequiresSignature": "Firma solicitada a esta persona",
+      "documentShared": "Documento compartido con esta persona",
+      "accessApproved": "Acceso aprobado",
+      "accessRejected": "Acceso rechazado"
+    },
+    "channels": {
+      "email": "Correo electrónico",
+      "whatsapp": "WhatsApp",
+      "emailReason": "Aún no hay un servidor de correo configurado.",
+      "whatsappReason": "Aún no hay una integración de WhatsApp configurada."
+    }
+  },
+  "blockAccessDialog": {
+    "asSessoesAtivasNesta": "Las sesiones activas en esta empresa serán revocadas.",
+    "bloquearAcessoAEmpresa": "¿Bloquear el acceso a la empresa?",
+    "cancelar": "Cancelar",
+    "eMail": "Correo electrónico",
+    "empresa": "Empresa",
+    "esteUsuarioPerderaO": "Este usuario perderá el acceso a esta empresa. Su cuenta no se borrará y los accesos en otras empresas no se verán afectados.",
+    "exAcessoSuspensoTemporariamente": "Ej.: acceso suspendido temporalmente",
+    "motivoDoBloqueioOpcional": "Motivo del bloqueo (opcional)",
+    "statusAtual": "Estado actual",
+    "usuario": "Usuario",
+    "blocking": "Bloqueando…",
+    "confirm": "Bloquear acceso"
+  },
+  "editAccessDialog": {
+    "cancelar": "Cancelar",
+    "editarAcesso": "Editar acceso",
+    "discard": {
+      "title": "¿Descartar los cambios?",
+      "description": "Se perderán los cambios de acceso no guardados.",
+      "confirm": "Descartar",
+      "cancel": "Seguir editando"
+    },
+    "unsaved": "Cambios sin guardar",
+    "noChanges": "No hay cambios pendientes",
+    "saving": "Guardando…"
+  },
+  "inviteMemberDialog": {
+    "cancelar": "Cancelar",
+    "concluir": "Concluir",
+    "copieOLinkAcima": "Copia el enlace de arriba y envíalo por otro canal.",
+    "eMail": "Correo electrónico",
+    "linkDoConvite": "Enlace de la invitación",
+    "nomeOpcional": "Nombre (opcional)",
+    "oEMailNao": "El correo no fue enviado.",
+    "semNenhumGrupoA": "Sin ningún grupo, la persona entra pero no alcanza documento alguno. El acceso se da al grupo, nunca a la persona suelta.",
+    "sobrenomeOpcional": "Apellido (opcional)",
+    "skipReason": {
+      "emailDisabled": "El envío de correo está desactivado en este espacio de trabajo.",
+      "smtpNotConfigured": "No hay ningún proveedor de correo configurado.",
+      "sendFailed": "El proveedor rechazó la entrega.",
+      "unknown": "No se confirmó la entrega."
+    },
+    "createFailed": "No fue posible crear la invitación.",
+    "copyFailedTitle": "No fue posible copiar",
+    "copyFailedMessage": "Selecciona el enlace y cópialo manualmente.",
+    "titleCreated": "Invitación creada",
+    "titleNew": "Invitar a la empresa",
+    "subtitleEmailed": "La invitación se envió por correo. Este enlace es el mismo, si quieres mandarlo por otro canal.",
+    "subtitleLinkOnly": "Envía este enlace a la persona. Funciona una sola vez.",
+    "subtitleNew": "La persona recibe un enlace, completa sus propios datos y entra directo.",
+    "creating": "Creando…",
+    "create": "Crear invitación",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "validUntilNotice": "Válido hasta {{date}}. Después deja de abrir, y hay que invitar de nuevo.",
+    "emailPlaceholder": "persona@ejemplo.com",
+    "subtitleEmailedNoLink": "La invitación se envió por correo. Solo sirve para quien la recibió.",
+    "subtitleNotSent": "La invitación se creó, pero el correo no salió.",
+    "inviteAgainLater": "Cuando el envío vuelva a funcionar, invita de nuevo: la invitación anterior se reemplaza."
+  },
+  "unblockAccessDialog": {
+    "bloqueado": "Bloqueado",
+    "cancelar": "Cancelar",
+    "desbloquearAcessoAEmpresa": "¿Desbloquear el acceso a la empresa?",
+    "eMail": "Correo electrónico",
+    "empresa": "Empresa",
+    "oUsuarioVoltaraA": "El usuario volverá a tener acceso a esta empresa. Otras empresas no se verán afectadas.",
+    "statusAtual": "Estado actual",
+    "usuario": "Usuario",
+    "unblocking": "Desbloqueando…",
+    "confirm": "Desbloquear acceso"
+  },
+  "userManagementRoute": {
+    "verificandoPermissoes": "Verificando permisos..."
+  },
+  "usersPage": {
+    "buscarPorNomeOu": "Buscar por nombre o correo",
+    "buscarUsuario": "Buscar usuario",
+    "convidar": "Invitar",
+    "filtrarPorStatus": "Filtrar por estado",
+    "usuarios": "Usuarios",
+    "statusFilter": {
+      "all": "Todos"
+    },
+    "tenantFallback": "tu empresa",
+    "inviteNoLink": "La invitación se creó, pero el servicio no devolvió el enlace.",
+    "groupsWarning": "La invitación es válida, pero no fue posible guardar los grupos. Define el acceso en Reglas cuando la persona entre.",
+    "toast": {
+      "blocked": "Acceso bloqueado.",
+      "unblocked": "Acceso desbloqueado.",
+      "accessUpdated": "Acceso actualizado.",
+      "inviteRevoked": "Invitación revocada."
+    },
+    "memberNotSelected": "Ningún miembro seleccionado.",
+    "inviteExpired": "Invitación vencida",
+    "inviteValidUntil": "Invitación válida hasta {{date}}",
+    "eyebrow": "Administración",
+    "description": "Invita personas y gestiona los accesos de {{tenant}}.",
+    "userCount_one": "{{count}} usuario",
+    "userCount_many": "{{count}} usuarios",
+    "userCount_other": "{{count}} usuarios",
+    "loadFailed": "No fue posible cargar los usuarios de la empresa.",
+    "empty": {
+      "error": "No fue posible cargar los usuarios",
+      "loading": "Cargando usuarios",
+      "none": "Aún no hay usuarios",
+      "status": {
+        "active": "Ningún usuario activo",
+        "invited": "Ningún usuario invitado",
+        "pending": "Ningún usuario pendiente",
+        "blocked": "Ningún usuario bloqueado",
+        "rejected": "Ningún usuario rechazado"
+      },
+      "descriptionAll": "Nadie tiene acceso a la empresa por ahora.",
+      "descriptionFiltered": "Cambia el filtro para ver los demás registros."
+    },
+    "sparseMessage": "Solo esto en esta selección",
+    "sparseDescription": "Cambia el filtro de estado para ver los demás registros.",
+    "columns": {
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "status": "Estado",
+      "roles": "Roles",
+      "groups": "Grupos"
+    },
+    "departmentTooltip": "Departamento indicado en la solicitud",
+    "actions": {
+      "editAccess": "Editar acceso",
+      "blockAccess": "Bloquear acceso",
+      "unblockAccess": "Desbloquear acceso",
+      "revokeInvite": "Revocar invitación"
+    }
+  }
+}

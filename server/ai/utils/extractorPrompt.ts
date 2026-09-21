@@ -2,6 +2,11 @@ import type { DocumentClassRule, RetrievedChunk } from '../types/documentAi.type
 import { MAX_CHARS_PER_EXTRACTOR_CHUNK, MAX_EXTRACTOR_FIELDS_IN_PROMPT } from '../constants.js';
 import { formatChunksForPrompt } from '../../services/retrievalProvider.js';
 import {
+  isForeignDocumentLanguage,
+  languageNameForPrompt,
+  type DocumentLanguageContext,
+} from './detectDocumentLanguage.js';
+import {
   augmentConfidentialityClassForExtraction,
   hasFinancialRoleFields,
   isConfidentialityClassRule,
@@ -131,6 +136,41 @@ trecho encontrado desempenha exatamente o papel descrito em \`description\`. Pro
 }
 
 /**
+ * O que muda quando o documento ou quem vai ler não é português.
+ *
+ * Vazio no caso comum — documento em português (ou `und`) para quem lê português —, e é isso que
+ * mantém o prompt medido intacto: regressão em português é bloqueante, e a forma mais segura de
+ * não regredir é não mexer no texto que já foi avaliado.
+ *
+ * A data é o ponto sensível. `03/09/2026` num contrato americano é 9 de março; o modelo, treinado
+ * a ler este prompt em português, tende a ler 3 de setembro. A validação confere o mesmo no código
+ * (`applyFieldNormalization`), mas pedir certo aqui evita o valor errado no `normalizedValue`.
+ */
+function languageInstructions(options: DocumentLanguageContext): string {
+  const foreignDocument = isForeignDocumentLanguage(options.documentLanguage);
+  const outputLanguage = languageNameForPrompt(options.outputLocale);
+  const foreignOutput = outputLanguage !== 'português';
+  if (!foreignDocument && !foreignOutput) return '';
+
+  const lines = ['', '', 'IDIOMA:'];
+  if (foreignDocument) {
+    lines.push(
+      `- O documento está em ${languageNameForPrompt(options.documentLanguage)}. Os rótulos e descrições dos campos estão em português, mas o dado pedido é o mesmo: procure o equivalente no idioma do documento.`,
+      '- value e evidence.snippet saem exatamente como escritos no documento, sem traduzir. Nome de pessoa ou empresa nunca se traduz.',
+      options.documentLanguage === 'en'
+        ? '- Data em algarismos num documento em inglês segue a convenção americana, mês antes do dia: "03/09/2026" é 9 de março de 2026 → "2026-03-09". Só é dia antes do mês quando o primeiro número passa de 12 ou o documento declara outra convenção.'
+        : '- Data em algarismos neste idioma é dia antes do mês: "03/09/2026" é 3 de setembro de 2026 → "2026-09-03".',
+    );
+  }
+  if (foreignOutput) {
+    lines.push(
+      `- "resumo" e naming.tipo saem em ${outputLanguage}, o idioma de quem vai ler. naming.sujeitos continuam como estão no documento.`,
+    );
+  }
+  return lines.join('\n');
+}
+
+/**
  * Documento financeiro — quem paga, quem recebe e quem só intermedeia.
  *
  * Metade das falhas de extração medidas no conjunto de teste está aqui, e todas
@@ -208,6 +248,7 @@ export function classExtractionHints(selectedClass: DocumentClassRule): string {
 export function buildCompactExtractorPrompt(
   chunks: RetrievedChunk[],
   selectedClass: DocumentClassRule,
+  options: DocumentLanguageContext = {},
 ): { prompt: string; compactChunks: RetrievedChunk[] } {
   const compactChunks = limitExtractorChunks(chunks);
   const fields = toCompactFields(selectedClass);
@@ -253,14 +294,14 @@ classe informada, que é apenas a pasta onde ele será arquivado:
 - naming.dataReferencia: a data que identifica o documento (assinatura, emissão, validade ou
   revisão), em yyyy-mm-dd. Use null se o documento não trouxer data.
 
-Preencha também "resumo": um parágrafo de duas a três linhas, em português, dizendo o que o
+Preencha também "resumo": um parágrafo de duas a três linhas, em ${languageNameForPrompt(options.outputLocale)}, dizendo o que o
 documento é e do que trata — quem são as partes ou o objeto, e o que ele estabelece, cobra ou
 atesta. É para alguém entender o documento sem abri-lo.
 - Só o que está escrito no documento. Não interprete consequências, não julgue, não recomende.
 - Sem repetir o nome do arquivo, sem preâmbulo ("Este documento..."), sem listar campo por campo:
   os campos já estão em metadata, e repeti-los aqui desperdiça as três linhas.
 - No máximo 400 caracteres. Documento ilegível ou sem conteúdo aproveitável: use null.
-${normalizationContract()}
+${normalizationContract()}${languageInstructions(options)}
 ${ndaHints}${financialHints}
 
 Classe documental: ${selectedClass.name}

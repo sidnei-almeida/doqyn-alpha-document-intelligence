@@ -9,6 +9,7 @@ import {
   type CountryCode,
 } from '@/lib/identifiers';
 import { Input, type InputProps } from './Input';
+import { useTranslation } from 'react-i18next';
 
 export interface WhatsappInputProps extends Omit<InputProps, 'value' | 'onChange' | 'type'> {
   value: string;
@@ -31,6 +32,7 @@ export function WhatsappInput({
   country,
   ...props
 }: WhatsappInputProps) {
+  const { t } = useTranslation('components');
   const format = useCallback(
     (previous: string, raw: string) =>
       country ? formatPhoneForCountry(country, raw) : formatWhatsappInput(previous, raw),
@@ -54,7 +56,7 @@ export function WhatsappInput({
 
   const complete = country ? isCompletePhoneForCountry(country, value) : isCompleteWhatsapp(value);
   const incomplete = !optional && value.length > 0 && !complete;
-  const validationError = incomplete ? 'WhatsApp incompleto.' : undefined;
+  const validationError = incomplete ? t('whatsappInput.incomplete') : undefined;
 
   return (
     <Input

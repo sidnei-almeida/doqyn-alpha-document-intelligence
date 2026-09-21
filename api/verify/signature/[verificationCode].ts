@@ -1,7 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SHARED_APP_COLLECTIONS } from '../../../server/db/constants.js';
 import { getDb } from '../../../server/db/mongoClient.js';
-import type { MongoDocumentSignature, MongoDocumentSignatureRequest } from '../../../server/db/types.js';
+import type {
+  MongoDocumentSignature,
+  MongoDocumentSignatureRequest,
+} from '../../../server/db/types.js';
 import {
   buildSignatureAuditContext,
   getPublicSignatureVerification,
@@ -22,7 +25,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const verificationCode = resolveCode(req);
   if (!verificationCode) {
-    return res.status(400).json({ message: 'verificationCode é obrigatório.', code: 'MISSING_CODE' });
+    return res
+      .status(400)
+      .json({ message: 'verificationCode é obrigatório.', code: 'MISSING_CODE' });
   }
 
   try {
@@ -33,7 +38,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .findOne({ verificationCode: verificationCode.trim() });
     const request = signature
       ? await db
-          .collection<MongoDocumentSignatureRequest>(SHARED_APP_COLLECTIONS.documentSignatureRequests)
+          .collection<MongoDocumentSignatureRequest>(
+            SHARED_APP_COLLECTIONS.documentSignatureRequests,
+          )
           .findOne({ signatureRequestId: signature.signatureRequestId })
       : null;
 
@@ -42,7 +49,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         buildSignatureAuditContext(request),
         {
           action: 'document.signature_verification_opened',
-          description: 'Validação pública de assinatura aberta.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata({

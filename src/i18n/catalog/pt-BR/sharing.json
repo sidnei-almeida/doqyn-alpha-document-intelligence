@@ -1,0 +1,74 @@
+{
+  "inboundSharesStrip": {
+    "aceitar": "Aceitar",
+    "aguardandoSeuAceite": "Aguardando seu aceite",
+    "documentosDeForaAguardando": "Documentos de fora aguardando decisão",
+    "fromOutside_one": "{{count}} documento de fora daqui",
+    "fromOutside_other": "{{count}} documentos de fora daqui",
+    "recusar": "Recusar"
+  },
+  "permissions": {
+    "canDownload": "pode baixar",
+    "readOnly": "só leitura",
+    "readOnlyLong": "somente leitura"
+  },
+  "shareDocumentModal": {
+    "compartilharDocumento": "Compartilhar documento",
+    "naoEDaquiBuscar": "Não é daqui? Buscar por nome de usuário",
+    "quemTemAcesso": "Quem tem acesso",
+    "quemTemAcesso2": "Quem tem acesso",
+    "trocar": "Trocar",
+    "steps": {
+      "recipient": "Quem recebe"
+    },
+    "status": {
+      "active": "ativo",
+      "pending": "pendente",
+      "revoked": "revogado",
+      "expired": "expirado"
+    },
+    "inbound": {
+      "pending": "aguardando aceite",
+      "declined": "recusado",
+      "accepted": "outra conta",
+      "local": "daqui"
+    },
+    "rowExternal": "{{email}} · expira {{date}} · {{permission}}",
+    "revoke": "Revogar",
+    "newLink": "Novo link",
+    "submit": "Compartilhar",
+    "emptyAccess": "Ninguém ainda.",
+    "issuedValidUntil": "O convite vale até {{date}}. Enquanto o acesso existir, este link pode ser copiado de novo aqui na lista.",
+    "chosenOutside": "{{contact}} · de fora daqui",
+    "fallbackLink": "Enviar por link com prazo",
+    "expiresHint": {
+      "doqyn": "Fora daqui o acesso tem prazo: passado ele, a concessão fecha sozinha.",
+      "internal": "Acesso de quem é daqui não expira: vale enquanto não for revogado.",
+      "external": "Passado o prazo, o link para de abrir sozinho."
+    },
+    "toggleDownloadLabel": "Permitir baixar o arquivo",
+    "toggleDownloadDescription": "Sem isto, o documento só pode ser lido na tela.",
+    "messagePlaceholder": "Contexto para quem vai receber.",
+    "summaryRecipient": "Quem recebe",
+    "summaryCanDownload": "Pode baixar",
+    "noDeadline": "Sem prazo",
+    "noteExternal": "O link é gerado agora e fica disponível para copiar enquanto o acesso existir.",
+    "noteInternal": "A pessoa passa a ver o documento na Biblioteca dela."
+  },
+  "toast": {
+    "conviteExternoCriado": "Convite externo criado.",
+    "acessoExternoRevogado": "Acesso externo revogado.",
+    "novoLinkGerado": "Novo link de convite gerado.",
+    "compartilhamentoRevogado": "Compartilhamento revogado.",
+    "createExternalFailed": "Não foi possível criar o convite externo.",
+    "revokeExternalFailed": "Não foi possível revogar o acesso externo.",
+    "regenerateExternalFailed": "Não foi possível renovar o convite externo.",
+    "inboundAccepted": "Documento aceito. Ele já aparece em {{section}}.",
+    "inboundDeclined": "Documento recusado.",
+    "decisionFailed": "Não foi possível registrar sua decisão.",
+    "sentPendingAcceptance": "Enviado. A pessoa precisa aceitar antes de ver o documento.",
+    "documentShared": "Documento compartilhado.",
+    "shareFailed": "Não foi possível compartilhar o documento.",
+    "revokeShareFailed": "Não foi possível revogar o compartilhamento."
+  }
+}

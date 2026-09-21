@@ -1,0 +1,180 @@
+{
+  "dashboardPage": {
+    "carregandoVisaoGeral": "Cargando la vista general",
+    "naoFoiPossivelCarregar": "No se pudo cargar la vista general",
+    "painelDeControle": "Panel de control",
+    "porCategoria": "Por categoría",
+    "porStatus": "Por estado",
+    "tentarNovamente": "Intentar de nuevo",
+    "eyebrow": "Resumen",
+    "panoramaOf": "Panorama de {{name}}",
+    "panoramaDetail": "documentos, actividad y gobernanza",
+    "byStatusSubtitle": "Dónde se detuvieron los documentos",
+    "byStatusEmpty": "No hay documentos en el período.",
+    "byCategorySubtitle": "Cómo se divide el acervo",
+    "byCategoryEmpty": "Ninguna categoría con documentos."
+  },
+  "documentDetailsShared": {
+    "atualizado": "Actualizado",
+    "carregandoFicha": "Cargando la ficha…",
+    "categoria": "Categoría",
+    "criado": "Creado",
+    "documento": "Documento",
+    "enviadoPor": "Subido por",
+    "ficha": "Ficha",
+    "preview": "Vista previa",
+    "proprietario": "Propietario",
+    "ultimaAtualizacaoPor": "Última actualización por",
+    "vencimento": "Fecha de vencimiento",
+    "validity": {
+      "expired_one": "Venció hace {{count}} día.",
+      "expired_other": "Venció hace {{count}} días.",
+      "expired_many": "Venció hace {{count}} días.",
+      "today": "Vence hoy.",
+      "inDays_one": "Vence en {{count}} día.",
+      "inDays_other": "Vence en {{count}} días.",
+      "inDays_many": "Vence en {{count}} días."
+    }
+  },
+  "documentPreviewViewer": {
+    "carregandoPreview": "Cargando la vista previa...",
+    "naoFoiPossivelCarregar": "No se pudo cargar la vista previa.",
+    "visualizacaoDoDocumento": "Vista del documento"
+  },
+  "documentThumbnail": {
+    "preparandoVisualizacao": "Preparando la vista previa",
+    "visualizacaoNaoDisponivel": "Vista previa no disponible"
+  },
+  "documentViewerDetailsPanel": {
+    "versao": "Versión",
+    "versao2": "Versión",
+    "semNome": "sin nombre"
+  },
+  "documentViewerModal": {
+    "carregandoPreviewDoDocumento": "Cargando la vista previa del documento...",
+    "previewIndisponivel": "Vista previa no disponible.",
+    "versaoNaoDisponivelPara": "Esta versión no está disponible para visualizar.",
+    "visualizacaoProtegidaDownloadIndisponivel": "Vista protegida. La descarga no está disponible para tu perfil.",
+    "voceNaoTemPermissao": "No tienes permiso para ver este documento.",
+    "typeImage": "Imagen",
+    "printUnavailable": "La impresión de este documento no está disponible para tu perfil.",
+    "loadDocumentFailed": "No se pudo cargar el documento.",
+    "downloadFailed": "No se pudo descargar el documento.",
+    "manifestFailed": "No se pudo cargar el manifiesto de vista previa.",
+    "versionLabel": "Versión {{version}}",
+    "pageOf": "Página {{current}} de {{total}}"
+  },
+  "documentViewerToolbar": {
+    "atualizarDocumento": "Actualizar documento",
+    "atualizarPreview": "Actualizar la vista previa",
+    "aumentarZoom": "Acercar",
+    "baixarOriginal": "Descargar original",
+    "carregandoDocumento": "Cargando documento…",
+    "diminuirZoom": "Alejar",
+    "fecharVisualizacaoDoDocumento": "Cerrar la vista del documento",
+    "largura": "Ancho",
+    "pagina": "Página",
+    "paginaAnterior": "Página anterior",
+    "proximaPagina": "Página siguiente",
+    "verTracking": "Ver rastreo",
+    "hideDetails": "Ocultar detalles",
+    "showDetails": "Ver detalles"
+  },
+  "imageViewer": {
+    "carregandoImagem": "Cargando imagen…",
+    "dimensions": "{{width}} × {{height}} px",
+    "girar90": "Girar 90°",
+    "metadadosDeImagemIndisponiveis": "Metadatos de imagen no disponibles."
+  },
+  "pdfPagesViewer": {
+    "esteDocumentoEGrande": "Este documento es grande. Algunas páginas se cargarán a demanda.",
+    "naoFoiPossivelCarregar": "No se pudo cargar la página",
+    "nenhumaPaginaDisponivelPara": "Ninguna página disponible para visualizar.",
+    "previewEmProcessamento": "Vista previa en proceso…",
+    "pageAlt": "Página {{page}}",
+    "thumbAlt": "Miniatura de la página {{page}}",
+    "hideThumbnails": "Ocultar miniaturas",
+    "showThumbnails": "Mostrar miniaturas"
+  },
+  "recipientFlow": {
+    "buscando": "Buscando…",
+    "buscarPessoa": "Buscar persona",
+    "comoAPessoaAssina": "Cómo firma la persona",
+    "eMail": "Correo electrónico",
+    "escolherData": "Elegir fecha",
+    "frequentes": "Frecuentes",
+    "nomeOuEMail": "Nombre o correo",
+    "ondeAPessoaTrabalha": "Dónde trabaja la persona",
+    "organizacaoOpcional": "Organización (opcional)",
+    "telefoneOpcional": "Teléfono (opcional)",
+    "tipoDeDestinatario": "Tipo de destinatario",
+    "todoMundoDaEmpresa": "Todos en la empresa",
+    "trocar": "Cambiar",
+    "validoAte": "Válido hasta",
+    "steps": {
+      "conditions": "Condiciones",
+      "confirm": "Confirmar"
+    },
+    "audienceInternal": "De tu empresa",
+    "audienceDoqyn": "Otra cuenta DOQYN",
+    "audienceExternal": "Invitado externo",
+    "noMatch": "No se encontró a nadie con ese nombre o correo.",
+    "invalidPhone": "Ingresa un teléfono válido con código de país, por ejemplo +52 55 1234 5678.",
+    "copyLink": "Copiar enlace",
+    "yes": "Sí",
+    "no": "No",
+    "summaryDocument": "Documento",
+    "summaryValidUntil": "Válido hasta",
+    "summaryMessage": "Mensaje",
+    "describe": {
+      "internal": "{{name}} (de aquí)",
+      "doqyn": "{{name}} (otra cuenta DOQYN)",
+      "external": "{{name}} (invitado externo)"
+    },
+    "name": "Nombre",
+    "nameOptional": "Nombre (opcional)",
+    "emailPlaceholder": "persona@empresa.com",
+    "messageOptional": "Mensaje (opcional)",
+    "guestLink": "Enlace del invitado",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "sending": "Enviando…",
+    "continue": "Continuar",
+    "recipientLocale": "Idioma de la invitación",
+    "recipientLocaleAuto": "El del navegador de quien lo abra"
+  },
+  "transferOwnershipModal": {
+    "cancelar": "Cancelar",
+    "exMudancaDeResponsavel": "Ej.: cambio de responsable de la carpeta",
+    "motivoOpcional": "Motivo (opcional)",
+    "novoProprietario": "Nuevo propietario",
+    "proprietarioAtual": "Propietario actual",
+    "transferir": "Transferir",
+    "transferirPropriedade": "Transferir la propiedad",
+    "selectOwner": "Selecciona el nuevo propietario.",
+    "transferred": "Propiedad transferida a {{name}}.",
+    "transferFailed": "No se pudo transferir la propiedad.",
+    "selectUser": "Selecciona un usuario"
+  },
+  "unsupportedViewer": {
+    "baixarOriginal": "Descargar original",
+    "esteTipoDeArquivo": "Este tipo de archivo todavía no tiene visor integrado.",
+    "tipoDetectado": "Tipo detectado:"
+  },
+  "previewError": {
+    "notReady": "La vista previa aún no está disponible para este documento.",
+    "failed": "No se pudo generar la vista previa de este documento.",
+    "notFound": "No se encontró la vista previa de este documento.",
+    "accessDenied": "No tienes permiso para ver este documento.",
+    "documentNotFound": "Documento no encontrado.",
+    "sessionExpired": "Tu sesión expiró. Inicia sesión de nuevo.",
+    "loadFailed": "No se pudo cargar la vista previa ahora."
+  },
+  "previewStatus": {
+    "ready": "Vista previa disponible",
+    "failed": "Falló la vista previa",
+    "skipped": "Vista previa pendiente",
+    "missing": "Sin vista previa",
+    "unavailable": "Vista previa no disponible"
+  }
+}

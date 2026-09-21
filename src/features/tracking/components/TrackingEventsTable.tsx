@@ -11,6 +11,8 @@ import {
   formatTrackingStatus,
 } from '../utils/trackingDisplay';
 import { TrackingDocumentCell } from './TrackingDocumentCell';
+import { auditEventLabel } from '@/features/audit/utils/auditEventText';
+import { useTranslation } from 'react-i18next';
 
 const SEVERITY_VARIANTS = {
   info: 'info',
@@ -57,6 +59,8 @@ export function TrackingEventsTable({
   sparseAction,
   footer,
 }: TrackingEventsTableProps) {
+  const { t } = useTranslation(['tracking', 'auditEvents']);
+
   return (
     <DataTable
       stretch={stretch}
@@ -67,17 +71,17 @@ export function TrackingEventsTable({
       onRowClick={onToggle}
       expandedKey={expandedId}
       renderExpanded={renderExpanded}
-      emptyMessage="Nenhum evento documental encontrado para os filtros selecionados."
-      emptyDescription="Ajuste os filtros ou amplie o período para ver mais atividade."
+      emptyMessage={t('trackingEventsTable.nenhumEventoDocumentalEncontrado')}
+      emptyDescription={t('trackingEventsTable.emptyDescription')}
       emptyAction={sparseAction}
-      sparseMessage="Nenhum outro evento para os filtros atuais"
-      sparseDescription="Tente ampliar o período ou remover filtros para ver mais registros."
+      sparseMessage={t('trackingEventsTable.sparseMessage')}
+      sparseDescription={t('trackingEventsTable.sparseDescription')}
       sparseAction={sparseAction}
       footer={footer}
       columns={[
         {
           key: 'occurredAt',
-          header: 'Data/hora',
+          header: t('trackingEventsTable.columns.occurredAt'),
           className: 'w-[150px]',
           render: (item) => (
             <span className="whitespace-nowrap font-mono text-micro tabular-nums text-doqyn-subtle">
@@ -87,14 +91,16 @@ export function TrackingEventsTable({
         },
         {
           key: 'action',
-          header: 'Ação',
+          header: t('trackingEventsTable.columns.action'),
           render: (item) => (
             <div className="min-w-[180px] leading-tight">
-              <p className="font-medium text-doqyn-text">{item.summary}</p>
+              <p className="font-medium text-doqyn-text">
+                {auditEventLabel(t, item.action, item.summary)}
+              </p>
               <p className="font-mono text-micro text-doqyn-subtle">{item.action}</p>
               {item.changesCount ? (
                 <p className="register-label mt-0.5 text-doqyn-subtle">
-                  {item.changesCount} {item.changesCount === 1 ? 'alteração' : 'alterações'}
+                  {t('trackingEventsTable.changesCount', { count: item.changesCount })}
                 </p>
               ) : null}
             </div>
@@ -102,7 +108,7 @@ export function TrackingEventsTable({
         },
         {
           key: 'document',
-          header: 'Documento',
+          header: t('trackingEventsTable.columns.document'),
           render: (item) => (
             <div className="min-w-0 leading-tight">
               <TrackingDocumentCell
@@ -119,7 +125,7 @@ export function TrackingEventsTable({
         },
         {
           key: 'actor',
-          header: 'Usuário',
+          header: t('trackingEventsTable.columns.actor'),
           render: (item) => (
             <div className="min-w-0 leading-tight">
               <TruncatedText as="p" className="text-doqyn-text">
@@ -137,7 +143,7 @@ export function TrackingEventsTable({
           // Investigar acesso é perguntar "de onde". O contexto vinha só na
           // gaveta; agora dispositivo, local e IP mascarado ficam na linha.
           key: 'origin',
-          header: 'Origem',
+          header: t('trackingEventsTable.columns.origin'),
           render: (item) => {
             const origin = formatSecurityContextDisplay(item.security, item.occurredAt);
             if (!origin) return <span className="text-doqyn-subtle">—</span>;
@@ -155,7 +161,7 @@ export function TrackingEventsTable({
         },
         {
           key: 'session',
-          header: 'Sessão',
+          header: t('trackingEventsTable.columns.session'),
           className: 'w-[104px]',
           render: (item) => (
             <span className="font-mono text-micro text-doqyn-subtle">
@@ -165,7 +171,7 @@ export function TrackingEventsTable({
         },
         {
           key: 'requestId',
-          header: 'Request',
+          header: t('trackingEventsTable.columns.request'),
           className: 'w-[120px]',
           render: (item) => (
             <span
@@ -178,7 +184,7 @@ export function TrackingEventsTable({
         },
         {
           key: 'duration',
-          header: 'Duração',
+          header: t('trackingEventsTable.columns.duration'),
           className: 'w-[84px] text-right',
           headerClassName: 'w-[84px] text-right',
           render: (item) => (
@@ -189,7 +195,7 @@ export function TrackingEventsTable({
         },
         {
           key: 'status',
-          header: 'Resultado',
+          header: t('trackingEventsTable.columns.status'),
           className: 'w-[110px]',
           render: (item) =>
             item.status ? (
@@ -202,7 +208,7 @@ export function TrackingEventsTable({
         },
         {
           key: 'severity',
-          header: 'Severidade',
+          header: t('trackingEventsTable.columns.severity'),
           className: 'w-[110px]',
           render: (item) => (
             <Badge size="xs" variant={SEVERITY_VARIANTS[item.severity] ?? 'default'} dot>

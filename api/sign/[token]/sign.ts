@@ -30,7 +30,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ message: 'token é obrigatório.', code: 'MISSING_TOKEN' });
   }
 
-  const body = req.body as { action?: string; consentAccepted?: boolean; reason?: string };
+  const body = req.body as {
+    action?: string;
+    consentAccepted?: boolean;
+    consentLocale?: string;
+    reason?: string;
+  };
 
   try {
     const request = await findSignatureRequestByToken(token);
@@ -42,7 +47,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signature_consent_checked',
-          description: 'Aceite de assinatura registrado.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(
@@ -57,6 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const result = await completeDocumentSignature({
       token,
       consentAccepted,
+      consentLocale: body.consentLocale,
       req,
       origin: resolveOrigin(req),
     });
@@ -67,7 +72,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signature_completed',
-          description: 'Assinatura eletrônica concluída.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(
@@ -85,7 +89,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.signed_pdf_generated',
-          description: 'PDF assinado gerado.',
           documentId: request.documentId,
           versionId: request.versionId,
           metadata: sanitizeAuditMetadata(

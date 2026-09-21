@@ -62,8 +62,13 @@ const TARGET_HINTS = [
  * "celebrado em 09 de junho de 2026 … NÃO ALICIAMENTO (3 ANOS)" era lido como **9 anos**, juntando
  * o dia de uma data com a unidade de outra frase. O prazo saía plausível, redondo e errado.
  */
+/*
+ * Unidades em português, inglês e espanhol — "años" sem acento é "anos", e "días" é "dias". O `\)?`
+ * depois do número aceita o estilo anglo e hispânico "thirty-six (36) months" / "tres (3) años",
+ * em que o algarismo vem dentro do parêntese.
+ */
 const DURATION_RE =
-  /(\d{1,4})\s*(?:\([^)]{0,24}\)\s*)?(dias?|semanas?|quinzenas?|mes(?:es)?|meses|anos?)\b/i;
+  /(\d{1,4})\)?\s*(?:\([^)]{0,24}\)\s*)?(dias?|days?|semanas?|weeks?|quinzenas?|mes(?:es)?|meses|months?|anos?|years?)\b/i;
 
 /**
  * Termos que dizem que um prazo governa a duração do documento.
@@ -91,6 +96,21 @@ const VALIDITY_CONTEXT_TERMS = [
   'nao aliciamento',
   'nao concorrencia',
   'exclusividade',
+  /*
+   * Inglês e espanhol no fim da lista, de propósito: o peso é a posição, e um documento bilíngue
+   * continua decidido pelo termo em português, como antes. "term" sozinho não entra — casaria com
+   * "terminate" e leria o aviso prévio de rescisão como vigência.
+   */
+  'term of',
+  'initial term',
+  'remain in effect',
+  'in force',
+  'valid for',
+  'validity',
+  'confidentiality',
+  'warranty',
+  'validez',
+  'confidencialidad',
 ];
 
 /** Quantos caracteres depois do termo ainda contam como "perto". */
@@ -154,7 +174,7 @@ export function isEndDateFieldName(field: FieldNaming): boolean {
 
 export type ParsedDuration = { amount: number; unit: 'day' | 'week' | 'month' | 'year' };
 
-/** Interpreta prazo relativo escrito em português. `null` quando não houver prazo reconhecível. */
+/** Interpreta prazo relativo em português, inglês ou espanhol. `null` sem prazo reconhecível. */
 export function parseRelativeDuration(raw: unknown): ParsedDuration | null {
   if (typeof raw !== 'string') return null;
   const match = DURATION_RE.exec(deaccent(raw));
@@ -163,10 +183,12 @@ export function parseRelativeDuration(raw: unknown): ParsedDuration | null {
   const amount = Number(match[1]);
   if (!Number.isFinite(amount) || amount <= 0) return null;
 
-  const unitRaw = match[2];
-  if (unitRaw.startsWith('ano')) return { amount, unit: 'year' };
-  if (unitRaw.startsWith('mes')) return { amount, unit: 'month' };
-  if (unitRaw.startsWith('semana')) return { amount: amount * 7, unit: 'day' };
+  const unitRaw = match[2].toLowerCase();
+  if (unitRaw.startsWith('ano') || unitRaw.startsWith('year')) return { amount, unit: 'year' };
+  if (unitRaw.startsWith('mes') || unitRaw.startsWith('month')) return { amount, unit: 'month' };
+  if (unitRaw.startsWith('semana') || unitRaw.startsWith('week')) {
+    return { amount: amount * 7, unit: 'day' };
+  }
   if (unitRaw.startsWith('quinzena')) return { amount: amount * 15, unit: 'day' };
   return { amount, unit: 'day' };
 }
@@ -236,7 +258,40 @@ export function addDurations(anchorIso: string, durations: ParsedDuration[]): st
   return value;
 }
 
-const MONTHS_PT: Record<string, number> = {
+/** Nomes de mês sem acento, em português, espanhol e inglês. Não há colisão de número entre eles. */
+const MONTH_NAMES: Record<string, number> = {
+  enero: 1,
+  ene: 1,
+  febrero: 2,
+  marzo: 3,
+  mayo: 5,
+  junio: 6,
+  julio: 7,
+  septiembre: 9,
+  setiembre: 9,
+  octubre: 10,
+  noviembre: 11,
+  diciembre: 12,
+  dic: 12,
+  january: 1,
+  february: 2,
+  feb: 2,
+  march: 3,
+  april: 4,
+  apr: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  aug: 8,
+  september: 9,
+  sep: 9,
+  sept: 9,
+  october: 10,
+  oct: 10,
+  november: 11,
+  december: 12,
+  dec: 12,
   janeiro: 1,
   fevereiro: 2,
   marco: 3,
@@ -283,7 +338,27 @@ function buildIso(year: number, month: number, day: number): string | null {
  * Ano de 2 dígitos é rejeitado de propósito: "01/02/26" é ambíguo demais para adivinhar em
  * documento jurídico, e chutar o século seria pior do que deixar o valor cru.
  */
-export function normalizeDateValue(raw: unknown): string | null {
+const NUMERIC_DATE_RE = /(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/;
+
+/**
+ * Data em algarismos que admite as duas leituras — `03/09/2026` é 3 de setembro ou 9 de março.
+ *
+ * Só aí a ordem depende de convenção. Com um número acima de 12, o próprio valor diz qual é o dia.
+ */
+export function isAmbiguousNumericDate(raw: unknown): boolean {
+  if (typeof raw !== 'string') return false;
+  const match = NUMERIC_DATE_RE.exec(raw);
+  if (!match || /\d{4}-\d{1,2}-\d{1,2}/.test(raw)) return false;
+  const first = Number(match[1]);
+  const second = Number(match[2]);
+  return first <= 12 && second <= 12 && first !== second;
+}
+
+export function normalizeDateValue(
+  raw: unknown,
+  /** `monthFirst`: convenção americana para a data em algarismos ambígua. Padrão: dia primeiro. */
+  options: { monthFirst?: boolean } = {},
+): string | null {
   if (typeof raw !== 'string') return null;
   const text = deaccent(raw).trim();
   if (!text) return null;
@@ -291,20 +366,36 @@ export function normalizeDateValue(raw: unknown): string | null {
   const iso = /(\d{4})-(\d{1,2})-(\d{1,2})/.exec(text);
   if (iso) return buildIso(Number(iso[1]), Number(iso[2]), Number(iso[3]));
 
-  const numeric = /(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/.exec(text);
-  if (numeric) return buildIso(Number(numeric[3]), Number(numeric[2]), Number(numeric[1]));
+  const numeric = NUMERIC_DATE_RE.exec(text);
+  if (numeric) {
+    const first = Number(numeric[1]);
+    const second = Number(numeric[2]);
+    const year = Number(numeric[3]);
+    // Segundo número acima de 12 só pode ser o dia — `12/25/2026` é americano em qualquer idioma,
+    // e antes virava `null`. Ambígua, vale a convenção pedida.
+    const readMonthFirst =
+      first <= 12 && (second > 12 || (options.monthFirst === true && second <= 12));
+    return readMonthFirst ? buildIso(year, first, second) : buildIso(year, second, first);
+  }
 
-  // "09 de junho de 2026", "9 junho 2026", "aos 09 dias do mes de junho de 2026"
+  // "09 de junho de 2026", "9 junho 2026", "15 de marzo de 2026", "4 March 2026"
   const byExtenso = /(\d{1,2})\s*(?:de\s+|\s+)([a-z]+)\.?\s*(?:de\s+|\s+)(\d{4})/.exec(text);
   if (byExtenso) {
-    const month = MONTHS_PT[byExtenso[2]];
+    const month = MONTH_NAMES[byExtenso[2]];
     if (month) return buildIso(Number(byExtenso[3]), month, Number(byExtenso[1]));
+  }
+
+  // "March 4, 2026", "march 4th 2026" — o mês antes do dia, como se escreve em inglês.
+  const monthDayYear = /([a-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/.exec(text);
+  if (monthDayYear) {
+    const month = MONTH_NAMES[monthDayYear[1]];
+    if (month) return buildIso(Number(monthDayYear[3]), month, Number(monthDayYear[2]));
   }
 
   // "junho de 2026" — sem dia, assume o primeiro. Quem chama decide se baixa a confiança.
   const monthYear = /([a-z]+)\s*(?:de\s+|\/)\s*(\d{4})/.exec(text);
   if (monthYear) {
-    const month = MONTHS_PT[monthYear[1]];
+    const month = MONTH_NAMES[monthYear[1]];
     if (month) return buildIso(Number(monthYear[2]), month, 1);
   }
 

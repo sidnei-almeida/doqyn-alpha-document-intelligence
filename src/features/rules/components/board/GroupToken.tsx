@@ -7,6 +7,7 @@ import type { DocumentAccessPermissions } from '../../api/rulesApi';
 import { PermissionPopover } from '../access/PermissionPopover';
 import { PermissionVerbs, type PermissionVerb } from '../access/PermissionVerbs';
 import type { GovernancePermissionValue } from '@shared/governancePermissions';
+import { useTranslation } from 'react-i18next';
 
 export type GroupTokenProps = {
   group: Group;
@@ -38,6 +39,7 @@ export function GroupToken({
   onRemove,
   onOpenGroupDetails,
 }: GroupTokenProps) {
+  const { t } = useTranslation('rules');
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
 
@@ -63,8 +65,8 @@ export function GroupToken({
           disabled={disabled}
           aria-label={
             category
-              ? `${group.name} em ${category.name}: abrir opções, ou arraste para mover`
-              : `${group.name}: arraste para conceder acesso`
+              ? t('groupToken.ariaInCategory', { group: group.name, category: category.name })
+              : t('groupToken.ariaPool', { group: group.name })
           }
           onClick={() => {
             if (!category) {

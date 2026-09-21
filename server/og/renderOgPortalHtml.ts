@@ -1,4 +1,15 @@
+import { getServerT, normalizeServerLocale, type ServerLocale } from '../i18n/index.js';
 import type { OgPortalMetadata } from './ogPortalMetadata.js';
+
+/**
+ * `og:locale` é `língua_TERRITÓRIO`, e `419` não é território que o Facebook reconheça: o
+ * espanhol latino-americano vai como `es_LA`, que é a etiqueta que ele usa.
+ */
+const OG_LOCALE: Record<ServerLocale, string> = {
+  'pt-BR': 'pt_BR',
+  'en-US': 'en_US',
+  'es-419': 'es_LA',
+};
 
 /**
  * A marca, embutida — o mesmo desenho de `src/components/brand/DoqynMark.tsx`.
@@ -30,14 +41,15 @@ function truncate(value: string, maxLength: number): string {
 }
 
 export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
+  const locale = normalizeServerLocale(metadata.locale);
+  const t = getServerT(locale, 'og');
   const title = escapeHtml(truncate(metadata.title, 120));
   const description = escapeHtml(truncate(metadata.description, 300));
   const imageUrl = escapeHtml(metadata.imageUrl);
   const canonicalUrl = escapeHtml(metadata.canonicalUrl);
   const portalPath = escapeHtml(metadata.portalPath);
-  const documentName = escapeHtml(metadata.documentName ?? 'Documento');
+  const documentName = escapeHtml(metadata.documentName ?? t('page.documentFallback'));
   const issuerName = escapeHtml(metadata.issuerName ?? 'DOQYN');
-  const ownerTenantName = escapeHtml(metadata.ownerTenantName ?? '');
   const statusLabel = escapeHtml(metadata.statusLabel ?? 'DOQYN');
   const ctaLabel = escapeHtml(metadata.ctaLabel);
   const versionLabel = metadata.versionLabel
@@ -46,15 +58,16 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
       )
     : '';
 
+  // O nome entra cru no `t`, que não escapa; a linha inteira é escapada onde é impressa.
   const eyebrow =
     metadata.kind === 'sign'
-      ? 'Solicitação de assinatura'
-      : ownerTenantName
-        ? `Compartilhado via ${ownerTenantName}`
-        : 'Compartilhamento seguro';
+      ? t('page.eyebrowSign')
+      : metadata.ownerTenantName
+        ? t('page.eyebrowShareVia', { tenant: metadata.ownerTenantName })
+        : t('page.eyebrowShare');
 
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="${locale}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -64,7 +77,7 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="DOQYN" />
-    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:locale" content="${OG_LOCALE[locale]}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${imageUrl}" />
@@ -239,7 +252,7 @@ export function renderOgPortalHtml(metadata: OgPortalMetadata): string {
           </div>
           <p>${description}</p>
           <a class="cta" href="${portalPath}">${ctaLabel}</a>
-          <p class="footer">Gestão segura, inteligente e rastreável de documentos empresariais.</p>
+          <p class="footer">${escapeHtml(t('page.footer'))}</p>
         </div>
       </article>
     </main>

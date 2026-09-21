@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { SettingsSectionBody } from '../SettingsSectionBody';
 import { SettingsRow, SettingsRowList } from '../SettingsRow';
 import type { RetentionDraft } from '../../hooks/useOrganizationSettings';
+import { i18n } from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 const RETENTION_DAYS_MIN = 1;
 const RETENTION_DAYS_MAX = 365;
@@ -21,10 +23,9 @@ function clampRetentionDays(value: number): number {
 
 function retentionPreview(mode: 'days' | 'manual', days: number): string {
   if (mode === 'manual') {
-    return 'Arquivos excluídos permanecem na lixeira até desativação manual ou ação do job de retenção.';
+    return i18n.t('settings:trashRetentionSettingsSection.previewManual');
   }
-  const label = days === 1 ? '1 dia' : `${days} dias`;
-  return `Após ${label} na lixeira, o documento é desativado (não excluído do storage). Administradores podem recuperá-lo em Desativados.`;
+  return i18n.t('settings:trashRetentionSettingsSection.previewDays', { count: days });
 }
 
 /** Bloco de leitura/edição. Quem salva é a barra da tela — aqui não há botão. */
@@ -33,6 +34,8 @@ export function TrashRetentionSettingsSection({
   onChange,
   isLoading,
 }: TrashRetentionSettingsSectionProps) {
+  const { t } = useTranslation('settings');
+
   const daysEnabled = draft.mode === 'days';
 
   const adjustDays = (delta: number) => {
@@ -42,7 +45,9 @@ export function TrashRetentionSettingsSection({
   if (isLoading) {
     return (
       <SettingsSectionBody>
-        <p className="text-sm text-doqyn-muted">Carregando configurações…</p>
+        <p className="text-sm text-doqyn-muted">
+          {t('trashRetentionSettingsSection.carregandoConfiguracoes')}
+        </p>
       </SettingsSectionBody>
     );
   }
@@ -51,8 +56,8 @@ export function TrashRetentionSettingsSection({
     <SettingsSectionBody className="settings-retention-section">
       <SettingsRowList>
         <SettingsRow
-          label="Modo de retenção"
-          description="Define se, após o prazo, documentos da lixeira passam automaticamente para Desativados."
+          label={t('trashRetentionSettingsSection.modoDeRetencao')}
+          description={t('trashRetentionSettingsSection.defineSeAposO')}
           className="settings-row--stack"
           control={
             <div className="flex flex-col gap-2">
@@ -60,21 +65,21 @@ export function TrashRetentionSettingsSection({
                 name="trashRetentionMode"
                 checked={draft.mode === 'days'}
                 onChange={() => onChange({ ...draft, mode: 'days' })}
-                label="Desativar automaticamente após período"
+                label={t('trashRetentionSettingsSection.desativarAutomaticamenteAposPeriodo')}
               />
               <Radio
                 name="trashRetentionMode"
                 checked={draft.mode === 'manual'}
                 onChange={() => onChange({ ...draft, mode: 'manual' })}
-                label="Retenção manual (sem desativação automática)"
+                label={t('trashRetentionSettingsSection.retencaoManualSemDesativacao')}
               />
             </div>
           }
         />
 
         <SettingsRow
-          label="Dias na lixeira"
-          description="Entre 1 e 365 dias. Após esse prazo, o documento é desativado (R2/Mongo permanecem)."
+          label={t('trashRetentionSettingsSection.diasNaLixeira')}
+          description={t('trashRetentionSettingsSection.entre1E365')}
           htmlFor="trash-retention-days"
           muted={!daysEnabled}
           control={
@@ -90,7 +95,7 @@ export function TrashRetentionSettingsSection({
                   disabled={!daysEnabled || draft.days <= RETENTION_DAYS_MIN}
                   onClick={() => adjustDays(-1)}
                   className="settings-stepper__btn"
-                  aria-label="Diminuir dias"
+                  aria-label={t('trashRetentionSettingsSection.diminuirDias')}
                 >
                   <Icon name="remove" size={14} />
                 </button>
@@ -108,14 +113,14 @@ export function TrashRetentionSettingsSection({
                     }
                   }}
                   className="settings-stepper__input"
-                  aria-label="Dias na lixeira"
+                  aria-label={t('trashRetentionSettingsSection.diasNaLixeira2')}
                 />
                 <button
                   type="button"
                   disabled={!daysEnabled || draft.days >= RETENTION_DAYS_MAX}
                   onClick={() => adjustDays(1)}
                   className="settings-stepper__btn"
-                  aria-label="Aumentar dias"
+                  aria-label={t('trashRetentionSettingsSection.aumentarDias')}
                 >
                   <Icon name="add" size={14} />
                 </button>

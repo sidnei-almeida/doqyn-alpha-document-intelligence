@@ -1,6 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
-import { getActivePermissionShortLabels } from '../../utils/governanceMapUi';
+import { getActivePermissionShortKeys } from '../../utils/governanceMapUi';
 
 type GovernancePermissionBadgesProps = {
   permissions: DocumentAccessPermissions;
@@ -12,20 +13,25 @@ type GovernancePermissionBadgesProps = {
 export function GovernancePermissionBadges({
   permissions,
   className,
-  emptyLabel = 'Sem acesso',
+  emptyLabel,
 }: GovernancePermissionBadgesProps) {
-  const labels = getActivePermissionShortLabels(permissions);
+  const { t, i18n } = useTranslation('rules');
+  const keys = getActivePermissionShortKeys(permissions);
 
-  if (labels.length === 0) {
-    return <span className={cn('text-[10px] text-doqyn-subtle', className)}>{emptyLabel}</span>;
+  if (keys.length === 0) {
+    return (
+      <span className={cn('text-[10px] text-doqyn-subtle', className)}>
+        {emptyLabel ?? t('permission.none')}
+      </span>
+    );
   }
 
   // Mesma gramática dos verbos do quadro: rótulo em minúscula, fio de acento no que vale.
   return (
     <div className={cn('permission-verbs', className)}>
-      {labels.map((label) => (
-        <span key={label} className="permission-verbs__mark" data-active>
-          {label.toLocaleLowerCase('pt-BR')}
+      {keys.map((key) => (
+        <span key={key} className="permission-verbs__mark" data-active>
+          {t(key).toLocaleLowerCase(i18n.language)}
         </span>
       ))}
     </div>

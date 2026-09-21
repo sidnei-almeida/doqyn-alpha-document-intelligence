@@ -60,7 +60,7 @@ Novos documentos **não** devem usar esses padrões. Download e preview leem o `
 ```env
 STORAGE_PROVIDER=local   # ou r2
 LOCAL_STORAGE_ROOT=/var/lib/doqyn-alpha/storage
-MAX_UPLOAD_MB=25
+MAX_UPLOAD_MB=50        # alinhado com a tela e a análise de IA; nginx aceita 60m
 
 # R2 (quando STORAGE_PROVIDER=r2)
 R2_DEFAULT_BUCKET=doqyn-alpha

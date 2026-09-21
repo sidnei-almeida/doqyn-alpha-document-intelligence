@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import { REGISTRY_INDEX_SPECS } from '../server/db/tenantIndexes.js';
+import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -65,11 +67,19 @@ describe('migrate keycloakUserId → authUserId', () => {
   });
 
   it('índices usam authUserId', () => {
-    const setup = read('server/db/setupMongo.ts');
-    const indexes = read('scripts/ensure-mongodb-indexes.ts');
-    assert.ok(setup.includes('{ key: { authUserId: 1, status: 1 } }'));
-    assert.ok(indexes.includes('{ key: { tenantId: 1, authUserId: 1 } }'));
-    assert.equal(setup.includes('keycloakUserId: 1, status: 1'), false);
+    const members = REGISTRY_INDEX_SPECS.find(
+      (spec) => spec.collection === REGISTRY_COLLECTIONS.tenantMembers,
+    );
+    assert.ok(members, 'tenant_members precisa ter especificação de índice');
+
+    const keys = members!.indexes.map((index) => Object.keys(index.key));
+    assert.ok(keys.some((key) => key.join(',') === 'tenantId,authUserId'));
+    assert.ok(keys.some((key) => key.join(',') === 'authUserId,status'));
+    assert.equal(
+      keys.some((key) => key.includes('keycloakUserId')),
+      false,
+      'nenhum índice pode liderar pelo campo antigo',
+    );
   });
 
   it('frontend não depende de keycloakUserId', () => {

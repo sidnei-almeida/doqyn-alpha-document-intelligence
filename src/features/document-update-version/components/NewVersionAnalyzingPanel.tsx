@@ -3,6 +3,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { formatFileSize } from '@/features/document-send/utils/validateUpload';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type NewVersionAnalyzingPanelProps = {
   fileName: string;
@@ -13,10 +14,10 @@ type NewVersionAnalyzingPanelProps = {
 };
 
 const ANALYSIS_STEPS = [
-  { id: 'ocr', label: 'Extraindo texto do PDF' },
-  { id: 'classify', label: 'Classificando documento' },
-  { id: 'metadata', label: 'Extraindo metadados' },
-  { id: 'compare', label: 'Comparando com versão atual' },
+  { id: 'ocr', labelKey: 'newVersionAnalyzingPanel.steps.ocr' },
+  { id: 'classify', labelKey: 'newVersionAnalyzingPanel.steps.classify' },
+  { id: 'metadata', labelKey: 'newVersionAnalyzingPanel.steps.metadata' },
+  { id: 'compare', labelKey: 'newVersionAnalyzingPanel.steps.compare' },
 ] as const;
 
 export function NewVersionAnalyzingPanel({
@@ -26,6 +27,8 @@ export function NewVersionAnalyzingPanel({
   nextVersionLabel,
   fillHeight = false,
 }: NewVersionAnalyzingPanelProps) {
+  const { t } = useTranslation('documentVersion');
+
   return (
     <section
       className={cn(
@@ -35,9 +38,14 @@ export function NewVersionAnalyzingPanel({
       data-testid="update-version-analyzing-panel"
     >
       <div className="mb-3 shrink-0">
-        <p className="text-[12px] font-semibold text-doqyn-text">Analisando nova versão</p>
+        <p className="text-[12px] font-semibold text-doqyn-text">
+          {t('newVersionAnalyzingPanel.analisandoNovaVersao')}
+        </p>
         <p className="mt-0.5 text-[11px] text-doqyn-muted">
-          Comparando com {currentVersionLabel} para preparar {nextVersionLabel}.
+          {t('newVersionAnalyzingPanel.comparingWith', {
+            current: currentVersionLabel,
+            next: nextVersionLabel,
+          })}
         </p>
       </div>
 
@@ -73,7 +81,7 @@ export function NewVersionAnalyzingPanel({
               size={ICON_SIZE.xs}
               className={cn(index === 0 && 'animate-spin text-doqyn-primary')}
             />
-            <span>{step.label}</span>
+            <span>{t(step.labelKey)}</span>
           </li>
         ))}
       </ul>

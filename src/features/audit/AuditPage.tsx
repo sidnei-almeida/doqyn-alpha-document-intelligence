@@ -17,8 +17,11 @@ import { useAuditCenter } from './hooks/useAuditCenter';
 import { type PendingApprovalItem } from './api/pendingApprovalsApi';
 import type { AuditEvent } from '@/types/audit';
 import type { AuditTabId } from './utils/auditDisplay';
+import { useTranslation } from 'react-i18next';
 
 export function AuditPage() {
+  const { t } = useTranslation('audit');
+
   const location = useLocation();
   const { user } = useAuth();
   const filterDocId = (location.state as { documentId?: string })?.documentId;
@@ -53,14 +56,14 @@ export function AuditPage() {
     () => [
       {
         id: 'pending',
-        label: 'Pendências',
+        label: t('auditPage.tabs.pending'),
         badge: isAdmin ? overview.pendingCount : undefined,
       },
-      { id: 'events', label: 'Eventos' },
-      { id: 'security', label: 'Segurança' },
-      { id: 'all', label: 'Todos' },
+      { id: 'events', label: t('auditPage.tabs.events') },
+      { id: 'security', label: t('auditPage.tabs.security') },
+      { id: 'all', label: t('auditPage.tabs.all') },
     ],
-    [isAdmin, overview.pendingCount],
+    [isAdmin, overview.pendingCount, t],
   );
 
   const showEventFilters =
@@ -83,17 +86,14 @@ export function AuditPage() {
 
   return (
     <PageShell
-      eyebrow="Governança"
-      title="Auditoria"
-      description="Acompanhe aprovações, ações administrativas e histórico de eventos do sistema."
+      eyebrow={t('auditPage.eyebrow')}
+      title={t('auditPage.auditoria')}
+      description={t('auditPage.acompanheAprovacoesAcoesAdministrativas')}
       bodyClassName="min-h-0"
     >
       <div className="shrink-0">
         {overviewError ? (
-          <InlineErrorHint
-            message="Não foi possível carregar o resumo da auditoria."
-            className="mb-4"
-          />
+          <InlineErrorHint message={t('auditPage.overviewError')} className="mb-4" />
         ) : null}
         <AuditSummaryStrip
           overview={overview}
@@ -105,7 +105,7 @@ export function AuditPage() {
 
       {filterDocId && (
         <p className="notice-rule notice-rule--accent shrink-0 py-0.5 text-label text-doqyn-muted">
-          Exibindo eventos do documento{' '}
+          {t('auditPage.exibindoEventosDoDocumento')}{' '}
           <span className="font-mono text-caption text-doqyn-text">{filterDocId}</span>
         </p>
       )}
@@ -120,14 +120,14 @@ export function AuditPage() {
             {!isAdmin ? (
               <AuditEmptyState
                 className="min-h-[320px] flex-1 border-t border-doqyn-border"
-                title="Acesso restrito"
-                description="Apenas administradores podem consultar pendências e aprovar solicitações."
+                title={t('auditPage.acessoRestrito')}
+                description={t('auditPage.apenasAdministradoresPodemConsultar')}
               />
             ) : pendingError ? (
               <AuditEmptyState
                 className="min-h-[320px] flex-1 border-t border-doqyn-border"
-                title="Não foi possível carregar pendências"
-                description="Tente atualizar a página ou verifique sua conexão."
+                title={t('auditPage.naoFoiPossivelCarregar')}
+                description={t('auditPage.tenteAtualizarAPagina')}
               />
             ) : (
               <PendingApprovalsList
@@ -146,8 +146,7 @@ export function AuditPage() {
           <div className="flex min-h-[360px] flex-col space-y-4">
             {activeTab === 'security' && (
               <p className="notice-rule shrink-0 py-0.5 text-caption text-doqyn-muted">
-                Eventos de bloqueio, rejeição, permissão negada e ações sensíveis registrados no
-                tenant.
+                {t('auditPage.eventosDeBloqueioRejeicao')}
               </p>
             )}
 
@@ -162,14 +161,16 @@ export function AuditPage() {
             <div className="flex items-center justify-between gap-4">
               {eventsError ? (
                 <span className="text-caption text-doqyn-danger">
-                  Não foi possível carregar eventos.
+                  {t('auditPage.naoFoiPossivelCarregar2')}
                 </span>
               ) : (
                 <span />
               )}
               <span className="font-mono text-micro tabular-nums text-doqyn-subtle">
-                {eventsTotal} {eventsTotal === 1 ? 'evento' : 'eventos'}
-                {events.length < eventsTotal ? ` · exibindo ${events.length}` : ''}
+                {t('auditPage.eventsCount', { count: eventsTotal })}
+                {events.length < eventsTotal
+                  ? ` · ${t('auditPage.showing', { count: events.length })}`
+                  : ''}
               </span>
             </div>
 
@@ -187,14 +188,14 @@ export function AuditPage() {
                   onClick={loadMoreEvents}
                   disabled={eventsFetchingMore}
                 >
-                  {eventsFetchingMore ? 'Carregando...' : 'Carregar mais'}
+                  {eventsFetchingMore ? t('auditPage.loadingMore') : t('auditPage.loadMore')}
                 </Button>
               </div>
             )}
 
             {!eventsLoading && events.length > 0 && !hasMoreEvents && (
               <p className="shrink-0 text-center font-mono text-micro uppercase tracking-[0.1em] text-doqyn-subtle">
-                Fim do histórico
+                {t('auditPage.fimDoHistorico')}
               </p>
             )}
           </div>
@@ -205,9 +206,7 @@ export function AuditPage() {
         open={Boolean(reviewItem)}
         item={reviewItem}
         isAdmin={isAdmin}
-        saving={
-          rejectMutation.isPending || approveDocumentMutation.isPending
-        }
+        saving={rejectMutation.isPending || approveDocumentMutation.isPending}
         onClose={() => setReviewItem(null)}
         onApprove={(item) => {
           setReviewItem(null);

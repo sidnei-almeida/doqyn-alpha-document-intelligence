@@ -31,12 +31,12 @@ describe('layout do workspace', () => {
     const topbar = readSrc('components/layout/WorkspaceTopBar.tsx');
     const search = readSrc('components/layout/GlobalSearchCommand.tsx');
     assert.ok(topbar.includes('GlobalSearchCommand'));
-    assert.ok(search.includes('Buscar documentos'));
+    assert.ok(search.includes('.buscarDocumentos'));
     assert.ok(search.includes('keyboard_command_key'));
     assert.ok(search.includes('Ctrl'));
     assert.ok(search.includes('isMacPlatform'));
     assert.ok(search.includes('metaKey') && search.includes('ctrlKey'));
-    assert.ok(search.includes('navigate(`/biblioteca'));
+    assert.ok(search.includes('navigate(`/library'));
   });
 
   it('TopBar reaproveita sessão atual (usuário e tenant)', () => {
@@ -60,13 +60,13 @@ describe('layout do workspace', () => {
 
   it('+ Novo tem upload de arquivo e de pasta, e cria categoria', () => {
     const newButton = readSrc('features/library/components/NewButtonMenu.tsx');
-    assert.ok(newButton.includes('Upload de arquivo'));
-    assert.ok(newButton.includes('Upload de pasta'));
+    assert.ok(newButton.includes('.uploadDeArquivo'));
+    assert.ok(newButton.includes('.uploadDePasta'));
     assert.ok(newButton.includes('startUploadFromFiles'));
     // "Nova pasta" prometia uma pasta manual que nunca ia existir — pasta da Biblioteca é
     // categoria de governança. O item virou "Nova categoria" e leva ao formulário que a cria,
     // em vez de ficar marcado como "Em breve" para sempre.
-    assert.ok(newButton.includes('Nova categoria'));
+    assert.ok(newButton.includes('.novaCategoria'));
     assert.ok(newButton.includes('/rules?nova=categoria'));
     assert.equal(newButton.includes('Em breve'), false);
     assert.equal(newButton.includes('localStorage'), false);
@@ -85,11 +85,11 @@ describe('layout do workspace', () => {
     assert.ok(sidebar.includes('SidebarNavItem'));
     assert.equal(sidebar.includes('ComingSoonNavItem'), false);
     for (const label of [
-      'Compartilhados comigo',
-      'Para assinar',
-      'Recentes',
-      'Favoritos',
-      'Lixeira',
+      'nav.compartilhados',
+      'nav.assinaturas',
+      'nav.recentes',
+      'nav.favoritos',
+      'nav.lixeira',
     ]) {
       assert.ok(constants.includes(label), `${label} presente`);
     }

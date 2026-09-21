@@ -27,10 +27,58 @@ export type ProvisionTenantInput = {
   tenantId: string;
   tenantType: TenantType;
   displayName: string;
+  /** ISO 3166-1 alpha-2, como o auth validou no cadastro. Ausente = BR. */
+  country?: string;
+  /** Tipo do documento fiscal (`cpf`, `cnpj`, `ruc`, `ein`...). Ausente só vale para BR. */
+  taxIdType?: string;
   collectionPrefix: string;
   createdByUserId: string;
   createdByMembershipId: string;
 };
+
+export type TenantTaxIdentity = {
+  country: string;
+  taxIdType: string;
+  taxIdMasked: string;
+};
+
+const BRAZILIAN_TAX_ID_MASKS: Record<string, string> = {
+  CPF: '***.***.***-**',
+  CNPJ: '**.***.***/****-**',
+};
+
+/** Fora do Brasil o formato varia por país, e o app nem recebe o número: não finge um. */
+const GENERIC_TAX_ID_MASK = '****';
+
+/**
+ * País, tipo e máscara do documento fiscal do tenant, a partir do que o auth mandou.
+ *
+ * O tipo era fixado em CNPJ/CPF pelo `tenantType`, e o `country`/`taxIdType` do corpo eram
+ * descartados no handler: toda empresa de fora do Brasil ficava registrada com CNPJ e máscara
+ * brasileira. Sem `country`, vale o contrato antigo (BR, tipo pelo `tenantType`).
+ */
+export function resolveTenantTaxIdentity(input: {
+  tenantType: TenantType;
+  country?: string;
+  taxIdType?: string;
+}): TenantTaxIdentity {
+  const country = input.country?.trim().toUpperCase() || 'BR';
+  if (!/^[A-Z]{2}$/.test(country)) {
+    throw new ServiceError('country inválido.', 'INVALID_COUNTRY', 400);
+  }
+
+  const brazilianDefault = input.tenantType === 'business' ? 'CNPJ' : 'CPF';
+  const taxIdType =
+    input.taxIdType?.trim().toUpperCase() || (country === 'BR' ? brazilianDefault : '');
+  if (!/^[A-Z0-9_]{2,16}$/.test(taxIdType)) {
+    throw new ServiceError('taxIdType inválido.', 'INVALID_TAX_ID_TYPE', 400);
+  }
+
+  const taxIdMasked =
+    (country === 'BR' ? BRAZILIAN_TAX_ID_MASKS[taxIdType] : undefined) ?? GENERIC_TAX_ID_MASK;
+
+  return { country, taxIdType, taxIdMasked };
+}
 
 export type ProvisionTenantOutput = {
   ok: true;
@@ -160,6 +208,7 @@ export async function provisionTenantEnvironment(
   input: ProvisionTenantInput,
 ): Promise<ProvisionTenantOutput> {
   assertProvisionInput(input);
+  const taxIdentity = resolveTenantTaxIdentity(input);
 
   await ensureRegistryTenantIndexes();
 
@@ -174,7 +223,6 @@ export async function provisionTenantEnvironment(
     ? buildBusinessCollectionPrefix(input.tenantId)
     : SHARED_INDIVIDUAL_COLLECTION_PREFIX;
   const isolationStrategy = isBusiness ? 'collection_prefix' : 'shared_individual_pool';
-  const taxIdType = isBusiness ? 'CNPJ' : 'CPF';
 
   if (!existing) {
     const tenantDoc: Record<string, unknown> = {
@@ -182,8 +230,9 @@ export async function provisionTenantEnvironment(
       tenantId: input.tenantId,
       companyId: input.tenantId,
       tenantType: input.tenantType,
-      taxIdType,
-      taxIdMasked: isBusiness ? '**.***.***/****-**' : '***.***.***-**',
+      country: taxIdentity.country,
+      taxIdType: taxIdentity.taxIdType,
+      taxIdMasked: taxIdentity.taxIdMasked,
       taxIdHash: `provisioned_${input.tenantId}`,
       displayName: input.displayName.trim(),
       legalName: input.displayName.trim(),
@@ -207,7 +256,9 @@ export async function provisionTenantEnvironment(
           displayName: input.displayName.trim(),
           status: 'active',
           tenantType: input.tenantType,
-          taxIdType,
+          country: taxIdentity.country,
+          taxIdType: taxIdentity.taxIdType,
+          taxIdMasked: taxIdentity.taxIdMasked,
           'isolation.strategy': isolationStrategy,
           'isolation.collectionPrefix': collectionPrefix,
           'isolation.storageMode': isBusiness

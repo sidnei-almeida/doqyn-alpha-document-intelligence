@@ -3,6 +3,7 @@ import { readDocumentPreviewPageImage } from '../../server/services/documentPrev
 import { buildDocumentAuditContext } from '../../server/audit/buildDocumentAuditContext.js';
 import { emitDocumentFailureEvent } from '../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../server/tenancy/documentRequestContext.js';
+import { buildContentDisposition } from '../../server/utils/contentDisposition.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { setPreviewAssetCacheHeaders } from '../../server/utils/previewCacheHeaders.js';
 
@@ -41,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Content-Length', String(file.buffer.length));
-    res.setHeader('Content-Disposition', `inline; filename="${file.fileName.replace(/"/g, '')}"`);
+    res.setHeader('Content-Disposition', buildContentDisposition('inline', file.fileName));
     setPreviewAssetCacheHeaders(res, `"${documentId}:${versionId}:page:${pageNumber}"`, {
       immutable: false,
     });
@@ -51,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     await emitDocumentFailureEvent(buildDocumentAuditContext(auth.ctx, auth.user), req, {
       action: 'document.preview_failed',
-      description: 'Falha ao servir página do preview.',
+      params: { context: 'page' },
       documentId,
       versionId,
       error,

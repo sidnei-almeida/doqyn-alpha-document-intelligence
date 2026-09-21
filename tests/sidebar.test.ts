@@ -11,20 +11,21 @@ function readSrc(relativePath: string): string {
   return readFileSync(join(srcRoot, relativePath), 'utf8');
 }
 
-describe('sidebar DOQYN', () => {
+const globalsCss = readSrc('styles/globals.css');
 
+describe('sidebar DOQYN', () => {
   it('seção Administração usa headers discretos', () => {
     const section = readSrc('components/layout/SidebarSection.tsx');
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(section.includes('text-doqyn-subtle'));
-    assert.ok(sidebar.includes('Administração'));
+    assert.ok(sidebar.includes('.administracao'));
   });
 
   it('sidebar workspace: Biblioteca, + Novo, modo colapsável', () => {
     const source = readSrc('components/layout/Sidebar.tsx');
     const collapsed = readSrc('components/layout/useSidebarCollapsed.ts');
-    assert.ok(source.includes('Biblioteca'));
-    assert.ok(source.includes('/biblioteca'));
+    assert.ok(source.includes('.biblioteca'));
+    assert.ok(source.includes('/library'));
     assert.ok(source.includes('NewButtonMenu'));
     assert.ok(source.includes('useSidebarCollapsed'));
     // O botão de colapsar saiu para `SidebarEdgeToggle`, que vive na borda entre sidebar e
@@ -37,8 +38,13 @@ describe('sidebar DOQYN', () => {
     // conteúdo virou o próprio controle, e reage no hover como o resto do sistema.
     assert.equal(source.includes('chevron_left'), false);
     const edge = readSrc('components/layout/SidebarEdgeToggle.tsx');
-    assert.ok(edge.includes('cursor-col-resize'));
-    assert.ok(edge.includes('group-hover:bg-doqyn-accent-active'));
+    // Mão, não `col-resize`: a borda se clica uma vez, e o cursor de arraste prometia um arraste
+    // que nunca existiu.
+    assert.ok(edge.includes('cursor-pointer'));
+    assert.equal(edge.includes('cursor-col-resize'), false);
+    // A pista acende no hover — hoje pelo `.sidebar-edge-toggle-grip` em vez de uma classe de fundo.
+    assert.ok(edge.includes('sidebar-edge-toggle-grip'));
+    assert.ok(globalsCss.includes('.sidebar-edge-toggle:hover .sidebar-edge-toggle-grip'));
     assert.equal(source.includes('explorer-icon-btn'), false);
     assert.ok(source.includes('data-collapsed'));
     assert.ok(collapsed.includes('--workspace-sidebar-width-collapsed'));
@@ -57,11 +63,11 @@ describe('sidebar DOQYN', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
     assert.ok(sidebar.includes('NAV_ITEMS_LIBRARY_VIEWS'));
     for (const label of [
-      'Compartilhados comigo',
-      'Para assinar',
-      'Recentes',
-      'Favoritos',
-      'Lixeira',
+      'nav.compartilhados',
+      'nav.assinaturas',
+      'nav.recentes',
+      'nav.favoritos',
+      'nav.lixeira',
     ]) {
       assert.ok(sidebar.includes(label) || readSrc('lib/constants.ts').includes(label));
     }
@@ -75,21 +81,29 @@ describe('sidebar DOQYN', () => {
 
   it('modo colapsado não exibe scroll na navegação', () => {
     const sidebar = readSrc('components/layout/Sidebar.tsx');
-    const globals = readFileSync(join(__dirname, '..', 'src', 'styles', 'globals.css'), 'utf8');
     assert.ok(sidebar.includes('workspace-sidebar-nav'));
     assert.ok(sidebar.includes('mt-5'));
     assert.equal(sidebar.includes('mt-auto'), false);
-    assert.ok(globals.includes(".workspace-sidebar[data-collapsed='true'] .workspace-sidebar-nav"));
+    // A supressão saiu do CSS por atributo e virou classe condicional no componente: colapsada, a
+    // navegação é `overflow-hidden`; aberta, `overflow-y-auto`.
+    const nav = sidebar.slice(sidebar.indexOf('workspace-sidebar-nav'), sidebar.indexOf('</nav>'));
+    assert.ok(nav.includes('overflow-hidden'));
+    assert.ok(nav.includes('overflow-y-auto'));
   });
 
   it('ThemeToggle tem affordance de clique com hover e cursor pointer', () => {
     const source = readSrc('components/ui/ThemeToggle.tsx');
-    assert.ok(source.includes('cursor-pointer'));
+    // O cursor vem do preflight do Tailwind (`button { cursor: pointer }`): o que a guarda precisa
+    // provar é que o controle é um `<button>` de verdade, e não uma `<div>` com `onClick`.
+    assert.ok(source.includes('<button'));
+    assert.ok(source.includes('type="button"'));
     // O hover deixou de preencher: no sistema novo o realce é de cor, não de fundo — bloco
-    // preenchido ficou reservado à ação principal da tela.
-    assert.ok(source.includes('hover:text-doqyn-text'));
+    // preenchido ficou reservado à ação principal da tela. E ele saiu do componente para a barra,
+    // porque o mesmo botão também serve as telas de entrada, que têm outro fundo.
     assert.equal(source.includes('hover:bg-doqyn-surface-hover'), false);
-    assert.ok(source.includes('h-9 w-9'));
+    const topbar = readSrc('components/layout/WorkspaceTopBar.tsx');
+    assert.ok(topbar.includes('hover:text-doqyn-text'));
+    assert.equal(topbar.includes('hover:bg-doqyn-surface-hover'), false);
   });
 });
 
@@ -101,7 +115,7 @@ describe('header do usuário', () => {
     assert.equal(topbar.includes('SidebarUserPanel'), false);
     assert.ok(menu.includes('header-user-menu'));
     assert.ok(menu.includes('header-user-menu-dropdown'));
-    assert.ok(menu.includes('Sair'));
+    assert.ok(menu.includes('.sair'));
     // O tema saiu do menu do usuário e virou controle da própria barra: é preferência de
     // visualização, não ação de conta.
     assert.ok(topbar.includes('ThemeToggle'));

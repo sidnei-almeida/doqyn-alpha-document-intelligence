@@ -15,11 +15,8 @@ export type GovernanceStepId = 'groups' | 'people' | 'categories';
 
 export type GovernanceStep = {
   id: GovernanceStepId;
+  /** Os números moram em `GovernanceProgress`; a frase, no placar, no idioma da tela. */
   done: boolean;
-  /** O que já está feito, em números — "0 de 6 pessoas em grupos". */
-  label: string;
-  /** Só nos passos abertos: o que fazer a seguir. */
-  hint?: string;
 };
 
 export type GovernanceProgress = {
@@ -35,10 +32,6 @@ export type GovernanceProgress = {
   coverage: number;
   complete: boolean;
 };
-
-function plural(count: number, singular: string, plural_: string): string {
-  return `${count} ${count === 1 ? singular : plural_}`;
-}
 
 /**
  * O estado da governança em três perguntas: existem grupos, tem gente neles, e eles
@@ -71,30 +64,9 @@ export function computeGovernanceProgress(
   ).length;
 
   const steps: GovernanceStep[] = [
-    {
-      id: 'groups',
-      done: groups.length > 0,
-      label: plural(groups.length, 'grupo criado', 'grupos criados'),
-      hint: groups.length === 0 ? 'Crie o primeiro grupo. É ele quem recebe acesso.' : undefined,
-    },
-    {
-      id: 'people',
-      done: peopleInGroups > 0,
-      label: `${peopleInGroups} de ${plural(totalPeople, 'pessoa', 'pessoas')} em grupos`,
-      hint:
-        peopleInGroups === 0
-          ? 'Grupo vazio não alcança ninguém. Coloque pessoas em Usuários.'
-          : undefined,
-    },
-    {
-      id: 'categories',
-      done: connectedCategoryCount > 0,
-      label: `${connectedCategoryCount} de ${plural(categories.length, 'categoria conectada', 'categorias conectadas')}`,
-      hint:
-        connectedCategoryCount === 0
-          ? 'Arraste um grupo até a faixa da categoria que ele deve alcançar.'
-          : undefined,
-    },
+    { id: 'groups', done: groups.length > 0 },
+    { id: 'people', done: peopleInGroups > 0 },
+    { id: 'categories', done: connectedCategoryCount > 0 },
   ];
 
   return {
@@ -119,16 +91,6 @@ export type CategoryReach = {
   /** Fração de 0 a 1 das pessoas da empresa que alcançam esta categoria. */
   coverage: number;
 };
-
-const REACH_LABELS: Record<CategoryReachState, string> = {
-  reached: 'alcançada',
-  'empty-groups': 'sem pessoas',
-  unreached: 'sem ninguém',
-};
-
-export function reachLabel(state: CategoryReachState): string {
-  return REACH_LABELS[state];
-}
 
 export function computeCategoryReach(
   category: DocumentCategory,

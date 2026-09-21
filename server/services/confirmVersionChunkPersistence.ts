@@ -1,4 +1,5 @@
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
+import { getStorageProvider } from '../storage/index.js';
 import { persistDocumentVersionChunks } from './documentChunkService.js';
 import { enqueueEmbeddingJob } from '../queues/embeddingQueue.js';
 import { enqueueChunkingJob } from '../queues/chunkingQueue.js';
@@ -6,7 +7,13 @@ import { logger } from '../utils/logger.js';
 
 export type VersionChunkPersistenceInput = {
   ctx: DocumentRequestContext;
-  pdfBuffer: Buffer;
+  /**
+   * `null` quando a versão nasceu apontando para o provisório: a confirmação não baixa mais o
+   * arquivo. A fila lê do storage de todo jeito; só o fatiamento inline precisa buscar.
+   */
+  pdfBuffer: Buffer | null;
+  /** Onde está o original, para o caminho inline buscar quando não veio buffer. */
+  primary?: { objectKey: string | null; bucketAlias: string | null };
   documentId: string;
   versionId: string;
   versionLabel: string;
@@ -67,13 +74,35 @@ export async function scheduleChunkPersistenceAfterVersionConfirm(
   return { mode: 'inline' };
 }
 
+async function readOriginalForChunking(input: VersionChunkPersistenceInput): Promise<Buffer | null> {
+  const provider = getStorageProvider();
+  const objectKey = input.primary?.objectKey;
+  if (!provider || !objectKey) return null;
+  const file = await provider.readDocumentVersion(
+    objectKey,
+    input.ctx.tenantId,
+    input.primary?.bucketAlias ?? null,
+    input.ctx.storageScope,
+  );
+  return file.buffer;
+}
+
 export async function persistChunksAfterVersionConfirm(
   input: VersionChunkPersistenceInput,
 ): Promise<void> {
   try {
+    const pdfBuffer = input.pdfBuffer ?? (await readOriginalForChunking(input));
+    if (!pdfBuffer) {
+      logger.warn('Fatiamento inline sem arquivo para ler', {
+        documentId: input.documentId,
+        versionId: input.versionId,
+      });
+      return;
+    }
+
     const { chunkCount } = await persistDocumentVersionChunks({
       ctx: input.ctx,
-      pdfBuffer: input.pdfBuffer,
+      pdfBuffer,
       documentId: input.documentId,
       versionId: input.versionId,
       versionLabel: input.versionLabel,

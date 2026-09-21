@@ -1,0 +1,100 @@
+{
+  "confirmNewVersionActions": {
+    "aVersaoAnteriorPermanece": "La versión anterior queda en el historial.",
+    "concluir": "Concluir",
+    "confirmVersion": "Confirmar {{version}}",
+    "fechar": "Cerrar",
+    "tentarNovamente": "Intentar de nuevo",
+    "analisando": "Analizando...",
+    "criando": "Creando {{version}}..."
+  },
+  "currentDocumentSummaryCard": {
+    "atualizado": "Actualizado",
+    "atualizado2": "Actualizado",
+    "categoria": "Categoría",
+    "categoria2": "Categoría",
+    "criado": "Creado",
+    "documentoAtual": "Documento actual",
+    "documentoAtual2": "Documento actual",
+    "processamento": "Procesamiento",
+    "processamento2": "Procesamiento",
+    "proprietario": "Propietario",
+    "proprietario2": "Propietario",
+    "tamanho": "Tamaño",
+    "tipoTamanho": "Tipo / tamaño"
+  },
+  "currentMetadataPanel": {
+    "metadadosAtuais": "Metadatos actuales"
+  },
+  "detailsField": {
+    "validade": "Fecha de vencimiento",
+    "validadeNaoDeterminada": "No determinada",
+    "validadeInferidaHint": "Inferida (firma/emisión + plazo)",
+    "titulo": "Título",
+    "dataDeAssinatura": "Fecha de firma"
+  },
+  "newVersionAnalyzingPanel": {
+    "analisandoNovaVersao": "Analizando la nueva versión",
+    "comparingWith": "Comparando con {{current}} para preparar {{next}}.",
+    "steps": {
+      "ocr": "Extrayendo texto del PDF",
+      "classify": "Clasificando documento",
+      "metadata": "Extrayendo metadatos",
+      "compare": "Comparando con la versión actual"
+    }
+  },
+  "newVersionReviewStep": {
+    "categoria": "Categoría",
+    "nomeSugerido": "Nombre sugerido",
+    "revisaoDaNovaVersao": "Revisión de la nueva versión",
+    "reviseiOsMetadadosExtraidos": "Revisé los metadatos extraídos y confirmo que la nueva versión puede crearse.",
+    "status": "Estado",
+    "versao": "Versión"
+  },
+  "newVersionUploadDropzone": {
+    "arrastePdfOuImagem": "Arrastra un PDF o una imagen, o haz clic para seleccionar",
+    "enviarNovaVersao": "Subir nueva versión",
+    "pdfJpgPngWebp": "PDF · JPG · PNG · WEBP · hasta",
+    "prontoParaAnalise": "· listo para el análisis",
+    "removerArquivoSelecionado": "Quitar el archivo seleccionado",
+    "tipoInvalido": "Sube un PDF o una imagen (JPG, PNG o WebP) para crear una nueva versión."
+  },
+  "updateDocumentVersionDrawer": {
+    "atualizarDocumento": "Actualizar documento",
+    "atualizarDocumento2": "Actualizar documento",
+    "carregandoDocumentoEHistorico": "Cargando el documento y el historial de versiones…",
+    "fecharAtualizacaoDeVersao": "Cerrar la actualización de versión",
+    "naoFoiPossivelContinuar": "No se pudo continuar",
+    "novaVersaoCriada": "Nueva versión creada",
+    "oDocumentoFoiAtualizado": "El documento fue actualizado a",
+    "erroCarregar": "No se pudieron cargar los datos del documento.",
+    "semPermissao": "No tienes permiso para actualizar este documento.",
+    "erroAnalisar": "No se pudo analizar el archivo enviado.",
+    "confirmeRevisao": "Confirma la revisión de los metadatos antes de continuar.",
+    "versaoCriada": "Nueva versión {{version}} creada.",
+    "erroCriar": "No se pudo crear la nueva versión.",
+    "erroDesconhecido": "Error desconocido."
+  },
+  "updateDocumentVersionHeader": {
+    "atualizarDocumento": "Actualizar documento",
+    "fecharAtualizacaoDeVersao": "Cerrar la actualización de versión",
+    "novaVersaoDe": "Nueva versión de {{name}}"
+  },
+  "versionComparisonPanel": {
+    "atual": "Actual",
+    "changed": "modificado",
+    "compararVersoes": "Comparar versiones",
+    "nova": "Nueva",
+    "linhas": {
+      "name": "Nombre",
+      "category": "Categoría",
+      "version": "Versión",
+      "summary": "Resumen"
+    }
+  },
+  "versionHistorySummary": {
+    "historicoDeVersoes": "Historial de versiones",
+    "proxima": "próxima",
+    "versoes": "Versiones"
+  }
+}

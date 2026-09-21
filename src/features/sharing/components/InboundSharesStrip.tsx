@@ -2,11 +2,11 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useInboundShareDecision, useInboundShares } from '../hooks/useInboundShares';
+import { formatDate } from '@/i18n/formats';
+import { useTranslation } from 'react-i18next';
 
 function formatReceivedAt(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(iso, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /**
@@ -21,6 +21,8 @@ function formatReceivedAt(iso: string): string {
  * não quem recebe.
  */
 export function InboundSharesStrip() {
+  const { t } = useTranslation('sharing');
+
   const { data } = useInboundShares();
   const decision = useInboundShareDecision();
 
@@ -30,15 +32,17 @@ export function InboundSharesStrip() {
   return (
     <section
       className="mb-6"
-      aria-label="Documentos de fora aguardando decisão"
+      aria-label={t('inboundSharesStrip.documentosDeForaAguardando')}
       data-testid="inbound-shares-strip"
     >
       <div className="mb-2 flex items-baseline gap-2">
-        <h2 className="text-eyebrow uppercase text-doqyn-primary">Aguardando seu aceite</h2>
+        <h2 className="text-eyebrow uppercase text-doqyn-primary">
+          {t('inboundSharesStrip.aguardandoSeuAceite')}
+        </h2>
         <span className="text-micro text-doqyn-muted">
           {/* Quem enviou pode ser uma conta pessoal: "de fora daqui" descreve a fronteira sem
               supor o tipo do tenant do outro lado. */}
-          {items.length} {items.length === 1 ? 'documento' : 'documentos'} de fora daqui
+          {t('inboundSharesStrip.fromOutside', { count: items.length })}
         </span>
       </div>
 
@@ -59,7 +63,7 @@ export function InboundSharesStrip() {
               <p className="truncate text-body text-doqyn-text">{item.documentName}</p>
               <p className="mt-0.5 truncate text-micro text-doqyn-muted">
                 {item.originTenantName} · {item.sharedByName} · {formatReceivedAt(item.receivedAt)}
-                {item.permissions.canDownload ? ' · pode baixar' : ' · somente leitura'}
+                {` · ${t(item.permissions.canDownload ? 'permissions.canDownload' : 'permissions.readOnlyLong')}`}
               </p>
               {item.message ? (
                 <p className="mt-1 truncate text-caption text-doqyn-muted">“{item.message}”</p>
@@ -74,7 +78,7 @@ export function InboundSharesStrip() {
                 disabled={decision.isPending}
                 onClick={() => decision.mutate({ grantId: item.grantId, decision: 'decline' })}
               >
-                Recusar
+                {t('inboundSharesStrip.recusar')}
               </Button>
               <Button
                 type="button"
@@ -82,7 +86,7 @@ export function InboundSharesStrip() {
                 disabled={decision.isPending}
                 onClick={() => decision.mutate({ grantId: item.grantId, decision: 'accept' })}
               >
-                Aceitar
+                {t('inboundSharesStrip.aceitar')}
               </Button>
             </div>
           </li>

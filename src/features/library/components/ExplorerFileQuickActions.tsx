@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DocumentListItem } from '@/types/document-library';
 import { useExplorerFileActions } from '../context/useExplorerFileActions';
+import { useTranslation } from 'react-i18next';
 
 type ExplorerFileQuickActionsProps = {
   document: DocumentListItem;
@@ -23,6 +24,8 @@ export function ExplorerFileQuickActions({
   onMore,
   className,
 }: ExplorerFileQuickActionsProps) {
+  const { t } = useTranslation('library');
+
   const { isStarred, toggleStar } = useExplorerFileActions();
   const canPreview = doc.permissions?.canPreview !== false && Boolean(doc.latestVersionId);
   const canDownload = Boolean(doc.permissions?.canDownload && doc.latestVersionId);
@@ -37,11 +40,11 @@ export function ExplorerFileQuickActions({
       data-testid="explorer-file-quick-actions"
       data-no-marquee-select
     >
-      <Tooltip label={starred ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}>
+      <Tooltip label={t(starred ? 'favorites.remove' : 'favorites.add')}>
         <button
           type="button"
           className={cn('explorer-icon-btn h-7 w-7', starred && 'text-doqyn-warning')}
-          aria-label={starred ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+          aria-label={t(starred ? 'favorites.remove' : 'favorites.add')}
           aria-pressed={starred}
           onClick={(event) => {
             event.stopPropagation();
@@ -52,11 +55,11 @@ export function ExplorerFileQuickActions({
         </button>
       </Tooltip>
       {canPreview && (
-        <Tooltip label="Visualizar">
+        <Tooltip label={t('explorerFileQuickActions.visualizar')}>
           <button
             type="button"
             className="explorer-icon-btn h-7 w-7"
-            aria-label="Visualizar"
+            aria-label={t('explorerFileQuickActions.visualizar2')}
             onClick={(event) => {
               event.stopPropagation();
               onPreview();
@@ -66,11 +69,11 @@ export function ExplorerFileQuickActions({
           </button>
         </Tooltip>
       )}
-      <Tooltip label="Detalhes">
+      <Tooltip label={t('explorerFileQuickActions.detalhes')}>
         <button
           type="button"
           className="explorer-icon-btn h-7 w-7"
-          aria-label="Detalhes"
+          aria-label={t('explorerFileQuickActions.detalhes2')}
           onClick={(event) => {
             event.stopPropagation();
             onDetails();
@@ -80,11 +83,11 @@ export function ExplorerFileQuickActions({
         </button>
       </Tooltip>
       {canDownload && (
-        <Tooltip label="Baixar">
+        <Tooltip label={t('explorerFileQuickActions.baixar')}>
           <button
             type="button"
             className="explorer-icon-btn h-7 w-7"
-            aria-label="Baixar"
+            aria-label={t('explorerFileQuickActions.baixar2')}
             onClick={(event) => {
               event.stopPropagation();
               onDownload();
@@ -94,11 +97,11 @@ export function ExplorerFileQuickActions({
           </button>
         </Tooltip>
       )}
-      <Tooltip label="Mais opções">
+      <Tooltip label={t('explorerFileQuickActions.maisOpcoes')}>
         <button
           type="button"
           className="explorer-icon-btn h-7 w-7"
-          aria-label="Mais opções"
+          aria-label={t('explorerFileQuickActions.maisOpcoes2')}
           onClick={(event) => {
             event.stopPropagation();
             const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();

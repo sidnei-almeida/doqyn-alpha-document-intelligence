@@ -10,6 +10,7 @@ import {
   OverviewPanelStatCell,
   OverviewPanelStatGrid,
 } from './OverviewPanelStat';
+import { useTranslation } from 'react-i18next';
 
 type OverviewStoragePanelProps = {
   storage: NonNullable<DashboardOverviewResponse['storage']>;
@@ -22,6 +23,8 @@ export function OverviewStoragePanel({
   downloadsInPeriod,
   recentErrors,
 }: OverviewStoragePanelProps) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   const errorStatus =
@@ -29,52 +32,54 @@ export function OverviewStoragePanel({
       <ul className="scrollbar-thin max-h-24 space-y-1.5 overflow-y-auto pr-1">
         {recentErrors.map((error) => (
           <li key={error.id}>
-            <span className="font-medium text-doqyn-text">{error.documentName ?? 'Documento'}</span>
+            <span className="font-medium text-doqyn-text">
+              {error.documentName ?? t('overviewStoragePanel.documentFallback')}
+            </span>
             <span className="text-doqyn-danger"> · {error.message}</span>
           </li>
         ))}
       </ul>
     ) : (
-      <EmptyHint bare>Nenhum erro recente no período.</EmptyHint>
+      <EmptyHint bare>{t('overviewStoragePanel.nenhumErroRecenteNo')}</EmptyHint>
     );
 
   return (
     <OverviewPanelShell
-      title="Storage e erros recentes"
-      subtitle="Uso de arquivos e incidentes no período"
+      title={t('overviewStoragePanel.storageEErrosRecentes')}
+      subtitle={t('overviewStoragePanel.subtitle')}
       titleId="overview-storage-title"
-      actionLabel="Abrir tracking"
+      actionLabel={t('overviewStoragePanel.openTracking')}
       onAction={() => navigate('/tracking')}
       data-testid="overview-storage"
     >
       <OverviewPanelStatGrid columnsClassName="grid-cols-2 sm:grid-cols-4">
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Originais"
+            label={t('overviewStoragePanel.originais')}
             value={storage.originalFiles}
-            hint="arquivos"
-            onClick={() => navigate('/biblioteca')}
+            hint={t('overviewStoragePanel.hintArquivos')}
+            onClick={() => navigate('/library')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Previews"
+            label={t('overviewStoragePanel.previews')}
             value={storage.previewFiles}
-            hint="gerados"
-            onClick={() => navigate('/biblioteca')}
+            hint={t('overviewStoragePanel.hintGerados')}
+            onClick={() => navigate('/library')}
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Tamanho total"
+            label={t('overviewStoragePanel.tamanhoTotal')}
             value={formatStorageBytes(storage.totalSizeBytes)}
-            hint="no bucket"
+            hint={t('overviewStoragePanel.hintNoBucket')}
             valueClassName="text-h1 leading-tight"
           />
         </OverviewPanelStatCell>
         <OverviewPanelStatCell>
           <OverviewPanelStat
-            label="Downloads"
+            label={t('overviewStoragePanel.downloads')}
             value={
               <span className="inline-flex items-center gap-1.5">
                 <Icon
@@ -86,7 +91,7 @@ export function OverviewStoragePanel({
                 {downloadsInPeriod}
               </span>
             }
-            hint="no período"
+            hint={t('overviewStoragePanel.inPeriod')}
             onClick={() => navigate('/tracking')}
           />
         </OverviewPanelStatCell>

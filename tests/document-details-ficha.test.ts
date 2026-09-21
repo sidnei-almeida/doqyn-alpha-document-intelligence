@@ -48,7 +48,7 @@ describe('ficha do painel Detalhes', () => {
       'src/features/documents/components/DocumentDetailsShared.tsx',
       'utf8',
     );
-    assert.ok(source.includes('label="Vencimento"'));
+    assert.ok(source.includes('.vencimento'));
     assert.ok(source.includes('searchMeta?.validityDate'));
   });
 });

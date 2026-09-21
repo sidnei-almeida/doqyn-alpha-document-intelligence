@@ -22,7 +22,7 @@ describe('fluxo dedicado de atualização de versão', () => {
   it('DocumentViewerModal redireciona para biblioteca?updateVersion quando sem callback', () => {
     const modal = readSrc('features/documents/viewer/DocumentViewerModal.tsx');
     assert.ok(modal.includes('onUpdateDocument'));
-    assert.ok(modal.includes('/biblioteca?updateVersion='));
+    assert.ok(modal.includes('/library?updateVersion='));
     assert.equal(modal.includes('/upload?documentId='), false);
   });
 
@@ -90,7 +90,7 @@ describe('fluxo dedicado de atualização de versão', () => {
     const actions = readSrc(
       'features/document-update-version/components/ConfirmNewVersionActions.tsx',
     );
-    assert.ok(actions.includes('Confirmar {nextVersionLabel}'));
+    assert.ok(actions.includes('.confirmVersion'));
     assert.equal(actions.includes('Enviar documento'), false);
   });
 
@@ -115,8 +115,8 @@ describe('fluxo dedicado de atualização de versão', () => {
     const header = readSrc(
       'features/document-update-version/components/UpdateDocumentVersionHeader.tsx',
     );
-    assert.ok(header.includes('Atualizar documento'));
-    assert.ok(header.includes('Nova versão de'));
+    assert.ok(header.includes('.atualizarDocumento'));
+    assert.ok(header.includes('.novaVersaoDe'));
     assert.equal(header.includes('Envio de Documentos'), false);
   });
 
@@ -129,6 +129,6 @@ describe('fluxo dedicado de atualização de versão', () => {
   it('drawer bloqueia fluxo quando canUpdate é falso', () => {
     const drawer = readSrc('features/document-update-version/UpdateDocumentVersionDrawer.tsx');
     assert.ok(drawer.includes('permissions?.canUpdate'));
-    assert.ok(drawer.includes('Você não tem permissão para atualizar este documento.'));
+    assert.ok(drawer.includes('.semPermissao'));
   });
 });

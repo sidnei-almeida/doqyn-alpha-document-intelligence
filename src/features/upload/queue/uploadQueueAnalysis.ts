@@ -1,5 +1,6 @@
 import type { ExtractedMetadata } from '@/features/document-send/types';
 import type { AnalyzePdfResponse } from '@/features/document-send/services/analyzePdf';
+import { commonPhrase } from '@/i18n/commonPhrase';
 
 /**
  * Quanto o navegador acompanha a análise antes de soltar o acompanhamento.
@@ -52,12 +53,12 @@ export const UPLOAD_ANALYZE_MAX_POLL_FAILURES = 5;
 
 /** O documento não falhou: o navegador é que parou de acompanhar. O texto precisa dizer isso. */
 export function uploadAnalyzeStillRunningMessage(): string {
-  return 'A análise continua no servidor. O documento aparece na Biblioteca assim que terminar, e não precisa reenviar.';
+  return commonPhrase('uploadQueue.stillRunning');
 }
 
 /** Aqui sim houve falha, mas é de contato com o servidor, não do documento. */
 export function uploadAnalyzePollFailureMessage(): string {
-  return 'Perdemos o contato com o servidor durante a análise. O documento pode ter sido processado. Confira na Biblioteca antes de reenviar.';
+  return commonPhrase('uploadQueue.pollFailure');
 }
 
 export function analysisFailureMessage(
@@ -66,17 +67,17 @@ export function analysisFailureMessage(
 ): string {
   if (status === 'ai_unavailable') {
     if (errorCode === 'GROQ_DAILY_TOKEN_LIMIT') {
-      return 'Cota diária de tokens do modelo Groq esgotada. Aguarde o reset (~1h) ou altere GROQ_MODEL para openai/gpt-oss-20b.';
+      return commonPhrase('uploadQueue.groqDailyLimit');
     }
     if (errorCode === 'GROQ_CONTEXT_LIMIT') {
-      return 'O documento é grande demais para o modelo atual. Reduza o tamanho do PDF ou ajuste PDF_ANALYSIS_MAX_INPUT_CHARS.';
+      return commonPhrase('uploadQueue.contextLimit');
     }
     if (errorCode === 'GROQ_REQUEST_TIMEOUT') {
-      return 'A análise automática demorou demais e foi interrompida. Tente novamente.';
+      return commonPhrase('uploadQueue.timeout');
     }
-    return 'Limite temporário da Groq atingido. Aguarde alguns minutos e tente novamente.';
+    return commonPhrase('uploadQueue.rateLimit');
   }
-  return 'A análise do documento falhou.';
+  return commonPhrase('uploadQueue.failed');
 }
 
 /** Indica se manualReviewConfirmed deve ser true no confirm-analysis. */

@@ -1,4 +1,26 @@
 {
+  "redirects": [
+    { "source": "/biblioteca/compartilhados/:path*", "destination": "/library/shared/:path*", "permanent": true },
+    { "source": "/biblioteca/assinaturas/:path*", "destination": "/library/signatures/:path*", "permanent": true },
+    { "source": "/biblioteca/recentes/:path*", "destination": "/library/recent/:path*", "permanent": true },
+    { "source": "/biblioteca/favoritos/:path*", "destination": "/library/favorites/:path*", "permanent": true },
+    { "source": "/biblioteca/lixeira/:path*", "destination": "/library/trash/:path*", "permanent": true },
+    { "source": "/biblioteca/desativados/:path*", "destination": "/library/deactivated/:path*", "permanent": true },
+    { "source": "/biblioteca/:path*", "destination": "/library/:path*", "permanent": true },
+    { "source": "/pedidos/:path*", "destination": "/requests/:path*", "permanent": true },
+    { "source": "/contatos/:path*", "destination": "/contacts/:path*", "permanent": true },
+    { "source": "/notificacoes/:path*", "destination": "/notifications/:path*", "permanent": true },
+    { "source": "/termos/:path*", "destination": "/terms/:path*", "permanent": true },
+    { "source": "/convite/:path*", "destination": "/invite/:path*", "permanent": true },
+    { "source": "/criar-empresa/:path*", "destination": "/signup/company/:path*", "permanent": true },
+    { "source": "/criar-acesso-cpf/:path*", "destination": "/signup/individual/:path*", "permanent": true },
+    { "source": "/confirmar-cadastro/:path*", "destination": "/verify-email/:path*", "permanent": true },
+    { "source": "/verificar-email/:path*", "destination": "/verify-email/:path*", "permanent": true },
+    { "source": "/confirmar-email/:path*", "destination": "/confirm-email-change/:path*", "permanent": true },
+    { "source": "/acesso/:path*", "destination": "/access/:path*", "permanent": true },
+    { "source": "/assinaturas/:path*", "destination": "/signatures/:path*", "permanent": true },
+    { "source": "/matriz/:path*", "destination": "/access-matrix/:path*", "permanent": true }
+  ],
   "rewrites": [
     {
       "source": "/guest/share/:token",

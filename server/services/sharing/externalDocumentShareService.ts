@@ -22,6 +22,7 @@ import { canUserShareDocument } from '../../tenancy/documentShareAccess.js';
 import { getTenantCollections } from '../../tenancy/getTenantCollections.js';
 import { getTenantById } from '../tenantsService.js';
 import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
+import { parseRecipientLocale, withRecipientLocaleQuery } from '../../i18n/index.js';
 import { decryptLinkToken, encryptLinkToken } from '../../security/linkTokenCipher.js';
 import { ServiceError } from '../../utils/serviceErrors.js';
 import {
@@ -33,6 +34,22 @@ import {
 import type { DocumentAuditContext } from '../../audit/documentAuditTypes.js';
 import { hashTrackingValue } from '../tracking/trackingSecurity.js';
 import { generateExternalShareInviteToken, hashExternalShareToken } from './externalShareTokens.js';
+
+/**
+ * Um balde por minuto, não o hash do token recém-gerado.
+ *
+ * O token é sorteado de novo em toda chamada — inclusive numa retentativa de rede do mesmo
+ * clique. Com o hash dele na chave, o índice único do outbox nunca vê repetição: cada retentativa
+ * gera um dedupeKey diferente, e a pessoa recebe dois e-mails com dois links diferentes, o mais
+ * antigo já morto pela sobrescrita do grant. O balde por minuto colapsa isso — duas chamadas para
+ * o mesmo grant dentro do mesmo minuto compartilham a chave — e ainda deixa um reenvio deliberado
+ * passado esse minuto sair como e-mail novo, que é o comportamento que "regenerar link" promete.
+ */
+function dedupeMinuteBucket(): number {
+  return Math.floor(Date.now() / 60_000);
+}
+import { enqueueExternalEmail } from '../notifications/externalEmailOutbox.js';
+import { buildExternalShareInviteEmail } from '../notifications/externalEmailTemplates.js';
 
 const ACTIVE_DOCUMENT_FILTER = {
   deletedAt: { $in: [null, undefined] },
@@ -128,8 +145,15 @@ export function buildExternalShareInvitePath(token: string): string {
   return `/guest/share/${encodeURIComponent(token)}`;
 }
 
-export function buildExternalShareInviteUrl(token: string, origin?: string): string {
-  return `${resolvePublicAppBaseUrl(origin)}${buildExternalShareInvitePath(token)}`;
+export function buildExternalShareInviteUrl(
+  token: string,
+  origin?: string,
+  recipientLocale?: string | null,
+): string {
+  return withRecipientLocaleQuery(
+    `${resolvePublicAppBaseUrl(origin)}${buildExternalShareInvitePath(token)}`,
+    recipientLocale,
+  );
 }
 
 export async function findExternalShareGrantByToken(
@@ -240,8 +264,9 @@ function serializeExternalShareGrant(
     sharedByNameSnapshot: grant.sharedByNameSnapshot ?? null,
     message: grant.message ?? null,
     /** Só existe com EXTERNAL_LINK_ENCRYPTION_KEY configurada; sem ela, o link some após a criação. */
+    recipientLocale: grant.recipientLocale ?? null,
     inviteUrl: recoveredToken
-      ? buildExternalShareInviteUrl(recoveredToken, options?.inviteOrigin)
+      ? buildExternalShareInviteUrl(recoveredToken, options?.inviteOrigin, grant.recipientLocale)
       : null,
   };
 }
@@ -259,9 +284,11 @@ export async function createDocumentExternalShareGrant(
     permissions?: Partial<ExternalDocumentSharePermissions>;
     expiresAt?: string;
     message?: string;
+    recipientLocale?: string;
     inviteOrigin?: string;
   },
 ) {
+  const recipientLocale = parseRecipientLocale(input.recipientLocale);
   const config = resolveExternalSharingConfig();
   if (!config.externalSharingEnabled) {
     throw new ServiceError(
@@ -319,6 +346,7 @@ export async function createDocumentExternalShareGrant(
           ...phoneFields,
           permissions,
           message: input.message?.trim() || null,
+          recipientLocale,
           status: 'pending',
           inviteTokenHash,
           inviteTokenEncrypted: encryptLinkToken(inviteToken),
@@ -332,6 +360,27 @@ export async function createDocumentExternalShareGrant(
       },
     );
 
+    const existingInviteUrl = buildExternalShareInviteUrl(
+      inviteToken,
+      input.inviteOrigin,
+      recipientLocale,
+    );
+    await enqueueExternalEmail({
+      tenantId: ctx.tenantId,
+      kind: 'external_share_invite',
+      dedupeKey: `external_share:${existing._id}:${dedupeMinuteBucket()}`,
+      recipientEmail,
+      ...buildExternalShareInviteEmail({
+        recipientLocale,
+        inviteUrl: existingInviteUrl,
+        senderName: user.name?.trim() || user.email,
+        tenantName: (await getTenantById(ctx.tenantId))?.displayName ?? ctx.tenantId,
+        expiresAt,
+        canDownload: permissions.canDownload,
+        message: input.message,
+      }),
+    });
+
     return {
       shareId: existing._id,
       documentId,
@@ -342,7 +391,7 @@ export async function createDocumentExternalShareGrant(
       updated: true,
       inviteToken,
       invitePath: buildExternalShareInvitePath(inviteToken),
-      inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin),
+      inviteUrl: existingInviteUrl,
       currentVersionId: doc.currentVersionId,
     };
   }
@@ -365,6 +414,7 @@ export async function createDocumentExternalShareGrant(
     message: input.message?.trim() || null,
     inviteTokenHash,
     inviteTokenEncrypted: encryptLinkToken(inviteToken),
+    recipientLocale,
     inviteExpiresAt,
     acceptedAt: null,
     lastAccessAt: null,
@@ -379,6 +429,27 @@ export async function createDocumentExternalShareGrant(
 
   await collection.insertOne(grant);
 
+  const newGrantInviteUrl = buildExternalShareInviteUrl(
+    inviteToken,
+    input.inviteOrigin,
+    recipientLocale,
+  );
+  await enqueueExternalEmail({
+    tenantId: ctx.tenantId,
+    kind: 'external_share_invite',
+    dedupeKey: `external_share:${grant._id}:${dedupeMinuteBucket()}`,
+    recipientEmail,
+    ...buildExternalShareInviteEmail({
+      recipientLocale,
+      inviteUrl: newGrantInviteUrl,
+      senderName: user.name?.trim() || user.email,
+      tenantName: (await getTenantById(ctx.tenantId))?.displayName ?? ctx.tenantId,
+      expiresAt,
+      canDownload: permissions.canDownload,
+      message: input.message,
+    }),
+  });
+
   return {
     shareId: grant._id,
     documentId,
@@ -389,7 +460,7 @@ export async function createDocumentExternalShareGrant(
     updated: false,
     inviteToken,
     invitePath: buildExternalShareInvitePath(inviteToken),
-    inviteUrl: buildExternalShareInviteUrl(inviteToken, input.inviteOrigin),
+    inviteUrl: newGrantInviteUrl,
     currentVersionId: doc.currentVersionId,
   };
 }
@@ -519,6 +590,27 @@ export async function regenerateDocumentExternalShareGrant(
     },
   );
 
+  const regeneratedInviteUrl = buildExternalShareInviteUrl(
+    inviteToken,
+    input?.inviteOrigin,
+    grant.recipientLocale,
+  );
+  await enqueueExternalEmail({
+    tenantId: ctx.tenantId,
+    kind: 'external_share_invite',
+    dedupeKey: `external_share:${shareId}:${dedupeMinuteBucket()}`,
+    recipientEmail: grant.recipientEmail,
+    ...buildExternalShareInviteEmail({
+      recipientLocale: grant.recipientLocale,
+      inviteUrl: regeneratedInviteUrl,
+      senderName: user.name?.trim() || user.email,
+      tenantName: (await getTenantById(ctx.tenantId))?.displayName ?? ctx.tenantId,
+      expiresAt,
+      canDownload: grant.permissions.canDownload,
+      message: grant.message,
+    }),
+  });
+
   return {
     shareId,
     documentId,
@@ -527,7 +619,7 @@ export async function regenerateDocumentExternalShareGrant(
     status: 'pending' as const,
     inviteToken,
     invitePath: buildExternalShareInvitePath(inviteToken),
-    inviteUrl: buildExternalShareInviteUrl(inviteToken, input?.inviteOrigin),
+    inviteUrl: regeneratedInviteUrl,
     currentVersionId: doc.currentVersionId,
   };
 }

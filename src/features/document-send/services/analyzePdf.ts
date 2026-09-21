@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n';
+import { formatDateTime } from '@/i18n/formats';
 import type { WorkflowRequestContext } from '../types/workflowLog';
 import type { WorkflowErrorApiResponse, WorkflowErrorDisplay } from '../types/workflowError';
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
@@ -23,6 +25,19 @@ type ApiProcessingLogItem = {
   status: 'done' | 'active' | 'pending' | 'error';
 };
 
+/**
+ * Pasta que a IA propõe quando nenhuma das configuradas serve.
+ *
+ * Não é classe: é um rascunho de classe, sem id e sem regra. Vira pasta de verdade quando alguém
+ * clica na revisão, ou na confirmação quando o tenant escolheu `auto_create`.
+ */
+export type SuggestedCategory = {
+  name: string;
+  description: string;
+  keywords: string[];
+  reason: string;
+};
+
 type ClassificationResult = {
   classId: string | null;
   className: string | null;
@@ -32,6 +47,7 @@ type ClassificationResult = {
   evidence: EvidenceSnippet[];
   errorCode?: string;
   reviewReason?: string;
+  suggestedCategory?: SuggestedCategory | null;
 };
 
 type ExtractedMetadataField = {
@@ -157,9 +173,30 @@ function resolveClientMimeType(file: File): string {
   return 'application/pdf';
 }
 
+/**
+ * SHA-256 do arquivo, calculado antes de enviar.
+ *
+ * Sem ele o servidor baixava o arquivo inteiro de volta do R2 só para descobrir este número, antes
+ * de pôr a análise na fila. O worker confere de novo quando baixa para analisar, então um valor
+ * errado não passa. Sem `crypto.subtle` (contexto sem HTTPS) devolve `undefined` e o servidor segue
+ * calculando do jeito antigo.
+ */
+async function computeFileSha256(file: File): Promise<string | undefined> {
+  if (!globalThis.crypto?.subtle) return undefined;
+  try {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join(
+      '',
+    );
+  } catch {
+    return undefined;
+  }
+}
+
 async function requestStagingUploadUrl(
   file: File,
   signal?: AbortSignal,
+  documentId?: string,
 ): Promise<StagingUploadUrlResponse> {
   const response = await authFetch('/api/documents/upload-url', {
     method: 'POST',
@@ -169,6 +206,9 @@ async function requestStagingUploadUrl(
       fileName: file.name,
       mimeType: resolveClientMimeType(file),
       sizeBytes: file.size,
+      // O servidor precisa saber se é documento novo ou versão de um que já existe: a cota de
+      // volume só barra o primeiro caso.
+      ...(documentId?.trim() ? { documentId: documentId.trim() } : {}),
     }),
     signal,
   });
@@ -177,7 +217,7 @@ async function requestStagingUploadUrl(
   if (!response.ok || !payload?.uploadUrl || !payload.jobId) {
     const workflowError = parseWorkflowErrorPayload(
       payload as WorkflowErrorApiResponse | null,
-      'Erro ao preparar upload do documento',
+      i18n.t('documentSend:analysisError.prepareUploadFailed'),
     );
     throw new AnalyzePdfRequestError(workflowError);
   }
@@ -204,11 +244,11 @@ async function putFileToStagingUploadUrl(
           error: {
             code: 'STAGING_UPLOAD_FAILED',
             category: 'storage',
-            title: 'Falha no upload para storage',
-            message: 'Falha ao enviar o documento para o storage. Tente novamente.',
+            title: i18n.t('documentSend:analysisError.uploadStorageTitle'),
+            message: i18n.t('documentSend:analysisError.uploadStorageMessage'),
           },
         },
-        'Falha ao enviar o documento para o storage.',
+        i18n.t('documentSend:analysisError.storageFailed'),
       ),
     );
   }
@@ -246,17 +286,12 @@ export function isAnalysisStillRunningError(error: unknown): error is AnalysisSt
   return error instanceof AnalysisStillRunningError;
 }
 
-function formatNow(): string {
-  const now = new Date();
-  return `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-}
-
 function mapApiLogs(logs: ApiProcessingLogItem[]): ProcessingLogItem[] {
   return logs.map((log, index) => ({
     id: `log-${index + 1}`,
     title: log.title,
     description: log.description,
-    time: log.status === 'done' ? formatNow() : '',
+    time: log.status === 'done' ? formatDateTime(new Date()) : '',
     status: log.status,
   }));
 }
@@ -318,7 +353,10 @@ function mapToExtractedMetadata(
     jobId: response.jobId,
     originalFileName: response.originalFileName,
     suggestedName: response.recommendedFileName ?? '—',
-    documentType: classification.className ?? extraction?.documentType ?? 'Indefinido',
+    documentType:
+      classification.className ??
+      extraction?.documentType ??
+      i18n.t('documentSend:documentTypeUnknown'),
     supplier,
     documentDate,
     value,
@@ -420,7 +458,7 @@ async function pollAnalysisJobResult(
             error: {
               code: isGone ? 'ANALYSIS_JOB_NOT_FOUND' : 'ANALYSIS_POLL_UNREACHABLE',
               category: 'ai',
-              title: 'Análise sem acompanhamento',
+              title: i18n.t('documentSend:analysisError.semAcompanhamentoTitle'),
               message: uploadAnalyzePollFailureMessage(),
             },
           },
@@ -441,11 +479,11 @@ async function pollAnalysisJobResult(
           error: {
             code: payload.errorCode ?? 'ANALYSIS_FAILED',
             category: 'ai',
-            title: 'Falha na análise',
-            message: payload.errorMessage ?? 'Falha na análise do documento.',
+            title: i18n.t('documentSend:analysisError.falhaNaAnaliseTitle'),
+            message: payload.errorMessage ?? i18n.t('documentSend:analysisError.analysisFailed'),
           },
         },
-        'Falha na análise do documento.',
+        i18n.t('documentSend:analysisError.analysisFailed'),
       );
       throw new AnalyzePdfRequestError(workflowError);
     }
@@ -467,11 +505,11 @@ async function pollAnalysisJobResult(
             error: {
               code: 'ANALYSIS_RESULT_MISSING',
               category: 'ai',
-              title: 'Resultado da análise indisponível',
-              message: 'Análise concluída sem resultado disponível. Tente novamente.',
+              title: i18n.t('documentSend:analysisError.resultadoIndisponivelTitle'),
+              message: i18n.t('documentSend:analysisError.resultadoIndisponivelMessage'),
             },
           },
-          'Análise concluída sem resultado disponível.',
+          i18n.t('documentSend:analysisError.noResult'),
         ),
       );
     }
@@ -510,7 +548,12 @@ export async function analyzePdf(
   const startedAt = performance.now();
 
   if (isPresignedUploadEnabled()) {
-    const issued = await requestStagingUploadUrl(file, options?.signal);
+    // O hash corre junto com o pedido da URL: os dois são independentes, e somar os tempos seria
+    // pagar em série o que cabe em paralelo.
+    const [issued, sha256] = await Promise.all([
+      requestStagingUploadUrl(file, options?.signal, options?.documentId),
+      computeFileSha256(file),
+    ]);
     await putFileToStagingUploadUrl(file, issued, options?.signal);
 
     const response = await authFetch(endpoint, {
@@ -522,6 +565,7 @@ export async function analyzePdf(
         originalFileName: file.name,
         mimeType: resolveClientMimeType(file),
         sizeBytes: file.size,
+        ...(sha256 ? { sha256 } : {}),
         ...(options?.documentId?.trim() ? { documentId: options.documentId.trim() } : {}),
       }),
       signal: options?.signal,
@@ -535,7 +579,7 @@ export async function analyzePdf(
 
     if (response.status === 202) {
       if (!payload || !('jobId' in payload) || payload.status !== 'queued') {
-        throw new Error('Resposta inválida do servidor (fila assíncrona)');
+        throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaFila'));
       }
 
       const queued = payload as AnalyzePdfEnqueueResponse;
@@ -555,14 +599,17 @@ export async function analyzePdf(
     if (!response.ok) {
       const errorPayload: WorkflowErrorApiResponse | null =
         payload && 'error' in payload ? payload : payload && 'code' in payload ? payload : null;
-      const workflowError = parseWorkflowErrorPayload(errorPayload, 'Erro ao analisar documento');
+      const workflowError = parseWorkflowErrorPayload(
+        errorPayload,
+        i18n.t('documentSend:analysisError.analyzeFailed'),
+      );
       workflowError.requestId = workflowError.requestId ?? requestId;
       workflowError.endpoint = endpoint;
       throw new AnalyzePdfRequestError(workflowError);
     }
 
     if (!payload || !('jobId' in payload)) {
-      throw new Error('Resposta inválida do servidor');
+      throw new Error(i18n.t('documentSend:analysisError.respostaInvalida'));
     }
 
     const result = payload as AnalyzePdfResponse;
@@ -600,7 +647,7 @@ export async function analyzePdf(
 
   if (response.status === 202) {
     if (!payload || !('jobId' in payload) || payload.status !== 'queued') {
-      throw new Error('Resposta inválida do servidor (fila assíncrona)');
+      throw new Error(i18n.t('documentSend:analysisError.respostaInvalidaFila'));
     }
 
     const queued = payload as AnalyzePdfEnqueueResponse;
@@ -620,14 +667,17 @@ export async function analyzePdf(
   if (!response.ok) {
     const errorPayload: WorkflowErrorApiResponse | null =
       payload && 'error' in payload ? payload : payload && 'code' in payload ? payload : null;
-    const workflowError = parseWorkflowErrorPayload(errorPayload, 'Erro ao analisar documento');
+    const workflowError = parseWorkflowErrorPayload(
+      errorPayload,
+      i18n.t('documentSend:analysisError.analyzeFailed'),
+    );
     workflowError.requestId = workflowError.requestId ?? requestId;
     workflowError.endpoint = endpoint;
     throw new AnalyzePdfRequestError(workflowError);
   }
 
   if (!payload || !('jobId' in payload)) {
-    throw new Error('Resposta inválida do servidor');
+    throw new Error(i18n.t('documentSend:analysisError.respostaInvalida'));
   }
 
   const result = payload as AnalyzePdfResponse;

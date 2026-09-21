@@ -10,10 +10,10 @@ export type TourAccess = {
 
 export type TourStep = {
   id: string;
-  /** Título do cartão. */
-  title: string;
-  /** Corpo do cartão — uma ou duas frases, sem lista. */
-  body: string;
+  /** Chave do título do cartão, em `tour.json`. */
+  titleKey: string;
+  /** Chave do corpo do cartão — uma ou duas frases, sem lista. */
+  bodyKey: string;
   /**
    * Rota a abrir antes de procurar o alvo. Sem rota, o passo acontece onde a
    * pessoa já está — é o caso dos que apontam para o rail e para a barra.

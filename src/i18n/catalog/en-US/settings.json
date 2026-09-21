@@ -1,0 +1,209 @@
+{
+  "accountSettingsSection": {
+    "acesso": "Access",
+    "fotoPapeisEDetalhes": "Photo, roles and account details.",
+    "identidade": "Identity",
+    "idiomaTemaEVisualizacao": "Language, theme and Library view.",
+    "preferencias": "Preferences",
+    "senhaEEMail": "Account password and email."
+  },
+  "authenticationSettingsSection": {
+    "alterarSenha": "Change password",
+    "aoTrocarASenha": "Changing the password ends every other active session."
+  },
+  "changeEmailCard": {
+    "codigoDeDesenvolvimento": "Development code:",
+    "confirmeSuaIdentidade": "Confirm your identity",
+    "digiteOAbaixoOu": ". Type it below, or use the link from the same email.",
+    "enviamosUmCodigoDe": ". We sent a 6-digit code to the new email before applying the change.",
+    "enviamosUmCodigoPara": "We sent a code to",
+    "novoEMail": "New email",
+    "oEnderecoAtualE": "The current address is",
+    "senhaAtual": "Current password",
+    "trocarEMail": "Change email",
+    "placeholderIndividual": "you@example.com",
+    "placeholderBusiness": "you@yourcompany.com",
+    "codeBlocked": "This code was blocked after too many attempts. Request a new one.",
+    "attemptsLeft_one": "{{count}} attempt left for this code.",
+    "attemptsLeft_other": "{{count}} attempts left for this code.",
+    "resendIn": "Resend in {{seconds}}s",
+    "resending": "Resending…",
+    "resend": "Resend code",
+    "confirming": "Confirming…",
+    "confirmChange": "Confirm change",
+    "sending": "Sending…",
+    "requestChange": "Request email change"
+  },
+  "changePasswordForm": {
+    "confirmarNovaSenha": "Confirm new password",
+    "novaSenha": "New password",
+    "requisitosDaSenha": "Password requirements",
+    "senhaAtual": "Current password",
+    "req": {
+      "length": "At least 8 characters",
+      "letters": "Contains letters",
+      "numbers": "Contains numbers"
+    },
+    "strength": {
+      "empty": "Enter the new password",
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
+    "currentRequired": "Enter your current password.",
+    "tooShort": "The new password must be at least 8 characters.",
+    "mismatch": "The confirmation doesn't match the new password.",
+    "changed": "Password changed.",
+    "sessionExpired": "Your session expired. Please sign in again.",
+    "wrongCurrent": "Current password is incorrect.",
+    "changeFailed": "Couldn't change the password. Please try again.",
+    "changeFailedShort": "Couldn't change the password.",
+    "saving": "Saving…",
+    "submit": "Change password"
+  },
+  "confirmEmailChangePage": {
+    "changingFrom": "You are changing <old>{{current}}</old> to <new>{{next}}</new>.",
+    "confirmarNovoEMail": "Confirm new email",
+    "eMailAtualizado": "Email updated",
+    "irParaLogin": "Go to sign in",
+    "validandoLink": "Validating the link…",
+    "voltarAoLogin": "Back to sign in",
+    "invalidLinkTitle": "Invalid link",
+    "incompleteLink": "The confirmation link is incomplete.",
+    "validateFailedTitle": "Couldn't validate the link",
+    "notCompletedTitle": "Confirmation not completed",
+    "confirming": "Confirming…",
+    "confirmChange": "Confirm change",
+    "success": "Email changed. Sign in again with the new address."
+  },
+  "nav": {
+    "contaLabel": "My account",
+    "contaDescription": "Identity, appearance and access",
+    "organizacaoDescription": "Upload, retention and governance"
+  },
+  "organizationSection": {
+    "alteracoesEm": "Changes in",
+    "armazenamento": "Storage",
+    "envioEIa": "Upload and AI",
+    "governanca": "Governance",
+    "impactamClassificacaoAutomaticaAlertas": "affect automatic classification, alerts and permissions in the Library.",
+    "ondeAClassificacaoOs": "Where classification, workflows and visibility are defined.",
+    "porQuantoTempoUm": "How long a deleted document stays recoverable.",
+    "regras": "Rules",
+    "retencaoDaLixeira": "Trash retention",
+    "uploadAiDescription": {
+      "business": "Applies to the whole organization: when the AI renames the file and when an upload stops for review.",
+      "individual": "Applies to all your documents: when the AI renames the file and when an upload stops for review."
+    },
+    "storageDescription": {
+      "business": "How much space the company's documents already take up.",
+      "individual": "How much space your account's documents already take up."
+    },
+    "rulesTitle": "Rules and governance",
+    "rulesDescription": "Classification policies, approval flows and mapping between categories and groups.",
+    "openRules": "Open Rules",
+    "groupsTitle": "Access groups",
+    "groupsDescription": "Groups linked to visibility rules and permissions by area.",
+    "manageUsers": "Manage users"
+  },
+  "preferencesSettingsSection": {
+    "aplicadoAoAbrirA": "Applied when opening the Library with no preference in the URL.",
+    "padraoClaroOuEscuro": "Standard, light or dark. Saved in this browser.",
+    "tema": "Theme",
+    "temaDaInterface": "Interface theme",
+    "visualizacaoPadraoDaBiblioteca": "Default Library view",
+    "visualizacaoPadraoDaBiblioteca2": "Default Library view",
+    "view": {
+      "grid": "Grid",
+      "list": "List"
+    }
+  },
+  "profileSettingsSection": {
+    "alterarFoto": "Change photo",
+    "alterarFoto2": "Change photo",
+    "eMail": "Email",
+    "jpgPngOuWebp": "JPG, PNG or WebP · up to 5 MB",
+    "nome": "First name",
+    "organizacao": "Organization",
+    "papeis": "Roles",
+    "removerFoto": "Remove photo",
+    "sobrenome": "Last name",
+    "identitySaved": "Identity saved",
+    "identitySavedMessage": "Your name now appears like this in the app.",
+    "saveFailed": "Couldn't save",
+    "tryAgain": "Please try again.",
+    "photoUploadFailed": "Couldn't upload the photo.",
+    "photoRemoveFailed": "Couldn't remove the photo.",
+    "saving": "Saving…",
+    "saveIdentity": "Save identity"
+  },
+  "settingsLayout": {
+    "conteudoDaSecaoDe": "Settings section content",
+    "navegacaoDeConfiguracoes": "Settings navigation"
+  },
+  "settingsSaveBar": {
+    "acoesDeSalvamento": "Save actions",
+    "save": "Save settings",
+    "discard": "Discard",
+    "unsaved": "Unsaved changes",
+    "allSaved": "All saved",
+    "saving": "Saving…"
+  },
+  "settingsSidebarNav": {
+    "secoesDeConfiguracoes": "Settings sections",
+    "secoesDeConfiguracoes2": "Settings sections"
+  },
+  "storageUsageSection": {
+    "armazenamentoUsado": "Storage used",
+    "arquivosOriginais": "Original files",
+    "carregandoUsoDoArmazenamento": "Loading storage usage…",
+    "naoFoiPossivelCarregar": "Could not load the storage usage. Reload the page to try again.",
+    "ofQuota": "of {{quota}}",
+    "preVisualizacoes": "Previews",
+    "percentUsed": "{{percent}} of space used",
+    "noQuota": "No storage limit set."
+  },
+  "toast": {
+    "salvo": "Settings saved",
+    "falhaSalvar": "Could not save",
+    "falhaSalvarMessage": "Try again.",
+    "salvoMessage": {
+      "business": "The changes already apply to the whole organization.",
+      "individual": "The changes already apply to all your documents."
+    }
+  },
+  "trashRetentionSettingsSection": {
+    "aumentarDias": "Increase days",
+    "carregandoConfiguracoes": "Loading settings…",
+    "defineSeAposO": "Sets whether documents in the trash move automatically to Deactivated once the deadline passes.",
+    "desativarAutomaticamenteAposPeriodo": "Deactivate automatically after the period",
+    "diasNaLixeira": "Days in the trash",
+    "diasNaLixeira2": "Days in the trash",
+    "diminuirDias": "Decrease days",
+    "entre1E365": "Between 1 and 365 days. After that, the document is deactivated (R2/Mongo are kept).",
+    "modoDeRetencao": "Retention mode",
+    "retencaoManualSemDesativacao": "Manual retention (no automatic deactivation)",
+    "previewManual": "Deleted files stay in the trash until they're deactivated manually or by the retention job.",
+    "previewDays_one": "After {{count}} day in the trash, the document is deactivated (not deleted from storage). Administrators can recover it from Deactivated.",
+    "previewDays_other": "After {{count}} days in the trash, the document is deactivated (not deleted from storage). Administrators can recover it from Deactivated."
+  },
+  "uploadAiSettingsSection": {
+    "quemDefineEstaPolitica": "This policy is set by the organization administrator. It decides when the AI renames your file and when the upload stops for review.",
+    "summaryDraft": "Draft summary",
+    "summaryCurrent": "Current summary",
+    "inEffect": "In effect",
+    "autoDelay": "Auto {{seconds}}s",
+    "manualReview": "Manual review"
+  },
+  "settingsPage": {
+    "eyebrow": "Settings"
+  },
+  "settingsRegisterList": {
+    "open": "Open"
+  },
+  "profileAvatar": {
+    "invalidType": "Use JPG, PNG or WebP.",
+    "tooLarge": "The image must be 5 MB or smaller.",
+    "notAllowed": "SVG and GIF aren't allowed."
+  }
+}

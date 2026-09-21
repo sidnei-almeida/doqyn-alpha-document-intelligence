@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { i18n } from '@/i18n';
 import { decideInboundShare, fetchInboundShares } from '../api/inboundSharesApi';
 
 export const INBOUND_SHARES_QUERY_KEY = ['inbound-shares'] as const;
@@ -29,17 +30,17 @@ export function useInboundShareDecision() {
     onSuccess: async (_result, variables) => {
       toast.success(
         variables.decision === 'accept'
-          ? 'Documento aceito. Ele já aparece em Compartilhados comigo.'
-          : 'Documento recusado.',
+          ? i18n.t('sharing:toast.inboundAccepted', {
+              section: i18n.t('common:nav.compartilhados'),
+            })
+          : i18n.t('sharing:toast.inboundDeclined'),
       );
       await queryClient.invalidateQueries({ queryKey: INBOUND_SHARES_QUERY_KEY });
       await queryClient.invalidateQueries({ queryKey: ['shared-with-me'] });
       await queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
     onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : 'Não foi possível registrar sua decisão.',
-      );
+      toast.error(error instanceof Error ? error.message : i18n.t('sharing:toast.decisionFailed'));
     },
   });
 }

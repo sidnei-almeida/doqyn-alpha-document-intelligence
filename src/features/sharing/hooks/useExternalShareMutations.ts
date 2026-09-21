@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { showApiErrorToast } from '@/shared/feedback/appFeedback';
@@ -34,6 +35,7 @@ export function useExternalShareMutations(documentId: string | null) {
       canDownload?: boolean;
       expiresAt?: string;
       message?: string;
+      recipientLocale?: string;
     }) =>
       createDocumentExternalShare(documentId!, {
         recipientEmail: input.recipientEmail,
@@ -43,27 +45,28 @@ export function useExternalShareMutations(documentId: string | null) {
         permissions: { canView: true, canDownload: input.canDownload === true },
         expiresAt: input.expiresAt,
         message: input.message,
+        recipientLocale: input.recipientLocale,
       }),
     onSuccess: () => {
-      toast.success('Convite externo criado.');
+      toast.success(i18n.t('sharing:toast.conviteExternoCriado'));
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível criar o convite externo.'),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.createExternalFailed')),
     onSettled: invalidate,
   });
 
   const revokeExternalShare = useMutation({
     mutationFn: (shareId: string) => revokeDocumentExternalShare(documentId!, shareId),
-    onSuccess: () => toast.success('Acesso externo revogado.'),
-    onError: (error) => showApiErrorToast(error, 'Não foi possível revogar o acesso externo.'),
+    onSuccess: () => toast.success(i18n.t('sharing:toast.acessoExternoRevogado')),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.revokeExternalFailed')),
     onSettled: invalidate,
   });
 
   const regenerateExternalShare = useMutation({
     mutationFn: (shareId: string) => regenerateDocumentExternalShare(documentId!, shareId),
     onSuccess: () => {
-      toast.success('Novo link de convite gerado.');
+      toast.success(i18n.t('sharing:toast.novoLinkGerado'));
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível renovar o convite externo.'),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.regenerateExternalFailed')),
     onSettled: invalidate,
   });
 

@@ -6,6 +6,7 @@ import { cn, formatDateTime } from '@/lib/utils';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { listDocumentVersions } from '@/features/documents/api/documentsApi';
 import type { DocumentListItem } from '@/types/document-library';
+import { useTranslation } from 'react-i18next';
 
 type DocumentVersionHistoryPanelProps = {
   document: DocumentListItem;
@@ -18,6 +19,8 @@ export function DocumentVersionHistoryPanel({
   onPreviewVersion,
   fillHeight = false,
 }: DocumentVersionHistoryPanelProps) {
+  const { t } = useTranslation('library');
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['document-versions', document.documentId],
     queryFn: () => listDocumentVersions(document.documentId),
@@ -25,15 +28,21 @@ export function DocumentVersionHistoryPanel({
   });
 
   if (isLoading) {
-    return <p className="py-2 text-[12px] text-doqyn-muted">Carregando histórico de versões...</p>;
+    return (
+      <p className="py-2 text-[12px] text-doqyn-muted">
+        {t('documentVersionHistoryPanel.carregandoHistoricoDeVersoes')}
+      </p>
+    );
   }
 
   if (isError || !data) {
     return (
       <div className="space-y-2 py-2">
-        <p className="text-[12px] text-doqyn-danger">Não foi possível carregar o histórico.</p>
+        <p className="text-[12px] text-doqyn-danger">
+          {t('documentVersionHistoryPanel.naoFoiPossivelCarregar')}
+        </p>
         <Button type="button" size="sm" variant="secondary" onClick={() => void refetch()}>
-          Tentar novamente
+          {t('documentVersionHistoryPanel.tentarNovamente')}
         </Button>
       </div>
     );
@@ -42,7 +51,8 @@ export function DocumentVersionHistoryPanel({
   return (
     <div className={cn('flex flex-col', fillHeight && 'min-h-0 flex-1')}>
       <p className="mb-2 shrink-0 text-[12px] text-doqyn-muted">
-        {data.versionCount} versão{data.versionCount === 1 ? '' : 'ões'} · atual{' '}
+        {t('documentVersionHistoryPanel.versionCount', { count: data.versionCount })}{' '}
+        {t('documentVersionHistoryPanel.atual')}{' '}
         <span className="font-medium text-doqyn-text">{data.currentVersionLabel}</span>
       </p>
 
@@ -67,7 +77,7 @@ export function DocumentVersionHistoryPanel({
                 />
                 {version.isCurrent && (
                   <span className="text-[10px] uppercase tracking-wide text-doqyn-primary">
-                    atual
+                    {t('documentVersionHistoryPanel.current')}
                   </span>
                 )}
               </div>
@@ -86,7 +96,7 @@ export function DocumentVersionHistoryPanel({
                 variant="ghost"
                 className="shrink-0"
                 onClick={() => onPreviewVersion(version.versionId)}
-                title="Visualizar esta versão"
+                title={t('documentVersionHistoryPanel.visualizarEstaVersao')}
               >
                 <Icon name="visibility" size={ICON_SIZE.sm} />
               </Button>

@@ -1,0 +1,7 @@
+
+================================================================================
+Reparo de normalizedValue decapitado
+================================================================================
+Database: doqyn_test
+Modo: DRY-RUN
+Coleção document_versions não existe. Nada a fazer.

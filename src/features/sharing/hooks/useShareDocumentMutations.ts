@@ -9,6 +9,7 @@ import {
   searchShareableUsers,
 } from '../api/shareApi';
 import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
+import { i18n } from '@/i18n';
 
 export function useDocumentShares(documentId: string | null, enabled = true) {
   return useQuery({
@@ -61,17 +62,17 @@ export function useShareDocumentMutations(documentId: string | null) {
     onSuccess: (_result, input) =>
       toast.success(
         input.sharedWithEmail || input.sharedWithUsername
-          ? 'Enviado. A pessoa precisa aceitar antes de ver o documento.'
-          : 'Documento compartilhado.',
+          ? i18n.t('sharing:toast.sentPendingAcceptance')
+          : i18n.t('sharing:toast.documentShared'),
       ),
-    onError: (error) => showApiErrorToast(error, 'Não foi possível compartilhar o documento.'),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.shareFailed')),
     onSettled: invalidate,
   });
 
   const revokeShare = useMutation({
     mutationFn: (shareId: string) => revokeDocumentShare(documentId!, shareId),
-    onSuccess: () => toast.success('Compartilhamento revogado.'),
-    onError: (error) => showApiErrorToast(error, 'Não foi possível revogar o compartilhamento.'),
+    onSuccess: () => toast.success(i18n.t('sharing:toast.compartilhamentoRevogado')),
+    onError: (error) => showApiErrorToast(error, i18n.t('sharing:toast.revokeShareFailed')),
     onSettled: invalidate,
   });
 

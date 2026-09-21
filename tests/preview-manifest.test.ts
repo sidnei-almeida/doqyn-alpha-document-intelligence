@@ -132,7 +132,7 @@ describe('preview manifest frontend', () => {
 
   it('botão download depende de canDownload no manifest', () => {
     assert.match(modalSource, /permissions\.canDownload/);
-    assert.match(modalSource, /Visualização protegida/);
+    assert.match(modalSource, /\.visualizacaoProtegida/);
   });
 
   it('hooks limpam objectURL', () => {

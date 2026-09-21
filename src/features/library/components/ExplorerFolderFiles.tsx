@@ -4,6 +4,7 @@ import { ExplorerFileListScope } from '../context/ExplorerActionsContext';
 import { FileRow } from './FileRow';
 import { FileGridView } from './FileGridView';
 import type { LibraryViewMode } from '../types/library';
+import { useTranslation } from 'react-i18next';
 
 type ExplorerFolderFilesProps = {
   documents: DocumentListItem[];
@@ -16,6 +17,8 @@ const HEADER_CELL = 'px-3 py-1.5 text-left font-normal';
  * Área de arquivos dentro de uma pasta — lista/grade sem cara de tabela administrativa.
  */
 export function ExplorerFolderFiles({ documents, viewMode }: ExplorerFolderFilesProps) {
+  const { t } = useTranslation('library');
+
   const orderedIds = useMemo(() => documents.map((doc) => doc.documentId), [documents]);
 
   if (viewMode === 'grid') {
@@ -36,20 +39,23 @@ export function ExplorerFolderFiles({ documents, viewMode }: ExplorerFolderFiles
         data-testid="library-file-table"
       >
         <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
-          <table className="explorer-row-gap w-full" aria-label="Arquivos da pasta">
+          <table
+            className="explorer-row-gap w-full"
+            aria-label={t('explorerFolderFiles.arquivosDaPasta')}
+          >
             <thead>
               <tr className="text-[11px] font-normal text-doqyn-subtle">
                 <th scope="col" className={HEADER_CELL}>
-                  Nome
+                  {t('explorerFolderFiles.nome')}
                 </th>
                 <th scope="col" className={`${HEADER_CELL} hidden w-[140px] md:table-cell`}>
-                  Modificado
+                  {t('explorerFolderFiles.modificado')}
                 </th>
                 <th scope="col" className={`${HEADER_CELL} hidden w-[100px] sm:table-cell`}>
-                  Status
+                  {t('explorerFolderFiles.status')}
                 </th>
                 <th scope="col" className={`${HEADER_CELL} w-10`}>
-                  <span className="sr-only">Ações</span>
+                  <span className="sr-only">{t('explorerFolderFiles.acoes')}</span>
                 </th>
               </tr>
             </thead>
@@ -67,11 +73,13 @@ export function ExplorerFolderFiles({ documents, viewMode }: ExplorerFolderFiles
 
 /** Placeholder de carregamento — silhueta de lista explorador. */
 export function FileTableSkeleton() {
+  const { t } = useTranslation('library');
+
   return (
     <div
       className="min-h-0 flex-1 overflow-hidden"
       role="status"
-      aria-label="Carregando documentos"
+      aria-label={t('explorerFolderFiles.carregandoDocumentos')}
       data-testid="explorer-folder-files-skeleton"
     >
       <div className="space-y-1 px-1">

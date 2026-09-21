@@ -1,9 +1,11 @@
+import { formatNumber } from '@/i18n/formats';
 import { cn } from '@/lib/utils';
 import { fileDropzoneProps } from '@/features/upload/drag-drop/useGlobalDragDrop';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useCallback, useState } from 'react';
 import { LeadDetail } from '@/components/ui/LeadDetail';
+import { useTranslation } from 'react-i18next';
 
 interface UploadDropzoneProps {
   onFileSelect: (file: File) => void;
@@ -20,6 +22,8 @@ export function UploadDropzone({
   className,
   accept = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg',
 }: UploadDropzoneProps) {
+  const { t } = useTranslation('components');
+
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDrop = useCallback(
@@ -51,7 +55,13 @@ export function UploadDropzone({
           </div>
           <div>
             <p className="text-sm font-medium text-doqyn-text">{selectedFile.name}</p>
-            <p className="text-xs text-doqyn-muted">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+            <p className="text-xs text-doqyn-muted">
+              {formatNumber(selectedFile.size / 1024, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })}{' '}
+              KB
+            </p>
           </div>
         </div>
         {onClear && (
@@ -89,10 +99,13 @@ export function UploadDropzone({
         <Icon name="upload" size={ICON_SIZE.md} className="text-doqyn-muted" />
       </div>
       <p className="mt-4 text-sm font-medium text-doqyn-text">
-        Arraste o documento ou clique para selecionar
+        {t('uploadDropzone.arrasteODocumentoOu')}
       </p>
       <p className="mt-1 text-xs text-doqyn-muted">
-        <LeadDetail lead="PDF, Word, Excel ou imagens" detail="até 25 MB" />
+        <LeadDetail
+          lead={t('uploadDropzone.formats')}
+          detail={t('uploadDropzone.maxSize', { size: '25 MB' })}
+        />
       </p>
     </label>
   );

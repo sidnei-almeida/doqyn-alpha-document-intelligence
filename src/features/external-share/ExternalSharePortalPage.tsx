@@ -19,6 +19,8 @@ import {
 } from '@/features/sharing/api/externalShareApi';
 import { GuestDocumentViewer } from './GuestDocumentViewer';
 import { useGuestPortalPageMeta } from '@/features/guest-portal/useGuestPortalPageMeta';
+import { formatDateTime } from '@/i18n/formats';
+import { useTranslation } from 'react-i18next';
 
 type PortalState =
   | { kind: 'loading' }
@@ -31,16 +33,12 @@ type PortalState =
     };
 
 function formatShareDate(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(iso);
 }
 
 function InviteLoadingState() {
+  const { t } = useTranslation('externalShare');
+
   return (
     <div className="guest-state" data-testid="external-share-loading">
       <Icon
@@ -48,20 +46,30 @@ function InviteLoadingState() {
         size={ICON_SIZE.md}
         className="animate-spin text-doqyn-muted"
       />
-      <p className="type-caption text-doqyn-subtle">Abrindo o convite…</p>
+      <p className="type-caption text-doqyn-subtle">
+        {t('externalSharePortalPage.abrindoOConvite')}
+      </p>
     </div>
   );
 }
 
 function InviteErrorState({ message, code }: { message: string; code?: string }) {
+  const { t } = useTranslation('externalShare');
+
   return (
     <section className="guest-card guest-card--narrow">
-      <p className="register-label text-doqyn-subtle">Convite indisponível</p>
-      <h1 className="guest-title">Este link não abre mais</h1>
+      <p className="register-label text-doqyn-subtle">
+        {t('externalSharePortalPage.conviteIndisponivel')}
+      </p>
+      <h1 className="guest-title">{t('externalSharePortalPage.esteLinkNaoAbre')}</h1>
       <p className="type-body mt-3 text-doqyn-muted">{message}</p>
-      {code ? <p className="register-label mt-4 text-doqyn-subtle">Código {code}</p> : null}
+      {code ? (
+        <p className="register-label mt-4 text-doqyn-subtle">
+          {t('externalSharePortalPage.codigo')} {code}
+        </p>
+      ) : null}
       <p className="type-caption mt-6 text-doqyn-subtle">
-        Peça um novo link a quem compartilhou o documento com você.
+        {t('externalSharePortalPage.pecaUmNovoLink')}
       </p>
     </section>
   );
@@ -78,37 +86,53 @@ function PendingInvitePanel({
   onAccept: () => void;
   accepting?: boolean;
 }) {
+  const { t } = useTranslation('externalShare');
+
   return (
     <section className="guest-card">
-      <p className="register-label text-doqyn-subtle">Convite de acesso</p>
+      <p className="register-label text-doqyn-subtle">
+        {t('externalSharePortalPage.conviteDeAcesso')}
+      </p>
 
       <TruncatedText as="h2" className="guest-title mt-2">
         {payload.document.displayName}
       </TruncatedText>
 
       <p className="type-body mt-2 text-doqyn-muted">
-        {payload.sharedByName} compartilhou este documento com você em {payload.ownerTenantName}.
+        {t('externalSharePortalPage.sharedWithYouIn', {
+          name: payload.sharedByName,
+          tenant: payload.ownerTenantName,
+        })}
       </p>
 
       <dl className="guest-register">
         <GuestRegisterRow
-          label="Categoria"
-          value={payload.document.categoryName || 'Sem categoria'}
+          label={t('externalSharePortalPage.categoria')}
+          value={payload.document.categoryName || t('externalSharePortalPage.noCategory')}
         />
         {payload.document.versionLabel ? (
-          <GuestRegisterRow label="Versão" value={payload.document.versionLabel} />
+          <GuestRegisterRow
+            label={t('externalSharePortalPage.versao')}
+            value={payload.document.versionLabel}
+          />
         ) : null}
-        <GuestRegisterRow label="Compartilhado em" value={formatShareDate(payload.sharedAt)} />
+        <GuestRegisterRow
+          label={t('externalSharePortalPage.compartilhadoEm')}
+          value={formatShareDate(payload.sharedAt)}
+        />
         {expiresLabel ? (
-          <GuestRegisterRow label="Acesso até" value={expiresLabel} tone="warning" />
+          <GuestRegisterRow
+            label={t('externalSharePortalPage.acessoAte')}
+            value={expiresLabel}
+            tone="warning"
+          />
         ) : null}
       </dl>
 
       {payload.message ? <blockquote className="guest-quote">{payload.message}</blockquote> : null}
 
       <p className="type-caption mt-6 text-doqyn-subtle">
-        O acesso vale só para este documento, fica registrado em nome do seu e-mail e pode ser
-        encerrado a qualquer momento por quem compartilhou.
+        {t('externalSharePortalPage.oAcessoValeSo')}
       </p>
 
       <div className="guest-actions">
@@ -118,7 +142,9 @@ function PendingInvitePanel({
           disabled={accepting}
           data-testid="external-share-accept"
         >
-          {accepting ? 'Abrindo…' : 'Aceitar e abrir documento'}
+          {t(
+            accepting ? 'externalSharePortalPage.opening' : 'externalSharePortalPage.acceptAndOpen',
+          )}
         </Button>
       </div>
     </section>
@@ -126,6 +152,8 @@ function PendingInvitePanel({
 }
 
 export function ExternalSharePortalPage() {
+  const { t } = useTranslation('externalShare');
+
   const { token = '' } = useParams();
   const [portal, setPortal] = useState<PortalState>({ kind: 'loading' });
   const [downloading, setDownloading] = useState(false);
@@ -133,8 +161,8 @@ export function ExternalSharePortalPage() {
   const pageMeta = useMemo(() => {
     if (portal.kind !== 'ready') {
       return {
-        title: 'Compartilhamento · DOQYN',
-        description: 'Acesse um documento compartilhado com segurança no DOQYN.',
+        title: t('externalSharePortalPage.meta.title'),
+        description: t('externalSharePortalPage.meta.description'),
         imagePath: '/og/portal-card-share.png',
       };
     }
@@ -147,20 +175,26 @@ export function ExternalSharePortalPage() {
       title: `${payload.document.displayName}${versionSuffix} · DOQYN`,
       description:
         payload.status === 'pending'
-          ? `${payload.sharedByName} convidou você a acessar um documento em ${payload.ownerTenantName}.`
-          : `${payload.sharedByName} compartilhou um documento com você via ${payload.ownerTenantName}.`,
+          ? t('externalSharePortalPage.invitedByTenant', {
+              name: payload.sharedByName,
+              tenant: payload.ownerTenantName,
+            })
+          : t('externalSharePortalPage.sharedByTenant', {
+              name: payload.sharedByName,
+              tenant: payload.ownerTenantName,
+            }),
       // Cartão de marca, nunca o documento: a imagem de prévia é buscada sem autenticação por
       // quem monta o card do link, e o resultado fica visível para todo o grupo onde ele for
       // colado.
       imagePath: '/og/portal-card-share.png',
     };
-  }, [portal]);
+  }, [portal, t]);
 
   useGuestPortalPageMeta(pageMeta);
 
   useEffect(() => {
     if (!token) {
-      setPortal({ kind: 'error', message: 'Link inválido.' });
+      setPortal({ kind: 'error', message: t('externalSharePortalPage.invalidLink') });
       return;
     }
 
@@ -180,7 +214,7 @@ export function ExternalSharePortalPage() {
       } catch (error) {
         if (cancelled) return;
         const message =
-          error instanceof Error ? error.message : 'Não foi possível abrir este compartilhamento.';
+          error instanceof Error ? error.message : t('externalSharePortalPage.openFailed');
         const code =
           typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
         setPortal({ kind: 'error', message, code });
@@ -191,7 +225,7 @@ export function ExternalSharePortalPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   const expiresLabel = useMemo(() => {
     if (portal.kind !== 'ready' || !portal.payload.expiresAt) return null;
@@ -208,7 +242,7 @@ export function ExternalSharePortalPage() {
       setPortal({ kind: 'ready', payload, manifest });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Não foi possível aceitar este convite.';
+        error instanceof Error ? error.message : t('externalSharePortalPage.acceptFailed');
       const code =
         typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined;
       setPortal({ kind: 'error', message, code });
@@ -229,7 +263,8 @@ export function ExternalSharePortalPage() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = portal.payload.document.displayName || 'documento';
+      anchor.download =
+        portal.payload.document.displayName || t('externalSharePortalPage.downloadFileName');
       anchor.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -258,13 +293,13 @@ export function ExternalSharePortalPage() {
   return (
     <div data-testid="external-share-portal">
       <GuestPortalShell
-        subtitle="Acesso seguro a documento"
+        subtitle={t('externalSharePortalPage.subtitle')}
         headerAside={
           portal.kind === 'ready' && isPendingInvite ? (
-            <GuestSeal>Aguardando aceite</GuestSeal>
+            <GuestSeal>{t('externalSharePortalPage.aguardandoAceite')}</GuestSeal>
           ) : null
         }
-        footNote="Acesso limitado a este documento. O link pode ser revogado a qualquer momento por quem compartilhou."
+        footNote={t('externalSharePortalPage.footNote')}
       >
         {portal.kind === 'loading' ? <InviteLoadingState /> : null}
         {portal.kind === 'error' ? (

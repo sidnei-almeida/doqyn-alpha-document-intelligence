@@ -5,6 +5,7 @@ import type { PerItemNamingChoice, WorkflowReviewSettings } from '../types/revie
 import { policyRequiresPerItemChoice } from '../utils/reviewWorkflowSettings';
 import type { DocumentNamingMode } from '../utils/resolveDocumentNaming';
 import { previewFinalFileName } from '../utils/resolveDocumentNaming';
+import { useTranslation } from 'react-i18next';
 
 interface DocumentNamingSectionProps {
   settings: WorkflowReviewSettings;
@@ -15,21 +16,22 @@ interface DocumentNamingSectionProps {
   className?: string;
 }
 
-const MODES: Array<{ id: DocumentNamingMode; label: string; description: string }> = [
+/** Chaves do namespace `documentSend`; a tela traduz. */
+const MODES: Array<{ id: DocumentNamingMode; labelKey: string; descriptionKey: string }> = [
   {
     id: 'ai_suggested',
-    label: 'Nome sugerido pela IA',
-    description: 'Padrão recomendado com metadados extraídos.',
+    labelKey: 'namingMode.aiSuggested.label',
+    descriptionKey: 'namingMode.aiSuggested.description',
   },
   {
     id: 'original',
-    label: 'Nome original do upload',
-    description: 'Mantém o arquivo como enviado (sanitizado).',
+    labelKey: 'namingMode.original.label',
+    descriptionKey: 'namingMode.original.description',
   },
   {
     id: 'manual',
-    label: 'Nome manual',
-    description: 'Digite o nome final desejado.',
+    labelKey: 'namingMode.manual.label',
+    descriptionKey: 'namingMode.manual.description',
   },
 ];
 
@@ -41,6 +43,8 @@ export function DocumentNamingSection({
   onPerItemChoiceChange,
   className,
 }: DocumentNamingSectionProps) {
+  const { t } = useTranslation('documentSend');
+
   const manualRequired = settings.defaultNamingPolicy === 'manual_required';
   const askEachFile = policyRequiresPerItemChoice(settings.defaultNamingPolicy);
   const showPerItemRadios = askEachFile && !manualRequired;
@@ -80,17 +84,23 @@ export function DocumentNamingSection({
       )}
     >
       <div>
-        <p className="text-xs font-medium text-doqyn-text">Nome do arquivo salvo</p>
+        <p className="text-xs font-medium text-doqyn-text">
+          {t('documentNamingSection.nomeDoArquivoSalvo')}
+        </p>
         {!settings.aiRenameEnabled && (
           <p className="mt-1 text-micro text-doqyn-muted">
-            Sugestão da IA (opcional):{' '}
+            {t('documentNamingSection.sugestaoDaIaOpcional')}{' '}
             <span className="font-mono text-doqyn-text">{aiSuggestedFileName || '—'}</span>
           </p>
         )}
       </div>
 
       {showPerItemRadios && (
-        <div className="space-y-2" role="radiogroup" aria-label="Modo de nomeação do arquivo">
+        <div
+          className="space-y-2"
+          role="radiogroup"
+          aria-label={t('documentNamingSection.modoDeNomeacaoDo')}
+        >
           {MODES.map((mode) => {
             const disabled = !settings.aiRenameEnabled && mode.id !== 'original';
             return (
@@ -100,8 +110,8 @@ export function DocumentNamingSection({
                 checked={effectiveMode === mode.id}
                 disabled={disabled}
                 onChange={() => setMode(mode.id)}
-                label={mode.label}
-                description={mode.description}
+                label={t(mode.labelKey)}
+                description={t(mode.descriptionKey)}
                 wrapperClassName={cn(
                   'rounded-md border px-3 py-2 transition-colors',
                   effectiveMode === mode.id
@@ -119,13 +129,15 @@ export function DocumentNamingSection({
         <Input
           value={perItemChoice.manualName ?? ''}
           onChange={(event) => setManualName(event.target.value)}
-          placeholder="Digite o nome final do arquivo"
+          placeholder={t('documentNamingSection.digiteONomeFinal')}
           className="text-sm"
         />
       )}
 
       <div className="rounded-md border border-doqyn-border-subtle bg-doqyn-bg/50 px-3 py-2">
-        <p className="text-eyebrow uppercase text-doqyn-muted">Preview do nome final</p>
+        <p className="text-eyebrow uppercase text-doqyn-muted">
+          {t('documentNamingSection.previewDoNomeFinal')}
+        </p>
         <p className="mt-1 break-all font-mono text-xs text-doqyn-text">{finalPreview}</p>
       </div>
     </div>

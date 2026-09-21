@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { buildDocumentListQuery } from '../server/utils/documentListQuery.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,8 +99,10 @@ describe('document move — tracking', () => {
   });
 
   it('tracking display inclui document.moved', () => {
-    const display = read('src/features/tracking/utils/trackingDisplay.ts');
-    assert.ok(display.includes("'document.moved'"));
+    // A frase do evento saiu do código e foi para o catálogo na extração de i18n. O que este
+    // teste sempre verificou — que existe rótulo para esta ação — agora se prova lá.
+    const catalog = read('src/i18n/catalog/pt-BR/tracking.json');
+    assert.ok(JSON.parse(catalog).actionLabel.document.moved);
   });
 });
 
@@ -107,9 +110,9 @@ describe('document move — frontend', () => {
   it('MoveDocumentModal lista categorias e confirma destino', () => {
     const modal = read('src/features/library/components/MoveDocumentModal.tsx');
     assert.ok(modal.includes('move-document-modal'));
-    assert.ok(modal.includes('Categoria atual'));
-    assert.ok(modal.includes('Mover para'));
-    assert.ok(modal.includes('Buscar categoria'));
+    assert.ok(modal.includes('.categoriaAtual'));
+    assert.ok(modal.includes('moveDocumentModal.moveTo'));
+    assert.ok(modal.includes('.buscarCategoria2'));
   });
 
   it('moveApi chama endpoints corretos', () => {
@@ -129,7 +132,7 @@ describe('document move — frontend', () => {
   it('toolbar desabilita Mover com pasta selecionada', () => {
     const toolbar = read('src/features/library/components/BulkSelectionToolbar.tsx');
     assert.ok(toolbar.includes('drive_file_move'));
-    assert.ok(toolbar.includes('Selecione apenas documentos para mover'));
+    assert.ok(toolbar.includes('.onlyDocumentsMove'));
     assert.ok(toolbar.includes('hasFolderSelection'));
   });
 
@@ -159,7 +162,9 @@ describe('document move — frontend', () => {
 
 describe('document move — listDocuments', () => {
   it('filtro por categoryId usa classId no Mongo', () => {
-    const service = read('server/services/documentService.ts');
-    assert.ok(service.includes('query.classId = filters.categoryId'));
+    const query = buildDocumentListQuery({ tenantId: 'tenant_a' }, { categoryId: 'cat_1' });
+
+    assert.equal(query.classId, 'cat_1');
+    assert.equal(query.categoryId, undefined);
   });
 });

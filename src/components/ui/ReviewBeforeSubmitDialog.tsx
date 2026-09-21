@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { safeDisplayValue } from '@/lib/reviewDisplay';
+import { useTranslation } from 'react-i18next';
 
 export type ReviewField = {
   label: string;
@@ -45,13 +46,17 @@ export function ReviewBeforeSubmitDialog({
   sections,
   attentionMessage,
   submitting = false,
-  confirmLabel = 'Confirmar e enviar',
-  cancelLabel = 'Voltar',
+  confirmLabel: confirmLabelProp,
+  cancelLabel: cancelLabelProp,
   editLabel,
   onCancel,
   onEdit,
   onConfirm,
 }: ReviewBeforeSubmitDialogProps) {
+  const { t } = useTranslation('components');
+  const confirmLabel = confirmLabelProp ?? t('reviewBeforeSubmitDialog.confirm');
+  const cancelLabel = cancelLabelProp ?? t('common:actions.back');
+
   return (
     <Modal
       open={open}
@@ -73,7 +78,7 @@ export function ReviewBeforeSubmitDialog({
             {cancelLabel}
           </Button>
           <Button type="button" size="sm" onClick={onConfirm} disabled={submitting}>
-            {submitting ? 'Enviando…' : confirmLabel}
+            {submitting ? t('reviewBeforeSubmitDialog.submitting') : confirmLabel}
           </Button>
         </>
       }

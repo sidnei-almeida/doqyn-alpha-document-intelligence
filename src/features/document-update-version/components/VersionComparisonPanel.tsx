@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { VersionComparisonRow } from '../types';
+import { useTranslation } from 'react-i18next';
 
 type VersionComparisonPanelProps = {
   rows: VersionComparisonRow[];
@@ -12,6 +13,8 @@ export function VersionComparisonPanel({
   currentVersionLabel,
   nextVersionLabel,
 }: VersionComparisonPanelProps) {
+  const { t } = useTranslation('documentVersion');
+
   return (
     <section
       className="rounded-xl border border-doqyn-border-subtle bg-doqyn-surface/50 p-3"
@@ -19,7 +22,7 @@ export function VersionComparisonPanel({
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-[11px] font-medium uppercase tracking-wide text-doqyn-muted">
-          Comparar versões
+          {t('versionComparisonPanel.compararVersoes')}
         </p>
         <p className="shrink-0 text-[10px] text-doqyn-muted">
           {currentVersionLabel} →{' '}
@@ -38,20 +41,26 @@ export function VersionComparisonPanel({
             data-changed={row.changed ? 'true' : 'false'}
           >
             <div className="flex items-center gap-2">
-              <p className="text-[11px] font-medium text-doqyn-text">{row.label}</p>
+              <p className="text-[11px] font-medium text-doqyn-text">
+                {row.labelKey ? t(row.labelKey) : row.label}
+              </p>
               {row.changed && (
                 <span className="text-[9px] uppercase tracking-wide text-doqyn-warning">
-                  alterado
+                  {t('versionComparisonPanel.changed')}
                 </span>
               )}
             </div>
             <div className="mt-1.5 grid gap-1.5 text-[11px]">
               <div className="flex min-w-0 items-baseline gap-2">
-                <span className="w-12 shrink-0 text-doqyn-muted">Atual</span>
+                <span className="w-12 shrink-0 text-doqyn-muted">
+                  {t('versionComparisonPanel.atual')}
+                </span>
                 <span className="min-w-0 break-all text-doqyn-muted">{row.currentValue}</span>
               </div>
               <div className="flex min-w-0 items-baseline gap-2">
-                <span className="w-12 shrink-0 text-doqyn-muted">Nova</span>
+                <span className="w-12 shrink-0 text-doqyn-muted">
+                  {t('versionComparisonPanel.nova')}
+                </span>
                 <span className="min-w-0 break-all text-doqyn-text">{row.newValue}</span>
               </div>
             </div>

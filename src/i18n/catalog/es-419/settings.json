@@ -1,0 +1,211 @@
+{
+  "accountSettingsSection": {
+    "acesso": "Acceso",
+    "fotoPapeisEDetalhes": "Foto, roles y detalles de la cuenta.",
+    "identidade": "Identidad",
+    "idiomaTemaEVisualizacao": "Idioma, tema y vista de la Biblioteca.",
+    "preferencias": "Preferencias",
+    "senhaEEMail": "Contraseña y correo de la cuenta."
+  },
+  "authenticationSettingsSection": {
+    "alterarSenha": "Cambiar contraseña",
+    "aoTrocarASenha": "Al cambiar la contraseña, las demás sesiones activas se cierran."
+  },
+  "changeEmailCard": {
+    "codigoDeDesenvolvimento": "Código de desarrollo:",
+    "confirmeSuaIdentidade": "Confirma tu identidad",
+    "digiteOAbaixoOu": ". Escríbelo abajo, o usa el enlace del mismo correo.",
+    "enviamosUmCodigoDe": ". Enviamos un código de 6 dígitos al nuevo correo antes de aplicar el cambio.",
+    "enviamosUmCodigoPara": "Enviamos un código a",
+    "novoEMail": "Nuevo correo",
+    "oEnderecoAtualE": "La dirección actual es",
+    "senhaAtual": "Contraseña actual",
+    "trocarEMail": "Cambiar correo",
+    "placeholderIndividual": "tu@ejemplo.com",
+    "placeholderBusiness": "tu@tuempresa.com",
+    "codeBlocked": "Este código se bloqueó por exceso de intentos. Pide uno nuevo.",
+    "attemptsLeft_one": "Te queda {{count}} intento con este código.",
+    "attemptsLeft_many": "Te quedan {{count}} intentos con este código.",
+    "attemptsLeft_other": "Te quedan {{count}} intentos con este código.",
+    "resendIn": "Reenviar en {{seconds}} s",
+    "resending": "Reenviando…",
+    "resend": "Reenviar código",
+    "confirming": "Confirmando…",
+    "confirmChange": "Confirmar cambio",
+    "sending": "Enviando…",
+    "requestChange": "Solicitar cambio de correo"
+  },
+  "changePasswordForm": {
+    "confirmarNovaSenha": "Confirmar la nueva contraseña",
+    "novaSenha": "Nueva contraseña",
+    "requisitosDaSenha": "Requisitos de la contraseña",
+    "senhaAtual": "Contraseña actual",
+    "req": {
+      "length": "Mínimo 8 caracteres",
+      "letters": "Contiene letras",
+      "numbers": "Contiene números"
+    },
+    "strength": {
+      "empty": "Escribe la nueva contraseña",
+      "weak": "Débil",
+      "medium": "Media",
+      "strong": "Fuerte"
+    },
+    "currentRequired": "Ingresa tu contraseña actual.",
+    "tooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "mismatch": "La confirmación no coincide con la nueva contraseña.",
+    "changed": "Contraseña cambiada.",
+    "sessionExpired": "Tu sesión expiró. Inicia sesión de nuevo.",
+    "wrongCurrent": "La contraseña actual es incorrecta.",
+    "changeFailed": "No fue posible cambiar la contraseña. Inténtalo de nuevo.",
+    "changeFailedShort": "No fue posible cambiar la contraseña.",
+    "saving": "Guardando…",
+    "submit": "Cambiar contraseña"
+  },
+  "confirmEmailChangePage": {
+    "changingFrom": "Estás cambiando <old>{{current}}</old> por <new>{{next}}</new>.",
+    "confirmarNovoEMail": "Confirmar el nuevo correo",
+    "eMailAtualizado": "Correo actualizado",
+    "irParaLogin": "Ir al inicio de sesión",
+    "validandoLink": "Validando el enlace…",
+    "voltarAoLogin": "Volver al inicio de sesión",
+    "invalidLinkTitle": "Enlace no válido",
+    "incompleteLink": "El enlace de confirmación está incompleto.",
+    "validateFailedTitle": "No fue posible validar el enlace",
+    "notCompletedTitle": "Confirmación no completada",
+    "confirming": "Confirmando…",
+    "confirmChange": "Confirmar cambio",
+    "success": "Correo cambiado. Inicia sesión de nuevo con la dirección nueva."
+  },
+  "nav": {
+    "contaLabel": "Mi cuenta",
+    "contaDescription": "Identidad, apariencia y acceso",
+    "organizacaoDescription": "Subida, retención y gobernanza"
+  },
+  "organizationSection": {
+    "alteracoesEm": "Los cambios en",
+    "armazenamento": "Almacenamiento",
+    "envioEIa": "Subida e IA",
+    "governanca": "Gobernanza",
+    "impactamClassificacaoAutomaticaAlertas": "afectan la clasificación automática, las alertas y los permisos en la Biblioteca.",
+    "ondeAClassificacaoOs": "Dónde se definen la clasificación, los flujos y la visibilidad.",
+    "porQuantoTempoUm": "Por cuánto tiempo un documento eliminado sigue siendo recuperable.",
+    "regras": "Reglas",
+    "retencaoDaLixeira": "Retención de la papelera",
+    "uploadAiDescription": {
+      "business": "Aplica a toda la organización: cuando la IA cambia el nombre del archivo y cuando la subida se detiene para revisión.",
+      "individual": "Aplica a todos tus documentos: cuando la IA cambia el nombre del archivo y cuando la subida se detiene para revisión."
+    },
+    "storageDescription": {
+      "business": "Lo que ya ocupan los documentos de la empresa.",
+      "individual": "Lo que ya ocupan los documentos de tu cuenta."
+    },
+    "rulesTitle": "Reglas y gobernanza",
+    "rulesDescription": "Políticas de clasificación, flujos de aprobación y mapeo entre categorías y grupos.",
+    "openRules": "Abrir Reglas",
+    "groupsTitle": "Grupos de acceso",
+    "groupsDescription": "Grupos vinculados a las reglas de visibilidad y los permisos por área.",
+    "manageUsers": "Gestionar usuarios"
+  },
+  "preferencesSettingsSection": {
+    "aplicadoAoAbrirA": "Se aplica al abrir la Biblioteca sin preferencia en la URL.",
+    "padraoClaroOuEscuro": "Estándar, claro u oscuro. Se guarda en este navegador.",
+    "tema": "Tema",
+    "temaDaInterface": "Tema de la interfaz",
+    "visualizacaoPadraoDaBiblioteca": "Vista predeterminada de la Biblioteca",
+    "visualizacaoPadraoDaBiblioteca2": "Vista predeterminada de la Biblioteca",
+    "view": {
+      "grid": "Cuadrícula",
+      "list": "Lista"
+    }
+  },
+  "profileSettingsSection": {
+    "alterarFoto": "Cambiar foto",
+    "alterarFoto2": "Cambiar foto",
+    "eMail": "Correo electrónico",
+    "jpgPngOuWebp": "JPG, PNG o WebP · hasta 5 MB",
+    "nome": "Nombre",
+    "organizacao": "Organización",
+    "papeis": "Roles",
+    "removerFoto": "Quitar foto",
+    "sobrenome": "Apellido",
+    "identitySaved": "Identidad guardada",
+    "identitySavedMessage": "Tu nombre ya aparece así en la app.",
+    "saveFailed": "No fue posible guardar",
+    "tryAgain": "Inténtalo de nuevo.",
+    "photoUploadFailed": "No fue posible subir la foto.",
+    "photoRemoveFailed": "No fue posible quitar la foto.",
+    "saving": "Guardando…",
+    "saveIdentity": "Guardar identidad"
+  },
+  "settingsLayout": {
+    "conteudoDaSecaoDe": "Contenido de la sección de configuración",
+    "navegacaoDeConfiguracoes": "Navegación de configuración"
+  },
+  "settingsSaveBar": {
+    "acoesDeSalvamento": "Acciones de guardado",
+    "save": "Guardar configuración",
+    "discard": "Descartar",
+    "unsaved": "Cambios sin guardar",
+    "allSaved": "Todo guardado",
+    "saving": "Guardando…"
+  },
+  "settingsSidebarNav": {
+    "secoesDeConfiguracoes": "Secciones de configuración",
+    "secoesDeConfiguracoes2": "Secciones de configuración"
+  },
+  "storageUsageSection": {
+    "armazenamentoUsado": "Almacenamiento usado",
+    "arquivosOriginais": "Archivos originales",
+    "carregandoUsoDoArmazenamento": "Cargando el uso del almacenamiento…",
+    "naoFoiPossivelCarregar": "No se pudo cargar el uso del almacenamiento. Recarga la página para intentarlo de nuevo.",
+    "ofQuota": "de {{quota}}",
+    "preVisualizacoes": "Vistas previas",
+    "percentUsed": "{{percent}} del espacio usado",
+    "noQuota": "Sin límite de almacenamiento definido."
+  },
+  "toast": {
+    "salvo": "Configuración guardada",
+    "falhaSalvar": "No se pudo guardar",
+    "falhaSalvarMessage": "Inténtalo de nuevo.",
+    "salvoMessage": {
+      "business": "Los cambios ya aplican a toda la organización.",
+      "individual": "Los cambios ya aplican a todos tus documentos."
+    }
+  },
+  "trashRetentionSettingsSection": {
+    "aumentarDias": "Aumentar días",
+    "carregandoConfiguracoes": "Cargando la configuración…",
+    "defineSeAposO": "Define si, pasado el plazo, los documentos de la papelera pasan automáticamente a Desactivados.",
+    "desativarAutomaticamenteAposPeriodo": "Desactivar automáticamente después del período",
+    "diasNaLixeira": "Días en la papelera",
+    "diasNaLixeira2": "Días en la papelera",
+    "diminuirDias": "Disminuir días",
+    "entre1E365": "Entre 1 y 365 días. Pasado ese plazo, el documento se desactiva (R2/Mongo se conservan).",
+    "modoDeRetencao": "Modo de retención",
+    "retencaoManualSemDesativacao": "Retención manual (sin desactivación automática)",
+    "previewManual": "Los archivos eliminados permanecen en la papelera hasta que se desactivan manualmente o por el proceso de retención.",
+    "previewDays_one": "Después de {{count}} día en la papelera, el documento se desactiva (no se elimina del almacenamiento). Los administradores pueden recuperarlo en Desactivados.",
+    "previewDays_many": "Después de {{count}} días en la papelera, el documento se desactiva (no se elimina del almacenamiento). Los administradores pueden recuperarlo en Desactivados.",
+    "previewDays_other": "Después de {{count}} días en la papelera, el documento se desactiva (no se elimina del almacenamiento). Los administradores pueden recuperarlo en Desactivados."
+  },
+  "uploadAiSettingsSection": {
+    "quemDefineEstaPolitica": "Esta política la define el administrador de la organización. Decide cuándo la IA renombra tu archivo y cuándo la subida se detiene para revisión.",
+    "summaryDraft": "Resumen del borrador",
+    "summaryCurrent": "Resumen actual",
+    "inEffect": "Vigente",
+    "autoDelay": "Auto {{seconds}} s",
+    "manualReview": "Revisión manual"
+  },
+  "settingsPage": {
+    "eyebrow": "Configuración"
+  },
+  "settingsRegisterList": {
+    "open": "Abrir"
+  },
+  "profileAvatar": {
+    "invalidType": "Usa JPG, PNG o WebP.",
+    "tooLarge": "La imagen debe tener como máximo 5 MB.",
+    "notAllowed": "No se permiten SVG ni GIF."
+  }
+}

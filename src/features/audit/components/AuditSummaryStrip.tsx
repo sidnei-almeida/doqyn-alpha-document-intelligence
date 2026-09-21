@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { AuditOverview } from '@/types/audit';
+import { useTranslation } from 'react-i18next';
 
 type AuditSummaryStripProps = {
   overview: AuditOverview;
@@ -28,19 +29,19 @@ type AuditSummaryStripProps = {
 const cards = [
   {
     key: 'pendingCount' as const,
-    label: 'Pendências',
+    labelKey: 'auditSummaryStrip.pending',
     tone: 'attention' as const,
     tab: 'pending' as const,
   },
   {
     key: 'todayEventsCount' as const,
-    label: 'Eventos hoje',
+    labelKey: 'auditSummaryStrip.todayEvents',
     tone: 'default' as const,
     tab: 'events' as const,
   },
   {
     key: 'criticalEventsCount' as const,
-    label: 'Ações críticas',
+    labelKey: 'auditSummaryStrip.criticalEvents',
     tone: 'danger' as const,
     tab: 'security' as const,
   },
@@ -58,16 +59,19 @@ export function AuditSummaryStrip({
   showPending = true,
   onSelect,
 }: AuditSummaryStripProps) {
+  const { t } = useTranslation('audit');
+
   const visibleCards = showPending
     ? cards
     : cards.filter((card) => !card.key.startsWith('pending'));
 
   return (
     <section
-      aria-label="Resumo da auditoria"
+      aria-label={t('auditSummaryStrip.resumoDaAuditoria')}
       className="grid gap-px border-y border-doqyn-border-subtle bg-doqyn-border-subtle/75 sm:grid-cols-2 xl:grid-cols-4"
     >
-      {visibleCards.map(({ key, label, tone, tab }) => {
+      {visibleCards.map(({ key, labelKey, tone, tab }) => {
+        const label = t(labelKey);
         const value = overview[key];
         // Zero não leva a lugar nenhum: abrir uma lista vazia responde menos que o próprio zero.
         const clicavel = Boolean(onSelect) && !loading && value > 0;
@@ -101,7 +105,7 @@ export function AuditSummaryStrip({
             type="button"
             onClick={() => onSelect?.(tab)}
             className="flex flex-col gap-2 bg-doqyn-bg px-4 py-4 text-left transition-colors hover:bg-doqyn-card focus-visible:outline focus-visible:outline-1 focus-visible:outline-doqyn-accent-active"
-            aria-label={`${label}: ${value}. Abrir lista.`}
+            aria-label={t('auditSummaryStrip.openList', { label, value })}
           >
             {conteudo}
           </button>

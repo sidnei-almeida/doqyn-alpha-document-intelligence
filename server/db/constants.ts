@@ -33,6 +33,8 @@ export const SHARED_APP_COLLECTIONS = {
   documentRequests: 'document_requests',
   /** Contato salvo à mão, ou dispensado da lista derivada. Ver `MongoSavedContact`. */
   savedContacts: 'saved_contacts',
+  /** E-mail para quem não tem conta — convite de compartilhamento/assinatura externo. Ver `MongoExternalEmailOutboxRow`. */
+  externalEmailOutbox: 'external_email_outbox',
 } as const;
 
 export const COLLECTIONS = {

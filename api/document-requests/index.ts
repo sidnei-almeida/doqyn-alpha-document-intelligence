@@ -63,7 +63,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         buildDocumentAuditContext(auth.ctx, auth.user),
         {
           action: 'document_request.created',
-          description: 'Documento requisitado a um usuário.',
           metadata: sanitizeAuditMetadata({
             requestId: request._id,
             requestedFromUserId: request.requestedFrom.userId,

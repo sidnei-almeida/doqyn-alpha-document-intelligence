@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import type { CompanyMemberDto } from '../api/usersApi';
+import { useTranslation } from 'react-i18next';
 
 type UnblockAccessDialogProps = {
   member: CompanyMemberDto;
@@ -20,46 +21,46 @@ export function UnblockAccessDialog({
   onClose,
   onConfirm,
 }: UnblockAccessDialogProps) {
+  const { t } = useTranslation('users');
+
   return (
     <Modal
       open
       onClose={onClose}
-      title="Desbloquear acesso à empresa?"
+      title={t('unblockAccessDialog.desbloquearAcessoAEmpresa')}
       subtitle={member.email}
       size="md"
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={unblocking}>
-            Cancelar
+            {t('unblockAccessDialog.cancelar')}
           </Button>
           <Button onClick={onConfirm} disabled={unblocking}>
-            {unblocking ? 'Desbloqueando…' : 'Desbloquear acesso'}
+            {unblocking ? t('unblockAccessDialog.unblocking') : t('unblockAccessDialog.confirm')}
           </Button>
         </>
       }
     >
       <div className="space-y-4 text-sm">
-        <p className="text-doqyn-muted">
-          O usuário voltará a ter acesso a esta empresa. Outras empresas não serão afetadas.
-        </p>
+        <p className="text-doqyn-muted">{t('unblockAccessDialog.oUsuarioVoltaraA')}</p>
 
         <dl className="grid gap-2 rounded-md border border-doqyn-border bg-doqyn-card p-3 text-xs">
           <div className="flex justify-between gap-4">
-            <dt className="text-doqyn-muted">Usuário</dt>
+            <dt className="text-doqyn-muted">{t('unblockAccessDialog.usuario')}</dt>
             <dd className="text-right font-medium">{memberName}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-doqyn-muted">E-mail</dt>
+            <dt className="text-doqyn-muted">{t('unblockAccessDialog.eMail')}</dt>
             <dd className="text-right">{member.email}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-doqyn-muted">Empresa</dt>
+            <dt className="text-doqyn-muted">{t('unblockAccessDialog.empresa')}</dt>
             <dd className="text-right">{tenantDisplayName}</dd>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <dt className="text-doqyn-muted">Status atual</dt>
+            <dt className="text-doqyn-muted">{t('unblockAccessDialog.statusAtual')}</dt>
             <dd>
-              <Badge variant="danger">Bloqueado</Badge>
+              <Badge variant="danger">{t('unblockAccessDialog.bloqueado')}</Badge>
             </dd>
           </div>
         </dl>

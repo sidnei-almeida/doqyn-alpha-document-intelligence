@@ -1,6 +1,7 @@
 import { authFetch } from '@/auth/apiAuth';
 import type { DashboardOverviewResponse, DashboardPeriodKey } from '@/types/dashboard-overview';
 import { parseDocumentApiError } from '@/features/documents/api/documentsApi.errors';
+import { categoryDisplayName } from '@/features/documents/utils/categoryDisplay';
 
 export async function fetchDashboardOverview(input?: {
   period?: DashboardPeriodKey;
@@ -19,5 +20,17 @@ export async function fetchDashboardOverview(input?: {
     throw await parseDocumentApiError(response);
   }
 
-  return response.json() as Promise<DashboardOverviewResponse>;
+  const overview = (await response.json()) as DashboardOverviewResponse;
+  return {
+    ...overview,
+    documentsByCategory: overview.documentsByCategory.map((item) => ({
+      ...item,
+      categoryName:
+        categoryDisplayName(item.categoryName, { id: item.categoryId }) ?? item.categoryName,
+    })),
+    recentDocuments: overview.recentDocuments.map((doc) => ({
+      ...doc,
+      categoryName: categoryDisplayName(doc.categoryName, { id: doc.categoryId }),
+    })),
+  };
 }

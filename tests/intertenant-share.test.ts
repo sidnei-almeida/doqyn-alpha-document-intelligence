@@ -133,9 +133,9 @@ describe('compartilhar entre empresas — a segunda dimensão do verbo', () => {
     const field = read('src/features/directory/components/CrossTenantRecipientField.tsx');
 
     // Prometer envio imediato para quem ainda vai decidir seria mentir sobre o que acontece.
-    assert.ok(field.includes('ela precisa aceitar antes de ver'));
+    assert.ok(field.includes('.usaDoqyn'));
     // E quem é de casa é mandado de volta para a busca certa, em vez de virar pendência à toa.
-    assert.ok(field.includes('é daqui. Use a busca acima.'));
+    assert.ok(field.includes('.ehDaqui'));
   });
 });
 

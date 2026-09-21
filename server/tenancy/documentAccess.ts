@@ -78,6 +78,22 @@ export function userGovernsTenantScope(user: AuthUser, storage: TenantStorageCon
   return storage.storageMode === 'shared_individual_collection' && storage.userId === userId;
 }
 
+/**
+ * Quem pode alterar a configuração de governança do tenant: categorias, classes, grupos e seus
+ * membros, regras de acesso e de extração, matriz.
+ *
+ * `company_admin` num tenant PJ; num tenant PF, o próprio indivíduo (`individual_admin`), que é o
+ * único usuário dele. Ler a configuração continua sendo de qualquer membro — quem envia documento
+ * escolhe categoria. Alterar não: grupo e regra são a entrada real da autorização por documento, e
+ * um membro que os editasse concederia acesso a si mesmo.
+ */
+export function userGovernsTenantConfiguration(user: AuthUser): boolean {
+  if (isDocumentAdmin(user)) return true;
+  return (
+    user.tenantType === 'individual' && (user.platformRoles ?? []).includes('individual_admin')
+  );
+}
+
 export function userHasDocumentGroupAccess(
   requiredGroupIds: string[] | undefined,
   memberGroupIds: string[],

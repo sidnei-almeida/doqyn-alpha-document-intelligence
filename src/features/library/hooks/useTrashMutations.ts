@@ -11,6 +11,7 @@ import {
   type TrashRetentionSettings,
 } from '../api/trashApi';
 import { invalidateLibraryQueries } from '../utils/libraryQueryInvalidation';
+import { i18n } from '@/i18n';
 
 export function useTrashMutations() {
   const queryClient = useQueryClient();
@@ -35,14 +36,10 @@ export function useTrashMutations() {
       if (result.failed > 0) {
         toast.warning(`${result.succeeded} movido(s), ${result.failed} falha(s).`);
       } else {
-        toast.success(
-          result.succeeded === 1
-            ? 'Documento movido para a lixeira.'
-            : `${result.succeeded} documentos movidos para a lixeira.`,
-        );
+        toast.success(i18n.t('library:toast.trashed', { count: result.succeeded }));
       }
     },
-    onError: () => toast.error('Não foi possível mover para a lixeira.'),
+    onError: () => toast.error(i18n.t('library:toast.falhaMoverLixeira')),
     onSettled: invalidate,
   });
 
@@ -56,13 +53,9 @@ export function useTrashMutations() {
           }))
         : batchRestoreDocuments(documentIds),
     onSuccess: (result) => {
-      toast.success(
-        result.succeeded === 1
-          ? 'Documento restaurado.'
-          : `${result.succeeded} documentos restaurados.`,
-      );
+      toast.success(i18n.t('library:toast.restored', { count: result.succeeded }));
     },
-    onError: () => toast.error('Não foi possível restaurar o documento.'),
+    onError: () => toast.error(i18n.t('library:toast.falhaRestaurarDocumento')),
     onSettled: invalidate,
   });
 
@@ -82,10 +75,10 @@ export function useTrashRetentionSettings() {
   const mutation = useMutation({
     mutationFn: (patch: Partial<TrashRetentionSettings>) => updateTrashRetentionSettings(patch),
     onSuccess: () => {
-      toast.success('Configurações da lixeira atualizadas.');
+      toast.success(i18n.t('library:toast.configuracoesLixeiraSalvas'));
       void queryClient.invalidateQueries({ queryKey: ['trash-retention-settings'] });
     },
-    onError: () => toast.error('Não foi possível salvar as configurações.'),
+    onError: () => toast.error(i18n.t('library:toast.falhaSalvarConfiguracoes')),
   });
 
   return {

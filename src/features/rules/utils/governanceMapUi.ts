@@ -1,26 +1,27 @@
 import type { DocumentAccessPermissions } from '../api/rulesApi';
 
-const PERMISSION_SHORT: Record<keyof DocumentAccessPermissions, string> = {
-  view: 'Ver',
-  download: 'Baixar',
-  upload: 'Alterar',
-  share: 'Compartilhar',
-  manage: 'Gerir',
+/** Chaves do namespace `rules`; a tela traduz. */
+const PERMISSION_SHORT_KEYS: Record<keyof DocumentAccessPermissions, string> = {
+  view: 'permission.short.view',
+  download: 'permission.short.download',
+  upload: 'permission.short.upload',
+  share: 'permission.short.share',
+  manage: 'permission.short.manage',
 };
 
-export const PERMISSION_HINTS: Record<keyof DocumentAccessPermissions, string> = {
-  view: 'Abre documentos desta categoria no visualizador.',
-  download: 'Permite baixar o arquivo original.',
+export const PERMISSION_HINT_KEYS: Record<keyof DocumentAccessPermissions, string> = {
+  view: 'permission.hint.view',
+  download: 'permission.hint.download',
   // O rótulo diz o que a permissão realmente concede desde D-24: o mesmo flag que libera enviar
   // nova versão agora também libera editar metadados e arquivar. Deixá-lo como "Enviar" faria o
   // mapa de regras prometer menos poder do que o backend concede.
-  upload: 'Pode enviar novas versões, editar metadados e arquivar documentos desta categoria.',
-  share: 'Pode compartilhar documentos com terceiros.',
-  manage: 'Acesso administrativo: metadados, auditoria e configurações.',
+  upload: 'permission.hint.upload',
+  share: 'permission.hint.share',
+  manage: 'permission.hint.manage',
 };
 
-export function getActivePermissionShortLabels(permissions: DocumentAccessPermissions): string[] {
-  return (Object.keys(PERMISSION_SHORT) as Array<keyof DocumentAccessPermissions>)
+export function getActivePermissionShortKeys(permissions: DocumentAccessPermissions): string[] {
+  return (Object.keys(PERMISSION_SHORT_KEYS) as Array<keyof DocumentAccessPermissions>)
     .filter((key) => permissions[key])
-    .map((key) => PERMISSION_SHORT[key]);
+    .map((key) => PERMISSION_SHORT_KEYS[key]);
 }

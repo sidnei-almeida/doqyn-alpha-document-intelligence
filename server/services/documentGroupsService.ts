@@ -4,6 +4,7 @@ import { normalizeGroupColor } from '../../shared/groupPalette.js';
 import { ServiceError } from '../utils/serviceErrors.js';
 import { assertGroupIdsExist } from '../utils/groupValidation.js';
 import { slugifyName } from '../utils/slugify.js';
+import { compareNames } from '../utils/textCollation.js';
 import { isDocumentCategoryId } from '../utils/entityIds.js';
 import { buildClassRuleOwnershipFilter } from '../tenancy/documentOwnership.js';
 import { requireTenantGovernanceCollections } from '../tenancy/requireTenantDocumentCollections.js';
@@ -58,7 +59,9 @@ export function serializeGroupMember(member: MongoDocumentGroupMember) {
 
 export async function listDocumentGroups(tenantId: string, opts?: ServiceOpts) {
   const { collections, scope } = await resolveContext(tenantId, opts);
-  const groups = await collections.documentGroups.find(scope).sort({ name: 1 }).toArray();
+  const groups = (await collections.documentGroups.find(scope).toArray()).sort((a, b) =>
+    compareNames(a.name, b.name),
+  );
 
   const members = await collections.documentGroupMembers.find({ ...scope, active: true }).toArray();
 
@@ -320,7 +323,9 @@ export async function deactivateMemberGroupsForInactiveMember(
 
   const result = await collections.documentGroupMembers.updateMany(
     { ...scope, membershipId: input.membershipId, active: true } as Record<string, unknown>,
-    { $set: { active: false, deactivatedBy: MEMBER_STATUS_DEACTIVATION, deactivatedAt: new Date() } },
+    {
+      $set: { active: false, deactivatedBy: MEMBER_STATUS_DEACTIVATION, deactivatedAt: new Date() },
+    },
   );
 
   return result.modifiedCount;

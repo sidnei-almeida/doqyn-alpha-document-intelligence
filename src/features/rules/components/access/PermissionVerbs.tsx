@@ -5,6 +5,7 @@ import {
   type GovernancePermissionState,
   type GovernancePermissionValue,
 } from '@shared/governancePermissions';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { DocumentAccessPermissions } from '../../api/rulesApi';
 
@@ -17,16 +18,12 @@ const DOMAIN_VERB: Record<PermissionVerb, string> = {
   upload: 'update',
 };
 
-export const PERMISSION_VERBS: Array<{ key: PermissionVerb; label: string; short: string }> = [
-  { key: 'view', label: 'Ver documentos', short: 'ver' },
-  { key: 'download', label: 'Baixar', short: 'baixar' },
-  { key: 'upload', label: 'Enviar', short: 'enviar' },
-];
+const PERMISSION_VERBS: PermissionVerb[] = ['view', 'download', 'upload'];
 
-const STATE_SUFFIX: Record<GovernancePermissionState, string> = {
-  deny: '',
-  allow: ': liberado',
-  require: ': pedindo aprovação',
+const STATE_KEY: Record<GovernancePermissionState, string | null> = {
+  deny: null,
+  allow: 'permission.state.allow',
+  require: 'permission.state.require',
 };
 
 /**
@@ -70,29 +67,34 @@ export function PermissionVerbs({
   variant?: 'token' | 'grid';
   className?: string;
 }) {
+  const { t } = useTranslation('rules');
   const readOnly = disabled || !onToggle;
 
   return (
     <span className={cn('permission-verbs', `permission-verbs--${variant}`, className)}>
       {PERMISSION_VERBS.map((verb) => {
-        const state = toPermissionState(permissions[verb.key]);
-        const label = `${verb.label}${STATE_SUFFIX[state]}`;
+        const state = toPermissionState(permissions[verb]);
+        const verbLabel = t(`permissionVerbs.${verb}.label`);
+        const stateKey = STATE_KEY[state];
+        const label = stateKey
+          ? t('permissionVerbs.withState', { verb: verbLabel, state: t(stateKey) })
+          : verbLabel;
         if (readOnly) {
           return (
             <span
-              key={verb.key}
+              key={verb}
               className="permission-verbs__mark"
               data-state={state}
               title={label}
               aria-label={label}
             >
-              {variant === 'grid' ? '' : verb.short}
+              {variant === 'grid' ? '' : t(`permissionVerbs.${verb}.short`)}
             </span>
           );
         }
         return (
           <button
-            key={verb.key}
+            key={verb}
             type="button"
             className="permission-verbs__mark"
             data-state={state}
@@ -101,10 +103,10 @@ export function PermissionVerbs({
             aria-label={label}
             onClick={(event) => {
               event.stopPropagation();
-              onToggle(verb.key, fromPermissionState(nextState(verb.key, state)));
+              onToggle(verb, fromPermissionState(nextState(verb, state)));
             }}
           >
-            {variant === 'grid' ? '' : verb.short}
+            {variant === 'grid' ? '' : t(`permissionVerbs.${verb}.short`)}
           </button>
         );
       })}

@@ -21,6 +21,8 @@ export type DocumentTrackingListItem = {
   action: string;
   severity: 'debug' | 'info' | 'warning' | 'error' | 'critical';
   summary: string;
+  /** Presente só em evento gravado pelo catálogo `auditEvents`. */
+  params?: Record<string, string | number | boolean>;
   document: {
     documentId: string | null;
     name: string;

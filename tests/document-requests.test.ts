@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import { DOCUMENT_REQUEST_INDEXES } from '../server/db/documentRequestIndexes.js';
+import { sharedAppIndexSpecs } from '../server/db/sharedAppIndexSpecs.js';
+import { SHARED_APP_COLLECTIONS } from '../server/db/constants.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -36,15 +39,25 @@ describe('requisitar documento — modelo', () => {
   });
 
   it('os índices atendem as duas direções e a varredura de prazo', () => {
-    const indexes = read('server/db/documentRequestIndexes.ts');
-    const script = read('scripts/ensure-mongodb-indexes.ts');
-    const setup = read('server/db/setupMongo.ts');
+    const keys = DOCUMENT_REQUEST_INDEXES.map((index) => Object.keys(index.key).join(','));
 
-    assert.ok(indexes.includes("'requestedFrom.userId': 1"));
-    assert.ok(indexes.includes("'requestedBy.userId': 1"));
-    assert.ok(indexes.includes('status: 1, dueAt: 1'));
-    // O job do Compose é este script, não `setupMongo`.
-    assert.ok(script.includes('DOCUMENT_REQUEST_INDEXES'));
+    assert.ok(
+      keys.some((key) => key.includes('requestedFrom.userId')),
+      'falta "o que me pediram"',
+    );
+    assert.ok(
+      keys.some((key) => key.includes('requestedBy.userId')),
+      'falta "o que eu pedi"',
+    );
+    assert.ok(keys.includes('status,dueAt'), 'falta a varredura de prazo');
+
+    // O job do Compose passou a montar a lista a partir de `sharedAppIndexSpecs`, e não mais com
+    // um import por coleção: a guarda confere que a coleção continua chegando lá.
+    const setup = read('server/db/setupMongo.ts');
+    const spec = sharedAppIndexSpecs().find(
+      (entry) => entry.collection === SHARED_APP_COLLECTIONS.documentRequests,
+    );
+    assert.equal(spec?.indexes, DOCUMENT_REQUEST_INDEXES);
     assert.ok(setup.includes('ensureDocumentRequestIndexes'));
   });
 });
@@ -189,7 +202,7 @@ describe('requisitar documento — aviso e tela', () => {
     const list = read('src/features/notifications/components/NotificationList.tsx');
 
     // Enquanto ninguém envia não há arquivo, e o `documentId` ausente devolveria `null`.
-    assert.ok(list.includes("if (notification.type === 'document_requested') return '/pedidos'"));
+    assert.ok(list.includes("if (notification.type === 'document_requested') return '/requests'"));
   });
 
   it('um fato, um aviso', () => {
@@ -206,10 +219,10 @@ describe('requisitar documento — aviso e tela', () => {
     const routes = read('src/app/routes.tsx');
     const nav = read('src/lib/constants.ts');
 
-    // `/biblioteca/:collection` lista documentos, e um pedido só vira documento quando alguém
+    // `/library/:collection` lista documentos, e um pedido só vira documento quando alguém
     // envia — entrar lá como coleção obrigaria a mentir para `DocumentListItem`.
-    assert.ok(routes.includes("path: '/pedidos'"));
-    assert.ok(nav.includes("path: '/pedidos'"));
+    assert.ok(routes.includes("path: '/requests'"));
+    assert.ok(nav.includes("path: '/requests'"));
   });
 
   it('a pessoa é identificada pelo id do auth, não pelo da associação', () => {
@@ -267,14 +280,14 @@ describe('requisitar documento — o que a revisão apontou', () => {
     const provider = read('src/features/upload/UploadQueueProvider.tsx');
     const client = read('src/features/document-send/services/confirmAnalysis.ts');
 
-    assert.ok(page.includes("label: 'Enviar documento'"));
+    assert.ok(page.includes("label: t('documentRequestsPage.actions.upload')"));
     assert.ok(types.includes('documentRequestId?: string'));
     assert.ok(provider.includes('documentRequestId: item.context?.documentRequestId'));
     // Vale para os dois caminhos: confirmação direta e envio para aprovação.
     assert.ok(client.split('documentRequestId: options?.documentRequestId').length === 3);
   });
 
-  it('a categoria pode vir de três lugares, e as guardas conhecem os três', () => {
+  it('a categoria pode vir de quatro lugares, e as guardas conhecem todos', () => {
     const guard = read('src/features/document-send/services/normalizeConfirmPayload.ts');
     const drawer = read('src/features/upload/review/ReviewDrawer.tsx');
     const submit = read('server/services/documentUploadApprovalService.ts');
@@ -283,12 +296,33 @@ describe('requisitar documento — o que a revisão apontou', () => {
     assert.ok(guard.includes('fallback?.manualClassId'));
     assert.ok(guard.includes('fallback?.documentRequestId'));
     assert.ok(drawer.includes('!fulfillsRequest'));
-    // Mesma ordem do confirm: pedido > escolha humana > IA.
-    assert.ok(
-      submit.includes(
-        'fulfilledRequest?.categoryId ?? data.manualClassId?.trim() ?? data.classification.classId',
-      ),
-    );
+
+    /**
+     * A ordem, não o texto da linha.
+     *
+     * O `assert` antigo casava a expressão inteira como string e quebrou quando o Prettier a
+     * quebrou em quatro linhas — sem que nada de comportamento tivesse mudado. O que importa é a
+     * precedência: pedido > escolha humana > IA > pasta criada pela IA. A pasta criada entra por
+     * último porque é o que sobra quando nenhuma das três decisões existiu.
+     */
+    // A classe da IA entra pela variável `aiClassId`, e não direto de `data`: ela é
+    // `classification.classId` menos a pasta de sistema, que é destino de fracasso e não
+    // classificação. Com "Sem categoria" contando como classe, `auto_create` nunca criava nada.
+    const order = [
+      'fulfilledRequest?.categoryId',
+      'data.manualClassId?.trim()',
+      'aiClassId',
+      'autoCreatedClassId',
+    ];
+
+    let cursor = submit.indexOf('const effectiveClassId');
+    assert.ok(cursor >= 0, 'a resolução da categoria de destino sumiu do envio para aprovação');
+
+    for (const term of order) {
+      const at = submit.indexOf(term, cursor);
+      assert.ok(at > cursor, `"${term}" fora de ordem na resolução da categoria`);
+      cursor = at;
+    }
   });
 
   it('pedir é o ato de autorização: cumprir dispensa permissão na categoria de destino', () => {
@@ -323,7 +357,7 @@ describe('requisitar documento — o que a revisão apontou', () => {
     // A listagem principal não carrega concessões; só "Compartilhados comigo" carrega.
     assert.ok(list.includes("notification.type === 'document_request_fulfilled'"));
     assert.ok(page.includes('function fulfilledDocumentPath'));
-    assert.ok(page.includes('/biblioteca/compartilhados?documentId='));
+    assert.ok(page.includes('/library/shared?documentId='));
   });
 
   it('o prazo é ancorado em UTC, senão as duas telas discordam por um dia', () => {
@@ -347,7 +381,8 @@ describe('requisitar documento — o que a revisão apontou', () => {
     const dialog = read('src/features/audit/components/PendingApprovalReviewDialog.tsx');
 
     assert.ok(query.includes('function readSharePermissions'));
-    assert.ok(dialog.includes('O que será concedido'));
-    assert.ok(dialog.includes("item.grants?.canDownload ? 'Ver e baixar' : 'Somente ver'"));
+    assert.ok(dialog.includes('.oQueSeraConcedido'));
+    assert.ok(dialog.includes("t('pendingApprovalReviewDialog.grantViewDownload')"));
+    assert.ok(dialog.includes("t('pendingApprovalReviewDialog.grantViewOnly')"));
   });
 });

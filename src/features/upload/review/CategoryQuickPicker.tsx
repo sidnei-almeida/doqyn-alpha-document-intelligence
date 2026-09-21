@@ -1,10 +1,16 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
-import { fetchDocumentCategories } from '@/features/documents/api/documentsApi';
+import {
+  createDocumentCategoryFromSuggestion,
+  fetchDocumentCategories,
+} from '@/features/documents/api/documentsApi';
+import type { SuggestedCategory } from '@/features/document-send/services/analyzePdf';
 import { EmptyHint } from '@/components/ui/EmptyHint';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Escolha de categoria em um clique.
@@ -21,19 +27,104 @@ export function CategoryQuickPicker({
   selectedClassId,
   onSelect,
   suggestedClassId,
+  suggestion,
+  canCreateCategory = false,
 }: {
   selectedClassId?: string;
   onSelect: (classId: string, className: string) => void;
   /** Categoria que a IA sugeriu, quando houve alguma. Ganha destaque de atalho. */
   suggestedClassId?: string | null;
+  /**
+   * Pasta que a IA propôs criar, quando nenhuma das existentes serviu.
+   *
+   * Vem do terceiro passe da classificação. Ainda não existe no banco: é um rascunho.
+   */
+  suggestion?: SuggestedCategory | null;
+  /**
+   * Se quem revisa pode criar categoria. A rota é de administrador; sem isso o botão devolveria
+   * 403, então quem não administra vê a proposta como texto e escolhe entre as pastas existentes.
+   */
+  canCreateCategory?: boolean;
 }) {
+  const { t } = useTranslation('upload');
+  const queryClient = useQueryClient();
+
   const [term, setTerm] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['document-categories-options'],
     queryFn: fetchDocumentCategories,
     staleTime: 5 * 60_000,
   });
+
+  const handleCreateSuggested = async () => {
+    if (!suggestion || creating) return;
+
+    setCreating(true);
+    try {
+      const created = await createDocumentCategoryFromSuggestion({
+        name: suggestion.name,
+        description: suggestion.description,
+        keywords: suggestion.keywords,
+      });
+
+      // A lista precisa conhecer a pasta nova antes de o drawer marcar a escolha — senão o chip
+      // selecionado não aparece e parece que o clique não fez nada.
+      await queryClient.invalidateQueries({ queryKey: ['document-categories-options'] });
+      onSelect(created.id, created.name);
+    } catch (error) {
+      // A mensagem do servidor é em pt-BR e vem com código; a genérica é a traduzida. Erro de
+      // contrato (resposta sem id) não tem texto de tela, então cai na genérica.
+      const serverMessage =
+        error instanceof Error && error.message && !/^[A-Z_]+$/.test(error.message)
+          ? error.message
+          : null;
+      toast.error(serverMessage ?? t('categoryQuickPicker.suggestion.createFailed'));
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  /**
+   * O bloco da proposta, acima da lista.
+   *
+   * Vem primeiro porque é a resposta à pergunta que trouxe a pessoa até aqui: nenhuma pasta
+   * serviu. Oferecer a lista antes seria pedir que ela escolha de novo entre as opções que a IA
+   * já descartou.
+   */
+  const suggestionBlock = suggestion ? (
+    // Linha, não caixa: a proposta é um trecho pautado acima da lista, marcado por um fio de
+    // acento à esquerda. Como caixa preenchida dentro de outra caixa ela virava um terceiro
+    // plano de superfície, e no tema claro não havia tom que a separasse sem gritar.
+    <div className="mb-2.5 border-l-2 border-doqyn-primary py-0.5 pl-2.5">
+      <p className="text-eyebrow uppercase text-doqyn-subtle">
+        {t('categoryQuickPicker.suggestion.eyebrow')}
+      </p>
+      <p className="mt-0.5 text-caption font-medium text-doqyn-text">{suggestion.name}</p>
+      <p className="mt-0.5 text-micro leading-relaxed text-doqyn-muted">{suggestion.description}</p>
+      {canCreateCategory ? (
+        <button
+          type="button"
+          onClick={() => void handleCreateSuggested()}
+          disabled={creating}
+          className="mt-2 inline-flex items-center gap-1.5 rounded-[4px] border border-doqyn-border-subtle px-2.5 py-1 text-caption font-medium text-doqyn-text transition-colors hover:border-doqyn-primary hover:bg-doqyn-surface-hover disabled:opacity-60"
+          data-testid="category-quick-pick-create-suggested"
+        >
+          {creating ? (
+            <Icon name="progress_activity" size={ICON_SIZE.xs} className="animate-spin" />
+          ) : (
+            <Icon name="create_new_folder" size={ICON_SIZE.xs} className="text-doqyn-primary" />
+          )}
+          {t('categoryQuickPicker.suggestion.createButton', { name: suggestion.name })}
+        </button>
+      ) : (
+        <p className="mt-1.5 text-micro text-doqyn-subtle">
+          {t('categoryQuickPicker.suggestion.adminOnly')}
+        </p>
+      )}
+    </div>
+  ) : null;
 
   const filtered = useMemo(() => {
     const normalized = term.trim().toLowerCase();
@@ -42,31 +133,41 @@ export function CategoryQuickPicker({
   }, [categories, term]);
 
   if (isLoading) {
-    return <p className="text-[11px] text-doqyn-muted">Carregando categorias…</p>;
+    return (
+      <p className="text-micro text-doqyn-muted">{t('categoryQuickPicker.carregandoCategorias')}</p>
+    );
   }
 
+  // Tenant sem nenhuma categoria é exatamente onde a proposta mais vale: antes, a revisão só
+  // dizia "nenhuma categoria configurada" e mandava a pessoa sair da tela para criar uma.
   if (categories.length === 0) {
     return (
-      <EmptyHint bare>
-        Nenhuma categoria configurada. Crie uma em Regras antes de classificar à mão.
-      </EmptyHint>
+      <div>
+        {suggestionBlock}
+        <EmptyHint bare>{t('categoryQuickPicker.nenhumaCategoriaConfiguradaCrie')}</EmptyHint>
+      </div>
     );
   }
 
   return (
     <div>
+      {suggestionBlock}
       {categories.length > SEARCH_THRESHOLD && (
         <input
           type="search"
           value={term}
           onChange={(event) => setTerm(event.target.value)}
-          placeholder="Filtrar categorias"
-          className="mb-2 w-full rounded-md border border-doqyn-border-subtle bg-doqyn-bg px-2.5 py-1.5 text-[12px] text-doqyn-text placeholder:text-doqyn-subtle"
-          aria-label="Filtrar categorias"
+          placeholder={t('categoryQuickPicker.filtrarCategorias')}
+          className="mb-2 w-full rounded-[4px] border border-doqyn-border-subtle bg-doqyn-bg px-2.5 py-1.5 text-caption text-doqyn-text placeholder:text-doqyn-subtle"
+          aria-label={t('categoryQuickPicker.filtrarCategorias2')}
         />
       )}
 
-      <div className="flex flex-wrap gap-1.5" role="listbox" aria-label="Categorias">
+      <div
+        className="flex flex-wrap gap-1.5"
+        role="listbox"
+        aria-label={t('categoryQuickPicker.categorias')}
+      >
         {filtered.map((category) => {
           const isSelected = category.id === selectedClassId;
           const isSuggested = category.id === suggestedClassId;
@@ -79,7 +180,7 @@ export function CategoryQuickPicker({
               aria-selected={isSelected}
               onClick={() => onSelect(category.id, category.name)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] transition-colors',
+                'inline-flex items-center gap-1.5 rounded-[4px] border px-2.5 py-1 text-caption transition-colors',
                 isSelected
                   ? 'border-doqyn-primary bg-doqyn-primary/10 font-medium text-doqyn-text'
                   : 'border-doqyn-border-subtle text-doqyn-muted hover:border-doqyn-primary/40 hover:text-doqyn-text',
@@ -91,7 +192,7 @@ export function CategoryQuickPicker({
               )}
               {category.name}
               {isSuggested && !isSelected && (
-                <span className="text-doqyn-accent text-[10px] uppercase tracking-wide">IA</span>
+                <span className="text-eyebrow uppercase text-doqyn-primary">IA</span>
               )}
             </button>
           );
@@ -100,7 +201,7 @@ export function CategoryQuickPicker({
 
       {filtered.length === 0 && (
         <EmptyHint bare className="mt-2">
-          Nenhuma categoria com esse nome.
+          {t('categoryQuickPicker.nenhumaCategoriaComEsse')}
         </EmptyHint>
       )}
     </div>

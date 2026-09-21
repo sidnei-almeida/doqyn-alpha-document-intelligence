@@ -1,4 +1,6 @@
 import { authFetch, getFetchCredentials, withAuthHeaders } from '@/auth/apiAuth';
+import { i18n } from '@/i18n';
+import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 
 export type DocumentRequestStatus = 'pending' | 'fulfilled' | 'cancelled' | 'expired';
 
@@ -33,7 +35,11 @@ export type DocumentRequestDirection = 'received' | 'sent';
 async function parse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { message?: string; code?: string };
-    const error = new Error(body.message ?? 'Não foi possível concluir a ação.');
+    const error = new Error(
+      body.code
+        ? getFriendlyAuthErrorMessage(body.code, body.message)
+        : (body.message ?? i18n.t('requests:actionFailed')),
+    );
     if (body.code) (error as Error & { code?: string }).code = body.code;
     throw error;
   }
@@ -90,9 +96,10 @@ export async function cancelDocumentRequest(requestId: string): Promise<void> {
   await parse<{ request: DocumentRequestItem }>(response);
 }
 
-export const REQUEST_STATUS_LABEL: Record<DocumentRequestStatus, string> = {
-  pending: 'Aguardando',
-  fulfilled: 'Atendido',
-  cancelled: 'Cancelado',
-  expired: 'Vencido',
+/** Chaves com namespace explícito; a tela traduz. */
+export const REQUEST_STATUS_LABEL_KEYS: Record<DocumentRequestStatus, string> = {
+  pending: 'requests:status.pending',
+  fulfilled: 'requests:status.fulfilled',
+  cancelled: 'requests:status.cancelled',
+  expired: 'requests:status.expired',
 };

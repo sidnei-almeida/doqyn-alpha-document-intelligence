@@ -7,6 +7,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import type { NotificationPreferencesDto, PlatformRole } from '../api/usersApi';
 import { ASSIGNABLE_PLATFORM_ROLES, getPlatformRoleMeta } from '../platformRoleLabels';
+import { useTranslation } from 'react-i18next';
 
 export type DocumentGroupOption = {
   id: string;
@@ -84,14 +85,16 @@ export function PlatformRolesSection({
   value: PlatformRole[];
   onChange: (roles: PlatformRole[]) => void;
 }) {
+  const { t } = useTranslation('users');
+
   // A ordem de `ASSIGNABLE_PLATFORM_ROLES` é a de privilégio: quem é admin é admin, mesmo com
   // `user` também gravado por um caminho antigo.
   const selected = ASSIGNABLE_PLATFORM_ROLES.find((role) => value.includes(role)) ?? 'user';
 
   return (
     <AccessFormSection
-      title="Papel na plataforma"
-      description="Define o que a pessoa administra. É um só, e não se acumulam."
+      title={t('accessFormSections.papelNaPlataforma')}
+      description={t('accessFormSections.defineOQueA')}
     >
       <div className="divide-y divide-doqyn-border-subtle">
         {ASSIGNABLE_PLATFORM_ROLES.map((role) => {
@@ -123,16 +126,18 @@ export function DocumentGroupsSection({
   value: string[];
   onChange: (ids: string[]) => void;
 }) {
+  const { t } = useTranslation('users');
+
   return (
     <AccessFormSection
-      title="Grupos"
-      description="Os mesmos grupos de Regras. São eles que decidem quais categorias a pessoa alcança."
+      title={t('accessFormSections.grupos')}
+      description={t('accessFormSections.osMesmosGruposDe')}
     >
       {groups.length === 0 ? (
         <GroupsEmptyState
-          title="Nenhum grupo criado ainda."
-          description="Sem grupo, a pessoa não alcança categoria alguma. Crie um em Regras e volte aqui."
-          ctaLabel="Abrir Regras"
+          title={t('accessFormSections.nenhumGrupoCriadoAinda')}
+          description={t('accessFormSections.semGrupoAPessoa')}
+          ctaLabel={t('accessFormSections.openRules')}
           ctaHref="/rules"
         />
       ) : (
@@ -155,11 +160,13 @@ export function DocumentGroupsSection({
                     <span className="flex items-baseline justify-between gap-3">
                       <span className="min-w-0 truncate">{group.name}</span>
                       <span className="shrink-0 font-mono text-micro tabular-nums text-doqyn-subtle">
-                        {memberCount} {memberCount === 1 ? 'pessoa' : 'pessoas'}
+                        {t('accessFormSections.peopleCount', { count: memberCount })}
                       </span>
                     </span>
                   }
-                  description={group.description?.trim() || 'Grupo documental de governança'}
+                  description={
+                    group.description?.trim() || t('accessFormSections.groupFallbackDescription')
+                  }
                   wrapperClassName="w-full"
                 />
               </div>
@@ -172,13 +179,13 @@ export function DocumentGroupsSection({
 }
 
 /** O que avisar. Um evento por linha, com o nome do fato, não do campo. */
-const EVENT_OPTIONS: Array<[keyof NotificationPreferencesDto, string]> = [
-  ['documentCreated', 'Documento novo na categoria'],
-  ['documentUpdated', 'Versão nova de um documento'],
-  ['documentRequiresSignature', 'Assinatura pedida a esta pessoa'],
-  ['documentShared', 'Documento compartilhado com ela'],
-  ['accessApproved', 'Acesso aprovado'],
-  ['accessRejected', 'Acesso recusado'],
+const EVENT_OPTIONS: Array<keyof NotificationPreferencesDto> = [
+  'documentCreated',
+  'documentUpdated',
+  'documentRequiresSignature',
+  'documentShared',
+  'accessApproved',
+  'accessRejected',
 ];
 
 /**
@@ -191,12 +198,20 @@ const EVENT_OPTIONS: Array<[keyof NotificationPreferencesDto, string]> = [
  */
 const CHANNEL_OPTIONS: Array<{
   key: keyof NotificationPreferencesDto | 'inApp';
-  label: string;
-  reason?: string;
+  labelKey?: string;
+  reasonKey?: string;
 }> = [
-  { key: 'inApp', label: 'No app' },
-  { key: 'email', label: 'E-mail', reason: 'Sem servidor de e-mail configurado ainda.' },
-  { key: 'whatsapp', label: 'WhatsApp', reason: 'Sem integração de WhatsApp configurada ainda.' },
+  { key: 'inApp' },
+  {
+    key: 'email',
+    labelKey: 'accessFormSections.channels.email',
+    reasonKey: 'accessFormSections.channels.emailReason',
+  },
+  {
+    key: 'whatsapp',
+    labelKey: 'accessFormSections.channels.whatsapp',
+    reasonKey: 'accessFormSections.channels.whatsappReason',
+  },
 ];
 
 export function NotificationsSection({
@@ -206,28 +221,30 @@ export function NotificationsSection({
   value: NotificationPreferencesDto;
   onChange: (value: NotificationPreferencesDto) => void;
 }) {
+  const { t } = useTranslation('users');
+
   return (
     <AccessFormSection
-      title="Notificações"
-      description="Os avisos saem do acesso: só chega o que a pessoa já alcança pelos grupos, ou o que é dela."
+      title={t('accessFormSections.notificacoes')}
+      description={t('accessFormSections.osAvisosSaemDo')}
     >
       <div className="space-y-4">
         <div>
-          <p className="text-caption text-doqyn-subtle">O que avisar</p>
+          <p className="text-caption text-doqyn-subtle">{t('accessFormSections.oQueAvisar')}</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {EVENT_OPTIONS.map(([key, label]) => (
+            {EVENT_OPTIONS.map((key) => (
               <Checkbox
                 key={key}
                 checked={value[key]}
                 onChange={(event) => onChange({ ...value, [key]: event.target.checked })}
-                label={label}
+                label={t(`accessFormSections.events.${key}`)}
               />
             ))}
           </div>
         </div>
 
         <div>
-          <p className="text-caption text-doqyn-subtle">Por onde</p>
+          <p className="text-caption text-doqyn-subtle">{t('accessFormSections.porOnde')}</p>
           <div className="mt-2 space-y-2">
             {CHANNEL_OPTIONS.map((channel) => {
               if (channel.key === 'inApp') {
@@ -237,8 +254,8 @@ export function NotificationsSection({
                     checked
                     disabled
                     readOnly
-                    label="No app"
-                    description="É a caixa do sino. Não se desliga."
+                    label={t('accessFormSections.noApp')}
+                    description={t('accessFormSections.eACaixaDo')}
                   />
                 );
               }
@@ -248,8 +265,8 @@ export function NotificationsSection({
                   key={channel.key}
                   checked={value[channel.key]}
                   onChange={(event) => onChange({ ...value, [channel.key]: event.target.checked })}
-                  label={channel.label}
-                  description={channel.reason}
+                  label={channel.labelKey ? t(channel.labelKey) : channel.key}
+                  description={channel.reasonKey ? t(channel.reasonKey) : undefined}
                 />
               );
             })}

@@ -37,6 +37,8 @@ export interface AuditEvent {
   actorName?: string;
   action: AuditAction;
   description: string;
+  /** Presente só em evento gravado pelo catálogo `auditEvents`. */
+  params?: Record<string, string | number | boolean>;
   area?: string;
   result?: AuditResult;
   severity: AuditSeverity;
@@ -72,41 +74,47 @@ export type AuditEventFilters = {
   category?: 'security';
 };
 
-export const AUDIT_ACTION_LABELS: Record<string, string> = {
-  document_uploaded: 'Documento enviado',
-  version_created: 'Nova versão criada',
-  document_reviewed: 'Documento revisado',
-  permission_granted: 'Permissão concedida',
-  rule_applied: 'Regra aplicada',
-  document_viewed: 'Documento visualizado',
-  'document.created': 'Documento criado',
-  'document.version.created': 'Versão criada',
-  'document.classified': 'Documento classificado',
-  'document.metadata.extracted': 'Metadados extraídos',
-  'document.metadata.confirmed': 'Análise confirmada',
-  'document.metadata.reviewed_confirmed': 'Revisão confirmada',
-  'document.review.required': 'Revisão necessária',
-  USER_ACCESS_REQUESTED: 'Solicitação de acesso',
-  USER_INVITED: 'Usuário convidado',
-  USER_CREATED: 'Usuário criado',
-  USER_APPROVED: 'Acesso aprovado',
-  USER_REJECTED: 'Acesso rejeitado',
-  USER_BLOCKED: 'Usuário bloqueado',
-  USER_ACTIVATED: 'Usuário reativado',
-  USER_ACCESS_UPDATED: 'Acesso atualizado',
-  NOTIFICATION_PREFERENCES_UPDATED: 'Preferências atualizadas',
+/**
+ * Chaves do catálogo `audit`, com namespace explícito para resolver em qualquer `t`.
+ *
+ * O id da ação vem do servidor e às vezes tem ponto (`document.created`); a chave do catálogo não
+ * pode ter, porque ponto é separador de caminho. Ação sem entrada aqui aparece com o id cru.
+ */
+export const AUDIT_ACTION_LABEL_KEYS: Record<string, string> = {
+  document_uploaded: 'audit:action.documentUploaded',
+  version_created: 'audit:action.versionCreated',
+  document_reviewed: 'audit:action.documentReviewed',
+  permission_granted: 'audit:action.permissionGranted',
+  rule_applied: 'audit:action.ruleApplied',
+  document_viewed: 'audit:action.documentViewed',
+  'document.created': 'audit:action.documentCreated',
+  'document.version.created': 'audit:action.documentVersionCreated',
+  'document.classified': 'audit:action.documentClassified',
+  'document.metadata.extracted': 'audit:action.metadataExtracted',
+  'document.metadata.confirmed': 'audit:action.metadataConfirmed',
+  'document.metadata.reviewed_confirmed': 'audit:action.reviewConfirmed',
+  'document.review.required': 'audit:action.reviewRequired',
+  USER_ACCESS_REQUESTED: 'audit:action.userAccessRequested',
+  USER_INVITED: 'audit:action.userInvited',
+  USER_CREATED: 'audit:action.userCreated',
+  USER_APPROVED: 'audit:action.userApproved',
+  USER_REJECTED: 'audit:action.userRejected',
+  USER_BLOCKED: 'audit:action.userBlocked',
+  USER_ACTIVATED: 'audit:action.userActivated',
+  USER_ACCESS_UPDATED: 'audit:action.userAccessUpdated',
+  NOTIFICATION_PREFERENCES_UPDATED: 'audit:action.notificationPreferencesUpdated',
 };
 
-export const AUDIT_SEVERITY_LABELS: Record<AuditSeverity, string> = {
-  info: 'Informação',
-  success: 'Sucesso',
-  warning: 'Atenção',
-  error: 'Erro',
-  critical: 'Crítico',
+export const AUDIT_SEVERITY_LABEL_KEYS: Record<AuditSeverity, string> = {
+  info: 'audit:severity.info',
+  success: 'audit:severity.success',
+  warning: 'audit:severity.warning',
+  error: 'audit:severity.error',
+  critical: 'audit:severity.critical',
 };
 
-export const AUDIT_SOURCE_LABELS: Record<AuditSource, string> = {
-  document: 'Documentos',
-  user: 'Usuários',
-  system: 'Sistema',
+export const AUDIT_SOURCE_LABEL_KEYS: Record<AuditSource, string> = {
+  document: 'audit:source.document',
+  user: 'audit:source.user',
+  system: 'audit:source.system',
 };

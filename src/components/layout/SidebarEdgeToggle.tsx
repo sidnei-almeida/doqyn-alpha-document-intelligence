@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 type SidebarEdgeToggleProps = {
   collapsed: boolean;
@@ -31,6 +32,7 @@ type SidebarEdgeToggleProps = {
  * no rótulo acessível do botão.
  */
 export function SidebarEdgeToggle({ collapsed, onToggle }: SidebarEdgeToggleProps) {
+  const { t } = useTranslation('components');
   const edgeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -67,12 +69,16 @@ export function SidebarEdgeToggle({ collapsed, onToggle }: SidebarEdgeToggleProp
       onClick={onToggle}
       onPointerMove={followPointer}
       onPointerLeave={resetPointer}
-      aria-label={`${collapsed ? 'Expandir' : 'Recolher'} barra lateral (Ctrl + \\)`}
+      aria-label={t(collapsed ? 'sidebarEdgeToggle.expand' : 'sidebarEdgeToggle.collapse')}
       data-testid="sidebar-collapse-toggle"
       className="sidebar-edge-toggle group absolute inset-y-0 right-0 z-10 w-2.5 translate-x-1/2 cursor-pointer focus-visible:outline-none"
     >
       <span aria-hidden className="sidebar-edge-toggle-grip">
-        <Icon name={collapsed ? 'chevron_right' : 'chevron_left'} size={ICON_SIZE.xs} weight={300} />
+        <Icon
+          name={collapsed ? 'chevron_right' : 'chevron_left'}
+          size={ICON_SIZE.xs}
+          weight={300}
+        />
       </span>
     </button>
   );

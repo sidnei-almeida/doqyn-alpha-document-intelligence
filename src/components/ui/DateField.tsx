@@ -5,6 +5,7 @@ import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { cn, formatDate } from '@/lib/utils';
 import { parseIsoDate } from '@/lib/dateValue';
 import { CalendarPanel } from './CalendarPanel';
+import { useTranslation } from 'react-i18next';
 import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
 
 export type DateFieldProps = {
@@ -36,7 +37,7 @@ export function DateField({
   label,
   value = '',
   onChange,
-  placeholder = 'Escolher data',
+  placeholder: placeholderProp,
   min,
   max,
   disabled,
@@ -45,6 +46,8 @@ export function DateField({
   variant = 'boxed',
   'aria-label': ariaLabel,
 }: DateFieldProps) {
+  const { t } = useTranslation('components');
+  const placeholder = placeholderProp ?? t('dateField.placeholder');
   const [open, setOpen] = useState(false);
   const [anchorWidth, setAnchorWidth] = useState<number>();
   const anchorRef = useRef<HTMLButtonElement>(null);
@@ -83,7 +86,8 @@ export function DateField({
           parsed ? 'text-doqyn-text' : 'text-doqyn-subtle',
         )}
       >
-        {parsed ? formatDate(parsed) : placeholder}
+        {/* A string, e não o `Date` local: `yyyy-mm-dd` é data de calendário e não passa por fuso. */}
+        {parsed ? formatDate(value.slice(0, 10)) : placeholder}
       </span>
       <Icon name="calendar_today" size={ICON_SIZE.xs} className="shrink-0 text-doqyn-subtle" />
     </button>
@@ -96,7 +100,7 @@ export function DateField({
       onClose={() => setOpen(false)}
       placement="bottom-start"
       role="dialog"
-      aria-label={label ?? ariaLabel ?? 'Calendário'}
+      aria-label={label ?? ariaLabel ?? t('dateField.calendar')}
       panelStyle={anchorWidth ? { minWidth: anchorWidth } : undefined}
     >
       <CalendarPanel

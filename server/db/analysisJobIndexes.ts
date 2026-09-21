@@ -13,12 +13,24 @@ import { ensureIndexesForCollection } from './tenantIndexes.js';
  * é varredura da coleção inteira no processo que já está ocupado analisando. `status + completedAt`
  * é a janela de vazão que alimenta a estimativa.
  */
+/**
+ * O job é registro de trabalho, não histórico: o que importa dele já está no documento e na
+ * trilha. Sem poda a coleção crescia a cada upload, para sempre, e junto com ela a contagem de
+ * posição na fila, que varre por status.
+ */
+export const ANALYSIS_JOB_TTL_SECONDS = 30 * 24 * 60 * 60;
+
 export const ANALYSIS_JOB_INDEXES: IndexDescription[] = [
   // A consulta de status carrega dono e tenant no filtro para não vazar job entre contas.
   { key: { tenantId: 1, ownerUserId: 1, createdAt: -1 } },
   { key: { tenantId: 1, status: 1, createdAt: -1 } },
   { key: { status: 1, createdAt: -1 } },
   { key: { status: 1, completedAt: -1 } },
+  {
+    key: { createdAt: 1 },
+    expireAfterSeconds: ANALYSIS_JOB_TTL_SECONDS,
+    name: 'analysis_jobs_ttl',
+  },
 ];
 
 export async function ensureAnalysisJobIndexes() {

@@ -1,3 +1,4 @@
+import { getServerT, normalizeServerLocale, type ServerLocale } from '../i18n/index.js';
 import {
   buildExternalShareInvitePath,
   getExternalSharePortalPayload,
@@ -27,6 +28,8 @@ export type OgPortalMetadata = {
   canonicalUrl: string;
   portalPath: string;
   ctaLabel: string;
+  /** Idioma do cartão. Ausente, pt-BR. */
+  locale?: ServerLocale;
 };
 
 /**
@@ -54,106 +57,81 @@ function cardImageUrl(origin: string, kind: OgPortalKind): string {
   );
 }
 
-const GENERIC_TITLE: Record<OgPortalKind, string> = {
-  sign: 'Documento para assinar · DOQYN',
-  share: 'Documento compartilhado · DOQYN',
-};
-
-const GENERIC_DESCRIPTION: Record<OgPortalKind, string> = {
-  sign: 'Alguém solicitou sua assinatura em um documento. Abra o link para ver e assinar.',
-  share: 'Um documento foi compartilhado com você. Abra o link para acessar.',
-};
-
+/**
+ * Indisponível, sem dizer por quê: "revogado pelo remetente" e "expirou" contam história sobre o
+ * documento para quem só viu o link passar num grupo.
+ */
 function unavailableMetadata(input: {
   kind: OgPortalKind;
   origin: string;
-  token: string;
   portalPath: string;
-  reason?: string;
+  locale: ServerLocale;
 }): OgPortalMetadata {
+  const t = getServerT(input.locale, 'og');
   const isSign = input.kind === 'sign';
   return {
     kind: input.kind,
     available: false,
-    title: isSign ? 'Assinatura indisponível · DOQYN' : 'Compartilhamento indisponível · DOQYN',
-    // `reason` continua sendo usado pela página que o robô recebe; fora dela, a meta description
-    // é genérica: "revogado pelo remetente" e "expirou" contam história sobre o documento para
-    // quem só viu o link passar num grupo.
-    description: isSign
-      ? 'Este link de assinatura não está mais disponível.'
-      : 'Este link de compartilhamento não está mais disponível.',
+    title: t(isSign ? 'unavailable.titleSign' : 'unavailable.titleShare'),
+    description: t(isSign ? 'unavailable.descriptionSign' : 'unavailable.descriptionShare'),
     imageUrl: cardImageUrl(input.origin, input.kind),
     canonicalUrl: toAbsolutePublicUrl(input.origin, input.portalPath),
     portalPath: input.portalPath,
-    ctaLabel: isSign ? 'Tentar abrir' : 'Tentar abrir',
-    statusLabel: 'Indisponível',
+    ctaLabel: t('unavailable.cta'),
+    statusLabel: t('unavailable.status'),
+    locale: input.locale,
   };
 }
 
-export async function getShareOgMetadata(token: string, origin: string): Promise<OgPortalMetadata> {
+export async function getShareOgMetadata(
+  token: string,
+  origin: string,
+  requestedLocale?: string | null,
+): Promise<OgPortalMetadata> {
+  const locale = normalizeServerLocale(requestedLocale);
+  const t = getServerT(locale, 'og');
   const portalPath = buildExternalShareInvitePath(token);
   const access = await resolveExternalShareAccess(token);
 
   if (!access.grant) {
-    return unavailableMetadata({
-      kind: 'share',
-      origin,
-      token,
-      portalPath,
-      reason:
-        access.reason === 'not_found'
-          ? 'Convite não encontrado ou link inválido.'
-          : access.reason === 'revoked'
-            ? 'Este compartilhamento foi revogado pelo remetente.'
-            : access.reason === 'expired' || access.reason === 'invite_expired'
-              ? 'Este convite expirou.'
-              : undefined,
-    });
+    return unavailableMetadata({ kind: 'share', origin, portalPath, locale });
   }
 
   try {
     // O payload ainda é buscado porque é ele que prova que o convite existe e está de pé — mas
     // nada do que ele carrega sobre o documento entra no cartão.
     const payload = await getExternalSharePortalPayload(token);
+    const pending = payload.status === 'pending';
 
     return {
       kind: 'share',
       available: true,
-      title: GENERIC_TITLE.share,
-      description: GENERIC_DESCRIPTION.share,
-      statusLabel: payload.status === 'pending' ? 'Aguardando aceite' : 'Documento compartilhado',
+      title: t('title.share'),
+      description: t('description.share'),
+      statusLabel: t(pending ? 'status.shareWaiting' : 'status.shareActive'),
       imageUrl: cardImageUrl(origin, 'share'),
       canonicalUrl: toAbsolutePublicUrl(origin, portalPath),
       portalPath,
-      ctaLabel: payload.status === 'pending' ? 'Aceitar e abrir' : 'Abrir documento',
+      ctaLabel: t(pending ? 'cta.shareAccept' : 'cta.shareOpen'),
+      locale,
     };
   } catch {
-    return unavailableMetadata({ kind: 'share', origin, token, portalPath });
+    return unavailableMetadata({ kind: 'share', origin, portalPath, locale });
   }
 }
 
-export async function getSignOgMetadata(token: string, origin: string): Promise<OgPortalMetadata> {
+export async function getSignOgMetadata(
+  token: string,
+  origin: string,
+  requestedLocale?: string | null,
+): Promise<OgPortalMetadata> {
+  const locale = normalizeServerLocale(requestedLocale);
+  const t = getServerT(locale, 'og');
   const portalPath = buildSignaturePortalPath(token);
   const request = await findSignatureRequestByToken(token);
 
-  if (!request) {
-    return unavailableMetadata({
-      kind: 'sign',
-      origin,
-      token,
-      portalPath,
-      reason: 'Solicitação de assinatura não encontrada.',
-    });
-  }
-
-  if (!isSignatureRequestOpen(request)) {
-    return unavailableMetadata({
-      kind: 'sign',
-      origin,
-      token,
-      portalPath,
-      reason: 'Esta solicitação de assinatura já foi concluída, expirou ou foi cancelada.',
-    });
+  if (!request || !isSignatureRequestOpen(request)) {
+    return unavailableMetadata({ kind: 'sign', origin, portalPath, locale });
   }
 
   try {
@@ -164,15 +142,16 @@ export async function getSignOgMetadata(token: string, origin: string): Promise<
     return {
       kind: 'sign',
       available: true,
-      title: GENERIC_TITLE.sign,
-      description: GENERIC_DESCRIPTION.sign,
-      statusLabel: 'Assinatura pendente',
+      title: t('title.sign'),
+      description: t('description.sign'),
+      statusLabel: t('status.signPending'),
       imageUrl: cardImageUrl(origin, 'sign'),
       canonicalUrl: toAbsolutePublicUrl(origin, portalPath),
       portalPath,
-      ctaLabel: 'Abrir e assinar',
+      ctaLabel: t('cta.sign'),
+      locale,
     };
   } catch {
-    return unavailableMetadata({ kind: 'sign', origin, token, portalPath });
+    return unavailableMetadata({ kind: 'sign', origin, portalPath, locale });
   }
 }

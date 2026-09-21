@@ -24,8 +24,8 @@ const FORBIDDEN_WRITE_PATTERNS = [
   /names\.accessGroups!\)\.(insert|update|replace|bulkWrite)/,
   /documentClasses\)\.(insert|update|replace|bulkWrite)/,
   /accessGroups\)\.(insert|update|replace|bulkWrite)/,
-  /currentMetadataPreview:\s*[\[{'"`0-9a-zA-Z_]/,
-  /metadataIndex:\s*[\[{]/,
+  /currentMetadataPreview:\s*[[{'"`0-9a-zA-Z_]/,
+  /metadataIndex:\s*[[{]/,
 ];
 
 function walk(dir: string, out: string[] = []): string[] {

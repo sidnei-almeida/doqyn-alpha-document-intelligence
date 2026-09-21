@@ -58,11 +58,11 @@ describe('o e-mail do aviso', () => {
       notificacao({ documentId: 'doc_1', documentName: 'Contrato.pdf' }),
       'https://app.doqyn.com',
     );
-    assert.match(comDoc.html, /documento=doc_1/);
+    assert.match(comDoc.html, /\/library\?preview=doc_1/);
     assert.match(comDoc.subject, /Contrato\.pdf/);
 
     const semDoc = buildNotificationEmail(notificacao(), 'https://app.doqyn.com');
-    assert.match(semDoc.html, /\/notificacoes/);
+    assert.match(semDoc.html, /\/notifications/);
   });
 
   it('escapa o que veio do usuário, senão o nome do arquivo vira marcação', () => {
@@ -72,6 +72,57 @@ describe('o e-mail do aviso', () => {
     );
     assert.equal(email.html.includes('<img src=x'), false);
     assert.match(email.html, /&lt;img/);
+  });
+
+  it('o assunto não repete o documento que o título já nomeia', () => {
+    const email = buildNotificationEmail(
+      notificacao({
+        params: { documentName: 'Alvará', daysRemaining: 7 },
+        documentId: 'doc_1',
+        documentName: 'Alvará',
+      }),
+      'https://app.doqyn.com',
+    );
+    assert.equal(email.subject, 'Alvará vence em 7 dias');
+  });
+
+  it('aviso sem documento não diz que a pessoa acompanha um documento', () => {
+    const comDoc = buildNotificationEmail(notificacao({ documentId: 'doc_1' }), 'https://x.dev');
+    assert.match(comDoc.html, /acompanha este documento/);
+
+    const semDoc = buildNotificationEmail(
+      notificacao({ type: 'approval_decided', title: 'Seu pedido foi recusado' }),
+      'https://x.dev',
+    );
+    assert.equal(semDoc.html.includes('acompanha este documento'), false);
+    assert.match(semDoc.html, /dirigido à sua conta no DOQYN/);
+  });
+
+  it('a linha de prazo mostra a data, e não repete os dias do título', () => {
+    const email = buildNotificationEmail(
+      notificacao({
+        params: { documentName: 'Alvará', daysRemaining: 7 },
+        documentName: 'Alvará',
+        expiry: { offsetDays: 7, validityDate: new Date('2026-09-20T00:00:00Z'), daysRemaining: 7 },
+      }),
+      'https://x.dev',
+      'pt-BR',
+    );
+    assert.match(email.html, /Válido até 20\/09\/2026/);
+    assert.equal(email.html.match(/vence em 7 dias/gi)?.length, 1);
+
+    const vencido = buildNotificationEmail(
+      notificacao({
+        expiry: {
+          offsetDays: 0,
+          validityDate: new Date('2026-09-10T00:00:00Z'),
+          daysRemaining: -3,
+        },
+      }),
+      'https://x.dev',
+      'en-US',
+    );
+    assert.match(vencido.html, /Expired on 09\/10\/2026/);
   });
 
   it('vai com versão em texto, para quem não renderiza HTML', () => {

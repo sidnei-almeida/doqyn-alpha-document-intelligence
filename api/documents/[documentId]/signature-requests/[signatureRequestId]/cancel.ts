@@ -49,7 +49,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.signature_request_cancelled',
-        description: 'Solicitação de assinatura revogada.',
         documentId: result.documentId,
         metadata: sanitizeAuditMetadata({
           signatureRequestId: result.signatureRequestId,

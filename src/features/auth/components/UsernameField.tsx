@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * O nome de usuário, escolhido no cadastro.
@@ -15,12 +16,12 @@ import { cn } from '@/lib/utils';
  */
 const CHECK_URL = '/auth/username-available';
 
-const REASON_TEXT: Record<string, string> = {
-  too_short: 'Curto demais: use ao menos 3 caracteres.',
-  too_long: 'Longo demais: no máximo 32 caracteres.',
-  invalid_shape: 'Use letras, números, ponto, hífen ou sublinhado.',
-  reserved: 'Esse é reservado. Escolha outro.',
-  taken: 'Já está em uso. Escolha outro.',
+const REASON_KEYS: Record<string, string> = {
+  too_short: 'usernameField.reason.tooShort',
+  too_long: 'usernameField.reason.tooLong',
+  invalid_shape: 'usernameField.reason.invalidShape',
+  reserved: 'usernameField.reason.reserved',
+  taken: 'usernameField.reason.taken',
 };
 
 export function normalizeUsernameInput(raw: string): string {
@@ -50,6 +51,8 @@ export function UsernameField({
   suggestion?: string;
   onValidityChange?: (valid: boolean) => void;
 }) {
+  const { t } = useTranslation('auth');
+
   const [touched, setTouched] = useState(false);
   const [status, setStatus] = useState<'idle' | 'checking' | 'free' | 'taken'>('idle');
   const [reason, setReason] = useState<string | null>(null);
@@ -103,23 +106,25 @@ export function UsernameField({
   }, [onValidityChange, username]);
 
   const feedback = useMemo(() => {
-    if (username.length > 0 && username.length < 3) return REASON_TEXT.too_short;
-    if (status === 'checking') return 'Conferindo…';
-    if (status === 'free') return 'Disponível.';
-    if (status === 'taken') return REASON_TEXT[reason ?? 'taken'] ?? REASON_TEXT.taken;
-    return 'É por ele que pessoas de fora encontram você.';
-  }, [reason, status, username.length]);
+    if (username.length > 0 && username.length < 3) return t('usernameField.reason.tooShort');
+    if (status === 'checking') return t('usernameField.checking');
+    if (status === 'free') return t('usernameField.available');
+    if (status === 'taken') {
+      return t(REASON_KEYS[reason ?? 'taken'] ?? 'usernameField.reason.taken');
+    }
+    return t('usernameField.hint');
+  }, [reason, status, username.length, t]);
 
   return (
     <div>
       <Input
-        label="Nome de usuário"
+        label={t('usernameField.nomeDeUsuario')}
         value={value}
         onChange={(event) => {
           setTouched(true);
           onChange(normalizeUsernameInput(event.target.value));
         }}
-        placeholder="joao.silva"
+        placeholder={t('usernameField.placeholder')}
         autoComplete="off"
         required
       />

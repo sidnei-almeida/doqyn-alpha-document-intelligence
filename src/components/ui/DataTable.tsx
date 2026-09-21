@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from './EmptyState';
+import { useTranslation } from 'react-i18next';
 
 export type DataTableColumn<T> = {
   key: string;
@@ -65,7 +66,7 @@ export function DataTable<T>({
   keyExtractor,
   onRowClick,
   selectedKey,
-  emptyMessage = 'Nenhum registro encontrado',
+  emptyMessage,
   emptyDescription,
   emptyAction,
   sparseMessage,
@@ -79,11 +80,12 @@ export function DataTable<T>({
   renderExpanded,
   expandedKey = null,
 }: DataTableProps<T>) {
+  const { t } = useTranslation('components');
   const densityStyle = DENSITY_STYLES[density];
   if (data.length === 0) {
     return (
       <EmptyState
-        title={emptyMessage}
+        title={emptyMessage ?? t('dataTable.empty')}
         description={emptyDescription}
         action={emptyAction}
         stretch={stretch}

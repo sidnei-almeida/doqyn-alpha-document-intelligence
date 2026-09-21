@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
+import { useTranslation } from 'react-i18next';
 
 export function PromptDialog({
   open,
@@ -10,8 +11,8 @@ export function PromptDialog({
   description,
   label,
   placeholder,
-  confirmLabel = 'Confirmar',
-  cancelLabel = 'Cancelar',
+  confirmLabel: confirmLabelProp,
+  cancelLabel: cancelLabelProp,
   required = true,
   /**
    * O texto com que o campo abre — o nome atual, quando o diálogo serve para renomear.
@@ -40,6 +41,9 @@ export function PromptDialog({
   onClose: () => void;
   onConfirm: (value: string) => void;
 }) {
+  const { t } = useTranslation('components');
+  const confirmLabel = confirmLabelProp ?? t('common:actions.confirm');
+  const cancelLabel = cancelLabelProp ?? t('common:actions.cancel');
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
 
@@ -54,7 +58,7 @@ export function PromptDialog({
   const handleConfirm = () => {
     const trimmed = value.trim();
     if (required && !trimmed) {
-      setError('Este campo é obrigatório.');
+      setError(t('promptDialog.required'));
       return;
     }
     onConfirm(trimmed);
@@ -75,7 +79,7 @@ export function PromptDialog({
             {cancelLabel}
           </Button>
           <Button type="button" onClick={handleConfirm} disabled={saving}>
-            {saving ? 'Aguarde…' : confirmLabel}
+            {saving ? t('promptDialog.wait') : confirmLabel}
           </Button>
         </>
       }

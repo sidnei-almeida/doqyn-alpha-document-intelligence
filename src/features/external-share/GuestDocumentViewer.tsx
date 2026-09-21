@@ -9,6 +9,7 @@ import {
 import type { DocumentPreviewManifest } from '@/types/preview-manifest';
 import type { ExternalSharePortalPayload } from '@/features/sharing/api/externalShareApi';
 import { fetchExternalShareAssetBlob } from '@/features/sharing/api/externalShareApi';
+import { useTranslation } from 'react-i18next';
 
 type GuestDocumentViewerProps = {
   manifest: DocumentPreviewManifest;
@@ -18,12 +19,10 @@ type GuestDocumentViewerProps = {
   isDownloading: boolean;
 };
 
-function viewerTypeBadge(viewerType: string | undefined): string | null {
-  if (viewerType === 'pdf_pages') return 'PDF';
-  if (viewerType === 'image') return 'Imagem';
-  if (viewerType === 'unsupported') return 'Sem preview';
-  return null;
-}
+const VIEWER_TYPE_BADGE_KEYS: Record<string, string> = {
+  image: 'guestDocumentViewer.imageBadge',
+  unsupported: 'guestDocumentViewer.noPreviewBadge',
+};
 
 export function GuestDocumentViewer({
   manifest,
@@ -32,6 +31,8 @@ export function GuestDocumentViewer({
   onDownload,
   isDownloading,
 }: GuestDocumentViewerProps) {
+  const { t } = useTranslation('externalShare');
+
   const viewerActionsRef = useRef<ViewerActions | null>(null);
   const [viewerToolbar, setViewerToolbar] = useState<ViewerToolbarState>({
     scale: 1,
@@ -48,9 +49,15 @@ export function GuestDocumentViewer({
   const displayName = payload.document.displayName;
   const subtitleParts = [
     payload.document.categoryName,
-    payload.document.versionLabel ? `Versão ${payload.document.versionLabel}` : '',
+    payload.document.versionLabel
+      ? t('guestDocumentViewer.versionLabel', { version: payload.document.versionLabel })
+      : '',
     payload.ownerTenantName,
-    viewerTypeBadge(manifest.viewerType),
+    manifest.viewerType === 'pdf_pages'
+      ? 'PDF'
+      : manifest.viewerType && VIEWER_TYPE_BADGE_KEYS[manifest.viewerType]
+        ? t(VIEWER_TYPE_BADGE_KEYS[manifest.viewerType]!)
+        : null,
   ].filter(Boolean);
   const subtitle = subtitleParts.join(' • ');
 
@@ -66,7 +73,10 @@ export function GuestDocumentViewer({
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0
-      ? `Página ${viewerToolbar.currentPage} de ${viewerToolbar.totalPages}`
+      ? t('guestDocumentViewer.pageOf', {
+          current: viewerToolbar.currentPage,
+          total: viewerToolbar.totalPages,
+        })
       : undefined;
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {
@@ -98,7 +108,7 @@ export function GuestDocumentViewer({
         <div className="doqyn-secure-viewer flex h-full min-h-0 flex-col">
           {showProtectedNotice ? (
             <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
-              Visualização protegida. Download indisponível neste convite.
+              {t('guestDocumentViewer.visualizacaoProtegidaDownloadIndisponivel')}
             </p>
           ) : null}
           <ViewerComponent

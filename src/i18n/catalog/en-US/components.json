@@ -1,0 +1,144 @@
+{
+  "authBrandLogo": {
+    "doqyn": "Doqyn"
+  },
+  "authShell": {
+    "ambienteCorporativoSeguro": "Secure corporate workspace"
+  },
+  "authSplitShell": {
+    "ambienteCorporativoSeguro": "Secure corporate workspace",
+    "doqyn": "Doqyn"
+  },
+  "calendarPanel": {
+    "hoje": "Today",
+    "limpar": "Clear",
+    "mesAnterior": "Previous month",
+    "proximoMes": "Next month"
+  },
+  "confirmProvider": {
+    "typeToConfirm": "Type <word>{{word}}</word> to confirm:",
+    "typeExactly": "Type {{word}} exactly to continue."
+  },
+  "countrySelect": {
+    "buscarPais": "Search country",
+    "nenhumPaisEncontrado": "No country found.",
+    "selecionarPais": "Select country",
+    "pais": "Country"
+  },
+  "filterBar": {
+    "limparFiltros": "Clear filters"
+  },
+  "globalSearchCommand": {
+    "buscarDocumentos": "Search documents",
+    "buscarDocumentos2": "Search documents",
+    "limparBusca": "Clear search"
+  },
+  "headerUserMenu": {
+    "configuracoes": "Settings",
+    "conta": "Account",
+    "menuDoUsuario": "User menu",
+    "sair": "Sign out"
+  },
+  "helpMenu": {
+    "ajuda": "Help",
+    "ajuda2": "Help",
+    "centralDeAjuda": "Help center",
+    "ondeFicaCadaCoisa": "Where everything is, in 2 min",
+    "verOTour": "Take the tour"
+  },
+  "input": {
+    "hidePassword": "Hide password",
+    "showPassword": "Show password"
+  },
+  "modal": {
+    "fechar": "Close"
+  },
+  "routeLoadingFallback": {
+    "carregandoModulo": "Loading module",
+    "carregandoModulo2": "Loading module..."
+  },
+  "sidebar": {
+    "administracao": "Administration"
+  },
+  "sidebarBrandLogo": {
+    "doqyn": "Doqyn",
+    "homeLink": "Doqyn — go to Library"
+  },
+  "sidebarEdgeToggle": {
+    "collapse": "Collapse sidebar (Ctrl + \\)",
+    "expand": "Expand sidebar (Ctrl + \\)"
+  },
+  "sidebarUsage": {
+    "armazenamento": "Storage",
+    "armazenamentoUsado": "Storage used",
+    "documentCount_one": "{{count}} document",
+    "documentCount_other": "{{count}} documents",
+    "ofQuota": "of {{quota}}",
+    "percentUsed": "{{percent}} used",
+    "tooltip": "Storage · {{used}}",
+    "tooltipWithQuota": "Storage · {{used}} of {{quota}} ({{percent}})"
+  },
+  "tableRowActionsMenu": {
+    "acoesDaLinha": "Row actions"
+  },
+  "termsAcceptanceCheckbox": {
+    "doDoqyn": "of DOQYN.",
+    "eDeclaroCienciaDa": "and acknowledge the",
+    "liEAceitoOs": "I have read and accept the",
+    "politicaDePrivacidade": "Privacy Policy",
+    "termosECondicoesDe": "Terms and Conditions of Use",
+    "helper": "We recommend reading the terms before continuing."
+  },
+  "theme": {
+    "darkHint": "Almost-black shell, graphite panel",
+    "darkLabel": "Dark",
+    "lightHint": "Light grey shell, paper panel",
+    "lightLabel": "Light",
+    "standardHint": "Graphite shell, paper panel",
+    "standardLabel": "Standard",
+    "toggleAriaLabel": "Theme: {{current}}. Switch to {{next}}.",
+    "toggleTitle": "Theme: {{current}}. {{hint}}. Click for {{next}}."
+  },
+  "uploadDropzone": {
+    "arrasteODocumentoOu": "Drag the document here or click to select",
+    "formats": "PDF, Word, Excel or images",
+    "maxSize": "up to {{size}}"
+  },
+  "versionBadge": {
+    "versaoAtual": "Current version"
+  },
+  "userFallback": "User",
+  "workspaceRefreshButton": {
+    "label": "Refresh"
+  },
+  "dataTable": {
+    "empty": "No records found"
+  },
+  "dateField": {
+    "placeholder": "Pick a date",
+    "calendar": "Calendar"
+  },
+  "inlineErrorHint": {
+    "message": "Couldn't load the data."
+  },
+  "progress": {
+    "label": "Progress"
+  },
+  "promptDialog": {
+    "required": "This field is required.",
+    "wait": "Please wait…"
+  },
+  "reviewBeforeSubmitDialog": {
+    "confirm": "Confirm and send",
+    "submitting": "Sending…"
+  },
+  "select": {
+    "placeholder": "Select"
+  },
+  "skeletonList": {
+    "loading": "Loading"
+  },
+  "whatsappInput": {
+    "incomplete": "Incomplete WhatsApp number."
+  }
+}

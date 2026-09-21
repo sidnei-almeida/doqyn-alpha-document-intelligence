@@ -11,8 +11,11 @@
  * que alguém ajustasse as casas de um deles.
  */
 
+import { formatNumber as formatNumberForLocale } from '@/i18n/formats';
+
+/** Separador decimal do idioma ativo: `1,5 GB` em português e espanhol, `1.5 GB` em inglês. */
 function formatNumber(value: number, digits: number, minDigits = digits): string {
-  return value.toLocaleString('pt-BR', {
+  return formatNumberForLocale(value, {
     minimumFractionDigits: minDigits,
     maximumFractionDigits: digits,
   });

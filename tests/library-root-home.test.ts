@@ -24,7 +24,7 @@ describe('home da Biblioteca (raiz)', () => {
     const page = readSrc('features/library/LibraryPage.tsx');
     const header = readSrc('features/library/components/ExplorerPageHeader.tsx');
     assert.ok(page.includes('ExplorerPageHeader'));
-    assert.ok(page.includes("'Biblioteca'"));
+    assert.ok(page.includes("t('libraryPage.title')"));
     assert.ok(
       page.includes('showFilterChips={explorer.isBrowseRoot && !explorer.isSearchOrFilterAtRoot}'),
     );
@@ -36,7 +36,7 @@ describe('home da Biblioteca (raiz)', () => {
     const grid = readSrc('features/library/components/ExplorerFolderGrid.tsx');
     assert.ok(home.includes('ExplorerFolderGrid'));
     assert.ok(home.includes('ExplorerRecentList'));
-    assert.ok(home.includes('Sem categoria'));
+    assert.ok(home.includes('.semCategoria'));
     assert.ok(home.includes('explorer-root-home'));
     assert.ok(home.includes('viewMode'));
     assert.ok(grid.includes('Pastas inteligentes'));
@@ -58,8 +58,8 @@ describe('home da Biblioteca (raiz)', () => {
     assert.ok(recent.includes('viewMode'));
     assert.ok(recent.includes('recent-files-grid'));
     assert.ok(card.includes('DocumentFileThumbnail'));
-    assert.ok(empty.includes('Nenhum arquivo recente'));
-    assert.ok(empty.includes('Enviar documento'));
+    assert.ok(empty.includes('.nenhumArquivoRecente'));
+    assert.ok(empty.includes('.enviarDocumento'));
   });
 
   it('modo grade é o padrão na URL', () => {

@@ -20,6 +20,7 @@ import {
 import { formatSecurityContextDisplay } from '../src/features/tracking/utils/trackingDisplay.js';
 import { DOCUMENT_SECURITY_CONTEXT_ACTIONS } from '../server/services/tracking/trackingTypes.js';
 import { sanitizeAuditMetadata } from '../server/utils/sanitizeAuditMetadata.js';
+import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -55,12 +56,39 @@ describe('tracking securityContext', () => {
     assert.equal('ipAddress' in context, false);
   });
 
-  it('resolve IP com cf-connecting-ip e x-forwarded-for', () => {
-    const cfReq = {
-      headers: { 'cf-connecting-ip': '203.0.113.10', 'x-forwarded-for': '10.0.0.1' },
+  it('ignora cf-connecting-ip sem Cloudflare na frente e prefere o x-real-ip do nginx', () => {
+    const spoofed = {
+      headers: {
+        'cf-connecting-ip': '6.6.6.6',
+        'x-forwarded-for': '6.6.6.7, 203.0.113.20',
+        'x-real-ip': '203.0.113.10',
+      },
       socket: { remoteAddress: '127.0.0.1' },
     };
-    assert.equal(resolveClientIp(cfReq), '203.0.113.10');
+    assert.equal(resolveClientIp(spoofed), '203.0.113.10');
+  });
+
+  it('do x-forwarded-for vale a entrada do último salto, não a do cliente', () => {
+    const req = {
+      headers: { 'x-forwarded-for': '6.6.6.7, 203.0.113.20' },
+      socket: { remoteAddress: '127.0.0.1' },
+    };
+    assert.equal(resolveClientIp(req), '203.0.113.20');
+  });
+
+  it('cf-connecting-ip só vale com TRUST_CLOUDFLARE=true', () => {
+    const previous = process.env.TRUST_CLOUDFLARE;
+    process.env.TRUST_CLOUDFLARE = 'true';
+    try {
+      const cfReq = {
+        headers: { 'cf-connecting-ip': '203.0.113.10', 'x-real-ip': '10.0.0.1' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
+      assert.equal(resolveClientIp(cfReq), '203.0.113.10');
+    } finally {
+      if (previous === undefined) delete process.env.TRUST_CLOUDFLARE;
+      else process.env.TRUST_CLOUDFLARE = previous;
+    }
   });
 
   it('parseia user-agent em browser/os/deviceType sem UA bruto', () => {
@@ -134,8 +162,8 @@ describe('tracking securityContext', () => {
     const drawer = read('src/features/tracking/components/TrackingEventLogDetail.tsx');
     const display = read('src/features/tracking/utils/trackingDisplay.ts');
     assert.ok(drawer.includes('formatSecurityContextDisplay'));
-    assert.ok(drawer.includes('Contexto de acesso'));
-    assert.ok(drawer.includes('Local aproximado'));
+    assert.ok(drawer.includes('.contextoDeAcesso'));
+    assert.ok(drawer.includes('trackingEventLogDetail.security.location'));
     assert.ok(display.includes('ipAddressMasked'));
     assert.equal(drawer.includes('user-agent bruto'), false);
   });
@@ -210,25 +238,46 @@ describe('tracking securityContext', () => {
     assert.equal(geo.timezone, 'America/Sao_Paulo');
   });
 
-  it('prioriza headers Cloudflare sobre lookup local', () => {
-    const context = buildSecurityContext(
-      {
-        headers: {
-          'cf-ipcountry': 'BR',
-          'cf-region': 'RS',
-          'cf-ipcity': 'Caxias do Sul',
-          'x-forwarded-for': '8.8.8.8',
-        },
-        socket: {},
-      },
-      { isExternalGuest: false },
-    );
-    assert.equal(context.city, 'Caxias do Sul');
-    assert.equal(context.region, 'RS');
-    assert.equal(context.country, 'BR');
+  const geoHeaders = {
+    'cf-ipcountry': 'BR',
+    'cf-region': 'RS',
+    'cf-ipcity': 'Caxias do Sul',
+    'x-forwarded-for': '8.8.8.8',
+  };
+
+  it('com TRUST_CLOUDFLARE=true, headers Cloudflare vêm antes do lookup local', () => {
+    const previous = process.env.TRUST_CLOUDFLARE;
+    process.env.TRUST_CLOUDFLARE = 'true';
+    try {
+      const context = buildSecurityContext(
+        { headers: geoHeaders, socket: {} },
+        { isExternalGuest: false },
+      );
+      assert.equal(context.city, 'Caxias do Sul');
+      assert.equal(context.region, 'RS');
+      assert.equal(context.country, 'BR');
+    } finally {
+      if (previous === undefined) delete process.env.TRUST_CLOUDFLARE;
+      else process.env.TRUST_CLOUDFLARE = previous;
+    }
+  });
+
+  it('sem Cloudflare na frente, o geo dos headers é ignorado — quem escreve é o cliente', () => {
+    const previous = process.env.TRUST_CLOUDFLARE;
+    delete process.env.TRUST_CLOUDFLARE;
+    try {
+      const context = buildSecurityContext(
+        { headers: geoHeaders, socket: {} },
+        { isExternalGuest: false },
+      );
+      assert.notEqual(context.city, 'Caxias do Sul');
+    } finally {
+      if (previous !== undefined) process.env.TRUST_CLOUDFLARE = previous;
+    }
   });
 
   it('UI mostra Rede local para eventos locais', () => {
+    initI18nForTests();
     const display = formatSecurityContextDisplay({
       browser: 'Firefox',
       browserVersion: '152',

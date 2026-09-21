@@ -20,12 +20,15 @@ import { submitIndividualSignup } from './api/individualSignupApi';
 import {
   buildIndividualSignupPayload,
   buildIndividualSignupReviewSections,
-  INDIVIDUAL_SIGNUP_REVIEW_COPY,
+  INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS,
   validateIndividualSignupForm,
   type IndividualSignupFormValues,
 } from './individualSignupReview';
+import { useTranslation } from 'react-i18next';
 
 export function IndividualSignupPage() {
+  const { t } = useTranslation('auth');
+
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
@@ -109,8 +112,8 @@ export function IndividualSignupPage() {
   );
 
   const reviewSections = useMemo(
-    () => buildIndividualSignupReviewSections(formValues),
-    [formValues],
+    () => buildIndividualSignupReviewSections(formValues, t),
+    [formValues, t],
   );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -126,7 +129,7 @@ export function IndividualSignupPage() {
     // O servidor aceitaria e resolveria a colisão com sufixo numérico — que é justamente o
     // silêncio que este campo existe para acabar.
     if (!usernameAvailable) {
-      setError('Escolha um nome de usuário disponível para continuar.');
+      setError(t('signup.usernameUnavailable'));
       return;
     }
 
@@ -137,7 +140,7 @@ export function IndividualSignupPage() {
       if (validation.field === 'acceptedTerms') {
         setTermsError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.reviewFields'));
       return;
     }
 
@@ -147,7 +150,7 @@ export function IndividualSignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.termsRequired'));
       }
       return;
     }
@@ -165,19 +168,20 @@ export function IndividualSignupPage() {
       // devolveria a pessoa ao login sem explicar por quê.
       if (result.emailVerificationRequired && result.verificationTicket) {
         storeVerificationTicket(result.verificationTicket);
-        toast.success(result.message ?? 'Conta criada. Confirme seu e-mail para entrar.');
-        navigate('/confirmar-cadastro', {
+        // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+        toast.success(t('individualSignupPage.createdVerify'));
+        navigate('/verify-email', {
           replace: true,
-          state: { ticket: result.verificationTicket },
+          state: { ticket: result.verificationTicket, emailSent: result.emailSent },
         });
         return;
       }
 
-      toast.success(result.message ?? 'Seu acesso CPF foi criado com sucesso.');
+      toast.success(t('individualSignupPage.created'));
       await refreshUser();
-      navigate('/biblioteca', { replace: true });
+      navigate('/library', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao criar acesso.';
+      const message = err instanceof Error ? err.message : t('individualSignupPage.failed');
       setError(message);
       showApiErrorToast(err, message);
     } finally {
@@ -188,20 +192,20 @@ export function IndividualSignupPage() {
   return (
     <>
       <AuthHeading
-        title="Acessar como pessoa física"
-        description="Para quem guarda documentos próprios, sem vínculo com uma empresa."
+        title={t('individualSignupPage.acessarComoPessoaFisica')}
+        description={t('individualSignupPage.paraQuemGuardaDocumentos')}
       />
 
       <form onSubmit={handleSubmit}>
         <div className="mb-5 border-b border-doqyn-border-subtle pb-2.5 font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-          Dados pessoais
+          {t('individualSignupPage.dadosPessoais')}
         </div>
 
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="firstName"
-              label="Nome"
+              label={t('individualSignupPage.nome')}
               autoComplete="given-name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -209,7 +213,7 @@ export function IndividualSignupPage() {
             />
             <Input
               id="lastName"
-              label="Sobrenome"
+              label={t('individualSignupPage.sobrenome')}
               autoComplete="family-name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
@@ -227,7 +231,7 @@ export function IndividualSignupPage() {
           <div className="flex flex-col gap-1.5">
             <Input
               id="email"
-              label="E-mail"
+              label={t('individualSignupPage.eMail')}
               autoComplete="email"
               type="email"
               value={email}
@@ -237,14 +241,19 @@ export function IndividualSignupPage() {
             />
             {fromAuthenticatedSession && (
               <p className="type-label text-doqyn-muted">
-                E-mail confirmado pela conta com que você entrou.
+                {t('individualSignupPage.eMailConfirmadoPela')}
               </p>
             )}
           </div>
-          <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
+          <CountrySelect
+            id="country"
+            label={t('individualSignupPage.pais')}
+            value={country}
+            onChange={handleCountryChange}
+          />
           <WhatsappInput
             id="whatsapp"
-            label="WhatsApp"
+            label={t('individualSignupPage.whatsapp')}
             country={country}
             value={whatsapp}
             onChange={setWhatsapp}
@@ -254,7 +263,7 @@ export function IndividualSignupPage() {
             id="taxId"
             country={country}
             personType="individual"
-            label={getTaxIdSpec(country, 'individual').label}
+            label={t(getTaxIdSpec(country, 'individual').labelKey)}
             value={taxId}
             onChange={setTaxId}
             required
@@ -263,7 +272,7 @@ export function IndividualSignupPage() {
             <>
               <Input
                 id="password"
-                label="Senha"
+                label={t('individualSignupPage.senha')}
                 autoComplete="new-password"
                 type="password"
                 value={password}
@@ -273,7 +282,7 @@ export function IndividualSignupPage() {
               />
               <Input
                 id="confirmPassword"
-                label="Confirmar senha"
+                label={t('individualSignupPage.confirmarSenha')}
                 autoComplete="new-password"
                 type="password"
                 value={confirmPassword}
@@ -304,23 +313,23 @@ export function IndividualSignupPage() {
         ) : null}
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link to="/acesso" className={AUTH_QUIET_BUTTON}>
-            Voltar
+          <Link to="/access" className={AUTH_QUIET_BUTTON}>
+            {t('individualSignupPage.voltar')}
           </Link>
           <button type="submit" disabled={resolvingSession} className={AUTH_PRIMARY_BUTTON}>
-            Criar acesso CPF
+            {t('individualSignupPage.criarAcessoCpf')}
           </button>
         </div>
       </form>
 
       <ReviewBeforeSubmitDialog
         open={reviewOpen}
-        title={INDIVIDUAL_SIGNUP_REVIEW_COPY.title}
-        description={INDIVIDUAL_SIGNUP_REVIEW_COPY.description}
-        attentionMessage={INDIVIDUAL_SIGNUP_REVIEW_COPY.attentionMessage}
+        title={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.title)}
+        description={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.description)}
+        attentionMessage={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.attentionMessage)}
         sections={reviewSections}
         submitting={submitting}
-        confirmLabel={INDIVIDUAL_SIGNUP_REVIEW_COPY.confirmLabel}
+        confirmLabel={t(INDIVIDUAL_SIGNUP_REVIEW_COPY_KEYS.confirmLabel)}
         onCancel={() => {
           if (!submitting) setReviewOpen(false);
         }}
@@ -331,12 +340,12 @@ export function IndividualSignupPage() {
       />
 
       <AuthFooterLink>
-        Já tenho conta.{' '}
+        {t('individualSignupPage.jaTenhoConta')}{' '}
         <Link
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
-          Entrar
+          {t('individualSignupPage.entrar')}
         </Link>
       </AuthFooterLink>
     </>

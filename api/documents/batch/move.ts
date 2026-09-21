@@ -3,15 +3,16 @@ import { buildDocumentAuditContext } from '../../../server/audit/buildDocumentAu
 import { batchMoveDocumentsToCategory } from '../../../server/services/documentMoveService.js';
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
 import { requireDocumentAuthContext } from '../../../server/tenancy/documentRequestContext.js';
+import {
+  MAX_BATCH_DOCUMENT_IDS,
+  normalizeBatchDocumentIds,
+} from '../../../server/utils/batchDocumentIds.js';
 import { isServiceError } from '../../../server/utils/serviceErrors.js';
 import { sanitizeAuditMetadata } from '../../../server/utils/sanitizeAuditMetadata.js';
 
 function readDocumentIds(req: VercelRequest): string[] {
   const body = req.body as { documentIds?: unknown } | undefined;
-  if (!Array.isArray(body?.documentIds)) return [];
-  return body.documentIds.filter(
-    (id): id is string => typeof id === 'string' && id.trim().length > 0,
-  );
+  return normalizeBatchDocumentIds(body?.documentIds);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -33,6 +34,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({
       message: 'documentIds é obrigatório.',
       code: 'MISSING_DOCUMENT_IDS',
+    });
+  }
+  if (documentIds.length > MAX_BATCH_DOCUMENT_IDS) {
+    return res.status(400).json({
+      message: `Selecione no máximo ${MAX_BATCH_DOCUMENT_IDS} documentos por vez.`,
+      code: 'TOO_MANY_DOCUMENT_IDS',
     });
   }
 
@@ -61,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.moved',
-          description: `Documento movido para ${result.targetCategoryName} (lote).`,
+          params: { context: 'batch', categoryName: result.targetCategoryName },
           documentId: row.documentId,
           versionId: row.currentVersionId,
           metadata: sanitizeAuditMetadata({

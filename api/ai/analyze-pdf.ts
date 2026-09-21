@@ -93,7 +93,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.analysis_started',
-        description: 'Análise de PDF iniciada.',
         target: {
           type: 'analysis_job',
           id: ingress.jobId ?? ctx.requestId,
@@ -135,11 +134,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 originalFileName: ingress.originalFileName,
                 mimeType: ingress.mimeType,
                 fileSizeBytes: ingress.fileSize,
+                fileHash: ingress.fileHash,
                 storageScope,
                 requestId: ctx.requestId,
                 batchId: ctx.batchId,
                 itemId: ctx.itemId,
                 jobKind: 'initial',
+                outputLocale: user.locale,
               })
             : await enqueuePdfAnalysisJob({
                 tenantId: companyId,
@@ -152,6 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 batchId: ctx.batchId,
                 itemId: ctx.itemId,
                 jobKind: 'initial',
+                outputLocale: user.locale,
               });
 
         logger.info('analyze-pdf enfileirado', {
@@ -195,6 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       companyId,
       ownerUserId: user.id,
       jobId: ingress.jobId,
+      outputLocale: user.locale,
       requestContext: {
         requestId: ctx.requestId,
         batchId: ctx.batchId,
@@ -247,10 +250,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: analysisAction,
-        description:
-          analysisAction === 'document.analysis_completed'
-            ? 'Análise de PDF concluída.'
-            : 'Falha na análise de PDF.',
         analysisJobId: result.jobId,
         result: analysisAction === 'document.analysis_completed' ? 'success' : 'error',
         target: {
@@ -309,7 +308,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auditCtx,
         {
           action: 'document.analysis_failed',
-          description: 'Falha na análise de PDF.',
           result: 'error',
           target: {
             type: 'analysis_job',

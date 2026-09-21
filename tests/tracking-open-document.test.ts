@@ -25,7 +25,7 @@ describe('atalho do tracking para o documento', () => {
   it('o nome do documento na tabela abre a Biblioteca no arquivo', () => {
     const cell = readRepoFile('src/features/tracking/components/TrackingDocumentCell.tsx');
 
-    assert.match(cell, /\/biblioteca\?preview=/);
+    assert.match(cell, /\/library\?preview=/);
     // Sem id não há atalho: evento de sistema não aponta para documento nenhum.
     assert.match(cell, /documentId \?/);
   });
@@ -33,8 +33,8 @@ describe('atalho do tracking para o documento', () => {
   it('a gaveta do evento também oferece abrir o documento', () => {
     const drawer = readRepoFile('src/features/tracking/components/TrackingEventLogDetail.tsx');
 
-    assert.match(drawer, /Abrir documento/);
-    assert.match(drawer, /\/biblioteca\?preview=/);
+    assert.match(drawer, /\.abrirDocumento/);
+    assert.match(drawer, /\/library\?preview=/);
   });
 
   it('a Biblioteca entende o link e abre o visualizador', () => {

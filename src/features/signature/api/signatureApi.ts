@@ -1,6 +1,19 @@
 import { authFetch } from '@/auth/apiAuth';
 import { parseDocumentApiError } from '@/features/documents/api/documentsApi.errors';
 import type { DocumentSignatureSummary } from '@/types/document-library';
+import { parseApiError } from '@/lib/apiErrors';
+import { i18n } from '@/i18n';
+import { DEFAULT_LOCALE, normalizeLocale } from '@/i18n/locales';
+
+/**
+ * O idioma que a tela está mostrando, para o servidor escrever a declaração de aceite nele.
+ *
+ * Vai por `?lang=` e não pelo `Accept-Language` do navegador: quem escolheu espanhol num
+ * navegador em português precisa ler e aceitar a declaração em espanhol.
+ */
+function uiLocaleQuery(): string {
+  return `lang=${encodeURIComponent(normalizeLocale(i18n.language) ?? DEFAULT_LOCALE)}`;
+}
 
 export type SignaturePortalPayload = {
   signatureRequestId: string;
@@ -27,6 +40,8 @@ export type SignaturePortalPayload = {
   expiresAt: string | null;
   message: string | null;
   consentText: string;
+  /** Idioma de `consentText`. Volta no pedido de assinatura, para o certificado imprimir a mesma frase. */
+  consentLocale?: string;
   status: string;
 };
 
@@ -44,7 +59,7 @@ async function parseJson<T>(response: Response): Promise<T> {
 }
 
 export async function fetchSignaturePortal(token: string): Promise<SignaturePortalPayload> {
-  const response = await fetch(`/api/sign/${encodeURIComponent(token)}`);
+  const response = await fetch(`/api/sign/${encodeURIComponent(token)}?${uiLocaleQuery()}`);
   return parseJson(response);
 }
 
@@ -64,11 +79,12 @@ export async function fetchSignaturePreviewAssetBlob(url: string): Promise<Blob>
 export async function signDocumentViaPortal(
   token: string,
   consentAccepted: boolean,
+  consentLocale?: string,
 ): Promise<SignatureSignResult> {
   const response = await fetch(`/api/sign/${encodeURIComponent(token)}/sign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ consentAccepted, action: 'sign' }),
+    body: JSON.stringify({ consentAccepted, consentLocale, action: 'sign' }),
   });
   return parseJson(response);
 }
@@ -93,6 +109,8 @@ export async function createDocumentSignatureRequest(
     message?: string;
     expiresAt?: string;
     permissions?: { canDownloadAfterSign?: boolean };
+    /** Idioma do portal de assinatura; ausente, o portal segue o navegador de quem abre. */
+    recipientLocale?: string;
   },
 ) {
   const response = await authFetch(
@@ -112,8 +130,7 @@ export async function createDocumentSignatureRequest(
 export async function fetchPublicSignatureVerification(verificationCode: string) {
   const response = await fetch(`/api/verify/signature/${encodeURIComponent(verificationCode)}`);
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { message?: string };
-    throw new Error(body.message ?? 'Assinatura não encontrada.');
+    throw await parseApiError(response, i18n.t('signature:signatureVerificationPage.notFound'));
   }
   return response.json();
 }
@@ -227,7 +244,7 @@ export async function fetchInternalSignatureSigningPayload(
   signatureRequestId: string,
 ): Promise<InternalSignatureSigningPayload> {
   const response = await authFetch(
-    `/api/signature-requests/${encodeURIComponent(signatureRequestId)}/signing-payload`,
+    `/api/signature-requests/${encodeURIComponent(signatureRequestId)}/signing-payload?${uiLocaleQuery()}`,
   );
   return parseJson(response);
 }
@@ -250,13 +267,14 @@ export async function fetchInternalSignaturePreviewAssetBlob(url: string): Promi
 export async function signDocumentViaRequest(
   signatureRequestId: string,
   consentAccepted: boolean,
+  consentLocale?: string,
 ): Promise<SignatureSignResult> {
   const response = await authFetch(
     `/api/signature-requests/${encodeURIComponent(signatureRequestId)}/sign`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ consentAccepted }),
+      body: JSON.stringify({ consentAccepted, consentLocale }),
     },
   );
   return parseJson(response);

@@ -5,13 +5,13 @@ import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CodeInput } from '@/features/email-verification/components/CodeInput';
-import { plural } from '@/lib/plural';
 import { isIndividualTenant } from '@/lib/tenantVocabulary';
 import {
   emailChangeApi,
   getEmailChangeErrorMessage,
   type RequestEmailChangeResponse,
 } from '../api/emailChangeApi';
+import { useTranslation } from 'react-i18next';
 
 /** Segundos que faltam até `iso`, nunca negativo. */
 function secondsUntil(iso: string | undefined): number {
@@ -27,12 +27,14 @@ function secondsUntil(iso: string | undefined): number {
  * computador com nada na mão. Os dois chegam na mesma mensagem.
  */
 export function ChangeEmailCard() {
+  const { t } = useTranslation('settings');
+
   const { user, tenant, refreshUser } = useAuth();
   // Sugerir um endereço corporativo a quem tem conta pessoal é oferecer um exemplo que não
   // se parece com o caso de uso dela.
   const emailPlaceholder = isIndividualTenant(tenant?.tenantType)
-    ? 'voce@exemplo.com'
-    : 'voce@suaempresa.com.br';
+    ? t('changeEmailCard.placeholderIndividual')
+    : t('changeEmailCard.placeholderBusiness');
   const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -120,10 +122,10 @@ export function ChangeEmailCard() {
   return (
     <div className="settings-subblock">
       <div className="settings-subblock__header">
-        <p className="register-label text-doqyn-subtle">Trocar e-mail</p>
+        <p className="register-label text-doqyn-subtle">{t('changeEmailCard.trocarEMail')}</p>
         <p className="settings-section-note">
-          O endereço atual é {user?.email ?? '—'}. Enviamos um código de 6 dígitos ao novo e-mail
-          antes de aplicar a troca.
+          {t('changeEmailCard.oEnderecoAtualE')} {user?.email ?? '—'}
+          {t('changeEmailCard.enviamosUmCodigoDe')}
         </p>
       </div>
 
@@ -131,7 +133,7 @@ export function ChangeEmailCard() {
         <Input
           variant="rule"
           type="email"
-          label="Novo e-mail"
+          label={t('changeEmailCard.novoEMail')}
           value={newEmail}
           onChange={(event) => setNewEmail(event.target.value)}
           placeholder={emailPlaceholder}
@@ -141,10 +143,10 @@ export function ChangeEmailCard() {
           variant="rule"
           type="password"
           revealable
-          label="Senha atual"
+          label={t('changeEmailCard.senhaAtual')}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="Confirme sua identidade"
+          placeholder={t('changeEmailCard.confirmeSuaIdentidade')}
           disabled={pending}
         />
       </div>
@@ -152,9 +154,9 @@ export function ChangeEmailCard() {
       {pendingStatus ? (
         <div className="flex flex-col gap-4">
           <p className="settings-section-note">
-            Enviamos um código para{' '}
-            <strong className="font-medium text-doqyn-text">{pendingStatus.newEmail}</strong>.
-            Digite-o abaixo, ou use o link do mesmo e-mail.
+            {t('changeEmailCard.enviamosUmCodigoPara')}{' '}
+            <strong className="font-medium text-doqyn-text">{pendingStatus.newEmail}</strong>
+            {t('changeEmailCard.digiteOAbaixoOu')}
           </p>
 
           <CodeInput
@@ -169,13 +171,15 @@ export function ChangeEmailCard() {
           {typeof attemptsLeft === 'number' && (confirmMutation.isError || blocked) ? (
             <p className="settings-section-note">
               {blocked
-                ? 'Este código foi bloqueado por excesso de tentativas. Peça um novo.'
-                : `${plural(attemptsLeft, 'tentativa restante', 'tentativas restantes')} neste código.`}
+                ? t('changeEmailCard.codeBlocked')
+                : t('changeEmailCard.attemptsLeft', { count: attemptsLeft })}
             </p>
           ) : null}
 
           {devCode ? (
-            <p className="settings-section-note">Código de desenvolvimento: {devCode}</p>
+            <p className="settings-section-note">
+              {t('changeEmailCard.codigoDeDesenvolvimento')} {devCode}
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -191,10 +195,10 @@ export function ChangeEmailCard() {
               disabled={resendMutation.isPending || cooldown > 0}
             >
               {cooldown > 0
-                ? `Reenviar em ${cooldown}s`
+                ? t('changeEmailCard.resendIn', { seconds: cooldown })
                 : resendMutation.isPending
-                  ? 'Reenviando…'
-                  : 'Reenviar código'}
+                  ? t('changeEmailCard.resending')
+                  : t('changeEmailCard.resend')}
             </Button>
             <Button
               type="button"
@@ -203,7 +207,9 @@ export function ChangeEmailCard() {
               onClick={() => confirmMutation.mutate(code)}
               disabled={code.length !== 6 || confirmMutation.isPending || blocked}
             >
-              {confirmMutation.isPending ? 'Confirmando…' : 'Confirmar troca'}
+              {confirmMutation.isPending
+                ? t('changeEmailCard.confirming')
+                : t('changeEmailCard.confirmChange')}
             </Button>
           </>
         ) : (
@@ -214,7 +220,9 @@ export function ChangeEmailCard() {
             onClick={() => requestMutation.mutate()}
             disabled={requestMutation.isPending || !newEmail || !password}
           >
-            {requestMutation.isPending ? 'Enviando…' : 'Solicitar troca de e-mail'}
+            {requestMutation.isPending
+              ? t('changeEmailCard.sending')
+              : t('changeEmailCard.requestChange')}
           </Button>
         )}
       </div>

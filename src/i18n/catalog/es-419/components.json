@@ -1,0 +1,145 @@
+{
+  "authBrandLogo": {
+    "doqyn": "Doqyn"
+  },
+  "authShell": {
+    "ambienteCorporativoSeguro": "Espacio de trabajo corporativo seguro"
+  },
+  "authSplitShell": {
+    "ambienteCorporativoSeguro": "Espacio de trabajo corporativo seguro",
+    "doqyn": "Doqyn"
+  },
+  "calendarPanel": {
+    "hoje": "Hoy",
+    "limpar": "Limpiar",
+    "mesAnterior": "Mes anterior",
+    "proximoMes": "Mes siguiente"
+  },
+  "confirmProvider": {
+    "typeToConfirm": "Escribe <word>{{word}}</word> para confirmar:",
+    "typeExactly": "Escribe exactamente {{word}} para continuar."
+  },
+  "countrySelect": {
+    "buscarPais": "Buscar país",
+    "nenhumPaisEncontrado": "No se encontró ningún país.",
+    "selecionarPais": "Seleccionar país",
+    "pais": "País"
+  },
+  "filterBar": {
+    "limparFiltros": "Limpiar filtros"
+  },
+  "globalSearchCommand": {
+    "buscarDocumentos": "Buscar documentos",
+    "buscarDocumentos2": "Buscar documentos",
+    "limparBusca": "Limpiar búsqueda"
+  },
+  "headerUserMenu": {
+    "configuracoes": "Configuración",
+    "conta": "Cuenta",
+    "menuDoUsuario": "Menú del usuario",
+    "sair": "Salir"
+  },
+  "helpMenu": {
+    "ajuda": "Ayuda",
+    "ajuda2": "Ayuda",
+    "centralDeAjuda": "Centro de ayuda",
+    "ondeFicaCadaCoisa": "Dónde está cada cosa, en 2 min",
+    "verOTour": "Ver el recorrido"
+  },
+  "input": {
+    "hidePassword": "Ocultar contraseña",
+    "showPassword": "Mostrar contraseña"
+  },
+  "modal": {
+    "fechar": "Cerrar"
+  },
+  "routeLoadingFallback": {
+    "carregandoModulo": "Cargando módulo",
+    "carregandoModulo2": "Cargando módulo..."
+  },
+  "sidebar": {
+    "administracao": "Administración"
+  },
+  "sidebarBrandLogo": {
+    "doqyn": "Doqyn",
+    "homeLink": "Doqyn — ir a la Biblioteca"
+  },
+  "sidebarEdgeToggle": {
+    "collapse": "Contraer barra lateral (Ctrl + \\)",
+    "expand": "Expandir barra lateral (Ctrl + \\)"
+  },
+  "sidebarUsage": {
+    "armazenamento": "Almacenamiento",
+    "armazenamentoUsado": "Almacenamiento usado",
+    "documentCount_one": "{{count}} documento",
+    "documentCount_many": "{{count}} documentos",
+    "documentCount_other": "{{count}} documentos",
+    "ofQuota": "de {{quota}}",
+    "percentUsed": "{{percent}} usado",
+    "tooltip": "Almacenamiento · {{used}}",
+    "tooltipWithQuota": "Almacenamiento · {{used}} de {{quota}} ({{percent}})"
+  },
+  "tableRowActionsMenu": {
+    "acoesDaLinha": "Acciones de la fila"
+  },
+  "termsAcceptanceCheckbox": {
+    "doDoqyn": "de DOQYN.",
+    "eDeclaroCienciaDa": "y declaro conocer la",
+    "liEAceitoOs": "Leí y acepto los",
+    "politicaDePrivacidade": "Política de Privacidad",
+    "termosECondicoesDe": "Términos y Condiciones de Uso",
+    "helper": "Te recomendamos leer los términos antes de continuar."
+  },
+  "theme": {
+    "darkHint": "Carcasa casi negra, panel grafito",
+    "darkLabel": "Oscuro",
+    "lightHint": "Carcasa gris claro, panel de papel",
+    "lightLabel": "Claro",
+    "standardHint": "Carcasa grafito, panel de papel",
+    "standardLabel": "Estándar",
+    "toggleAriaLabel": "Tema: {{current}}. Cambiar a {{next}}.",
+    "toggleTitle": "Tema: {{current}}. {{hint}}. Haz clic para {{next}}."
+  },
+  "uploadDropzone": {
+    "arrasteODocumentoOu": "Arrastra el documento aquí o haz clic para seleccionar",
+    "formats": "PDF, Word, Excel o imágenes",
+    "maxSize": "hasta {{size}}"
+  },
+  "versionBadge": {
+    "versaoAtual": "Versión actual"
+  },
+  "userFallback": "Usuario",
+  "workspaceRefreshButton": {
+    "label": "Actualizar"
+  },
+  "dataTable": {
+    "empty": "No se encontraron registros"
+  },
+  "dateField": {
+    "placeholder": "Elegir fecha",
+    "calendar": "Calendario"
+  },
+  "inlineErrorHint": {
+    "message": "No se pudieron cargar los datos."
+  },
+  "progress": {
+    "label": "Progreso"
+  },
+  "promptDialog": {
+    "required": "Este campo es obligatorio.",
+    "wait": "Espera…"
+  },
+  "reviewBeforeSubmitDialog": {
+    "confirm": "Confirmar y enviar",
+    "submitting": "Enviando…"
+  },
+  "select": {
+    "placeholder": "Seleccionar"
+  },
+  "skeletonList": {
+    "loading": "Cargando"
+  },
+  "whatsappInput": {
+    "incomplete": "WhatsApp incompleto."
+  }
+}

@@ -69,28 +69,9 @@
     <title>DOQYN · Document Intelligence</title>
   </head>
   <body>
-    <script>
-      // Dois atributos, não um: `data-appearance` nomeia o tema e `data-theme` diz
-      // qual paleta vale por padrão — a do painel. No `standard` a casca desmente
-      // esse padrão localmente. Espelha `src/lib/theme.ts`; se um mudar, muda os dois.
-      //
-      // Quem chega pela primeira vez vê o `standard`, e não o que o sistema operacional
-      // prefere. O DOQYN tem uma aparência própria — casca de grafite, painel de papel —
-      // e é ela que apresenta o produto; herdar o modo escuro do sistema mostrava a
-      // terceira opção da lista para quem nunca escolheu nenhuma. A partir daí a escolha
-      // é da pessoa, e fica gravada.
-      (function () {
-        var stored = localStorage.getItem('doqyn-theme');
-        var theme =
-          stored === 'standard' || stored === 'light' || stored === 'dark'
-            ? stored
-            : 'standard';
-        var palette = theme === 'dark' ? 'dark' : 'light';
-        document.documentElement.dataset.appearance = theme;
-        document.documentElement.dataset.theme = palette;
-        document.documentElement.style.colorScheme = palette;
-      })();
-    </script>
+    <!-- Antes da primeira pintura, e fora do bundle: ver `public/boot.js`. Sem `defer` nem
+         `async` de propósito — depois da pintura já é tarde, o tema piscaria. -->
+    <script src="/boot.js"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

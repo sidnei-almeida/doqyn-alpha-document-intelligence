@@ -122,7 +122,7 @@ export function parseMetadataDate(raw: string | number): Date | null {
   const text = String(raw).trim();
   if (!text) return null;
 
-  const br = text.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  const br = text.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
   if (br) {
     const day = Number(br[1]);
     const month = Number(br[2]);

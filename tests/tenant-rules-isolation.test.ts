@@ -98,9 +98,8 @@ describe('isolamento tenant — regras de classificação', () => {
     const filterA = buildDocumentOwnershipFilter(businessCtx('company_alpha'));
     const filterB = buildDocumentOwnershipFilter(businessCtx('company_beta'));
     assert.notDeepEqual(filterA, filterB);
-    assert.ok(filterA.$or);
-    assert.deepEqual(filterA.$or![0], { tenantId: 'company_alpha' });
-    assert.deepEqual(filterB.$or![0], { tenantId: 'company_beta' });
+    assert.deepEqual(filterA, { tenantId: 'company_alpha' });
+    assert.deepEqual(filterB, { tenantId: 'company_beta' });
   });
 
   it('B. tenant sem regra mapeada retorna lista vazia', () => {

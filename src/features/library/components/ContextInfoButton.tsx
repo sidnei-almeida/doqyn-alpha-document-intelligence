@@ -7,6 +7,7 @@ import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import type { LibraryFolder } from '../types/library';
 import { LibraryInfoPopover } from './LibraryInfoPopover';
 import type { LibraryOverview } from './detailsPanelTypes';
+import { useTranslation } from 'react-i18next';
 
 type ContextInfoButtonProps = {
   overview: LibraryOverview;
@@ -24,16 +25,18 @@ export function ContextInfoButton({
   onOpenChange,
   className,
 }: ContextInfoButtonProps) {
+  const { t } = useTranslation('library');
+
   const anchorRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className={cn('relative shrink-0', className)}>
-      <Tooltip label="Informações">
+      <Tooltip label={t('contextInfoButton.informacoes')}>
         <button
           ref={anchorRef}
           type="button"
           className="workspace-action-btn explorer-icon-btn"
-          aria-label="Informações"
+          aria-label={t('contextInfoButton.informacoes2')}
           aria-expanded={open}
           aria-haspopup="dialog"
           data-testid="library-context-info-button"
@@ -48,7 +51,7 @@ export function ContextInfoButton({
         open={open}
         onClose={() => onOpenChange(false)}
         placement="bottom-end"
-        aria-label="Informações"
+        aria-label={t('contextInfoButton.informacoes3')}
         className="w-[min(20rem,calc(100vw-2rem))]"
       >
         <LibraryInfoPopover overview={overview} folder={folder} />

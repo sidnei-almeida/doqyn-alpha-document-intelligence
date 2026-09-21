@@ -64,6 +64,9 @@ export async function parseMultipart(
     try {
       bb = busboy({
         headers: req.headers,
+        // O navegador manda o nome do arquivo em UTF-8 cru; o padrão do busboy lê como latin-1, e
+        // `técnico.png` chegava como `tÃ©cnico.png` — que o corte ASCII escondia como `tAcnico`.
+        defParamCharset: 'utf8',
         limits: {
           files: 1,
           fileSize: maxFileBytes,

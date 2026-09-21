@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { buildDocumentListQuery } from '../server/utils/documentListQuery.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,11 +162,19 @@ describe('integração Biblioteca — pasta e cache', () => {
   });
 
   it('backend trata processed e processed_with_review no filtro Processado', () => {
-    const service = readFileSync(
-      join(__dirname, '..', 'server', 'services', 'documentService.ts'),
-      'utf8',
+    const processado = buildDocumentListQuery(
+      { tenantId: 'tenant_a' },
+      { processingStatus: 'processed' },
     );
-    assert.ok(service.includes("processingStatus === 'processed'"));
-    assert.ok(service.includes('processed_with_review'));
+    assert.deepEqual(processado.processingStatus, {
+      $in: ['processed', 'processed_with_review'],
+    });
+
+    // Qualquer outro estado continua sendo igualdade simples: só o Processado é guarda-chuva.
+    const pendente = buildDocumentListQuery(
+      { tenantId: 'tenant_a' },
+      { processingStatus: 'pending' },
+    );
+    assert.equal(pendente.processingStatus, 'pending');
   });
 });

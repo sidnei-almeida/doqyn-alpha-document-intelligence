@@ -8,6 +8,7 @@ import { tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import type { DocumentRequestContext } from '../tenancy/documentRequestContext.js';
 import { recordChunkingJobCompletion } from '../metrics/prometheus.js';
 import { logger } from '../utils/logger.js';
+import { onShutdown } from '../runtime/shutdown.js';
 
 export async function processChunkingJob(job: Job<ChunkingQueueJobPayload>): Promise<void> {
   const payload = job.data;
@@ -102,6 +103,10 @@ export async function runChunkingWorkerLoop(): Promise<void> {
       message: error instanceof Error ? error.message : 'unknown',
     });
   });
+
+  // No SIGTERM o worker para de pegar job novo e espera o que está em mãos terminar, em vez
+  // de ser morto no meio e deixar a vaga do tenant presa até o prazo vencer.
+  onShutdown('worker de fatiamento', () => worker.close());
 
   logger.info('Chunking worker aguardando jobs');
 }

@@ -3,6 +3,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { Link } from 'react-router-dom';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { AUTH_CHOICE_ROW } from '@/features/auth/components/authControls';
+import { useTranslation } from 'react-i18next';
 
 function AccessOption({
   to,
@@ -45,35 +46,40 @@ export function AccessChoicePage({
   title?: string;
   description?: string;
 } = {}) {
+  const { t } = useTranslation('auth');
+
   return (
     <>
-      <AuthHeading title={title ?? 'Como você quer começar?'} description={description} />
+      <AuthHeading
+        title={title ?? t('accessChoicePage.comoVoceQuerComecar')}
+        description={description}
+      />
 
       <div className="border-t border-doqyn-border-subtle">
         {/* Entrar numa empresa que já usa o DOQYN não é mais um caminho daqui: quem já está
             dentro convida, e o convite chega por link. Oferecer um pedido que ninguém mais
             aprova seria mandar a pessoa para uma fila que não existe. */}
         <AccessOption
-          to="/criar-empresa"
+          to="/signup/company"
           index={1}
-          title="Cadastrar minha empresa"
-          subtitle="Para abrir um ambiente novo para a sua empresa."
+          title={t('accessChoicePage.cadastrarMinhaEmpresa')}
+          subtitle={t('accessChoicePage.subtitleEmpresa')}
         />
         <AccessOption
-          to="/criar-acesso-cpf"
+          to="/signup/individual"
           index={2}
-          title="Acessar como pessoa física"
-          subtitle="Para quem guarda documentos próprios, sem empresa."
+          title={t('accessChoicePage.acessarComoPessoaFisica')}
+          subtitle={t('accessChoicePage.subtitlePessoaFisica')}
         />
       </div>
 
       <AuthFooterLink>
-        Já tenho conta.{' '}
+        {t('accessChoicePage.jaTenhoConta')}{' '}
         <Link
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
-          Entrar
+          {t('accessChoicePage.entrar')}
         </Link>
       </AuthFooterLink>
     </>

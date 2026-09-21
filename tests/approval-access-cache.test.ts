@@ -27,8 +27,8 @@ describe('aprovação de acesso — persistência e cache', () => {
     // convite, e é a mesma seção de formulário — é a ligação com Regras que este teste guarda.
     const sections = readSrc('src/features/users/components/AccessFormSections.tsx');
     const convite = readSrc('src/features/users/components/InviteMemberDialog.tsx');
-    assert.ok(sections.includes('title="Grupos"'));
-    assert.ok(sections.includes('Os mesmos grupos de Regras'));
+    assert.ok(sections.includes('.grupos'));
+    assert.ok(sections.includes('.osMesmosGruposDe'));
     assert.ok(convite.includes('documentGroupIds'));
     assert.equal(convite.includes('accessGroupIds'), false);
   });

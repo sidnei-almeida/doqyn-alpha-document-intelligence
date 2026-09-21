@@ -1,3 +1,4 @@
+import { compareText } from '@/i18n/formats';
 import type { DocumentListItem } from '@/types/document-library';
 import type { LibrarySortDirection, LibrarySortKey } from '../types/library';
 
@@ -19,22 +20,16 @@ export function sortDocuments(
 
   switch (sortKey) {
     case 'name':
-      sorted.sort(
-        (a, b) => factor * documentDisplayName(a).localeCompare(documentDisplayName(b), 'pt-BR'),
-      );
+      sorted.sort((a, b) => factor * compareText(documentDisplayName(a), documentDisplayName(b)));
       break;
     case 'status':
-      sorted.sort((a, b) => factor * (a.status ?? '').localeCompare(b.status ?? '', 'pt-BR'));
+      sorted.sort((a, b) => factor * compareText(a.status ?? '', b.status ?? ''));
       break;
     case 'owner':
-      sorted.sort(
-        (a, b) => factor * documentOwnerName(a).localeCompare(documentOwnerName(b), 'pt-BR'),
-      );
+      sorted.sort((a, b) => factor * compareText(documentOwnerName(a), documentOwnerName(b)));
       break;
     case 'category':
-      sorted.sort(
-        (a, b) => factor * (a.categoryName ?? '').localeCompare(b.categoryName ?? '', 'pt-BR'),
-      );
+      sorted.sort((a, b) => factor * compareText(a.categoryName ?? '', b.categoryName ?? ''));
       break;
     case 'updatedAt':
     default:

@@ -2,6 +2,7 @@ import { forwardRef, useId, useState, type InputHTMLAttributes } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/utils';
 import { fieldControlClass, fieldLabelClass, fieldWrapperClass } from './fieldStyles';
+import { useTranslation } from 'react-i18next';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -27,6 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
+    const { t } = useTranslation('components');
     const generatedId = useId();
     const inputId = id ?? generatedId;
     const [revealed, setRevealed] = useState(false);
@@ -75,7 +77,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               className="absolute inset-y-0 right-0 inline-flex w-10 items-center justify-center text-doqyn-muted transition-colors hover:text-doqyn-text disabled:opacity-40"
               onClick={() => setRevealed((value) => !value)}
               disabled={disabled}
-              aria-label={revealed ? 'Ocultar senha' : 'Mostrar senha'}
+              aria-label={t(revealed ? 'input.hidePassword' : 'input.showPassword')}
               aria-pressed={revealed}
               tabIndex={-1}
             >

@@ -7,6 +7,7 @@ import type {
   TrackingSummary,
 } from '@/types/document-tracking';
 import { buildTrackingEventsQuery } from '../utils/trackingDisplay';
+import { parseApiError } from '@/lib/apiErrors';
 
 const API_BASE = '/api';
 
@@ -18,8 +19,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Erro na requisição' }));
-    throw new Error(error.message ?? `HTTP ${response.status}`);
+    throw await parseApiError(response);
   }
 
   return response.json();

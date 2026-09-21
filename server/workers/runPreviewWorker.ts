@@ -1,13 +1,12 @@
 import 'dotenv/config';
 import { connectRedisOnBoot } from '../redis/redisClient.js';
 import { runPreviewWorkerLoop } from './previewWorker.js';
-import {
-  configurePrometheusService,
-  initPrometheusMetrics,
-} from '../metrics/prometheus.js';
+import { configurePrometheusService, initPrometheusMetrics } from '../metrics/prometheus.js';
 import { startStandaloneMetricsServer } from '../metrics/metricsServer.js';
+import { installProcessGuards } from '../runtime/shutdown.js';
 
 async function main() {
+  installProcessGuards('doqyn-worker-preview');
   configurePrometheusService({
     serviceName: process.env.METRICS_SERVICE_NAME ?? 'doqyn-worker-preview',
     serviceRole: 'worker-preview',

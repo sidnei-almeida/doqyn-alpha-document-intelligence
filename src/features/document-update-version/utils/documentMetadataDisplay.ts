@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n';
+import { formatDate } from '@/i18n/formats';
 import type { MetadataDisplayField } from '../types';
 import type { DocumentSearchMeta } from '@/types/document-library';
 import {
@@ -40,18 +42,12 @@ function fieldLabelFromRaw(_key: string, value: unknown): string | null {
   return null;
 }
 
-const DATE_ONLY = new Intl.DateTimeFormat('pt-BR', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-
 function formatDateOnly(value: string | Date | null | undefined): string | null {
   if (value == null || value === '') return null;
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  return DATE_ONLY.format(d);
+  // UTC explícito: o metadado guarda o dia à meia-noite UTC, e o fuso do perfil o mudaria.
+  return formatDate(d, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 }
 
 function formatMaybeDateValue(raw: unknown): string {
@@ -91,7 +87,7 @@ export function metadataRecordToDisplayFields(
 
     byCanonical.set(canonicalKey, {
       key: canonicalKey,
-      label: resolveMetadataLabel(canonicalKey, rawLabel),
+      label: resolveMetadataLabel(canonicalKey, rawLabel, i18n.language),
       value: formatted,
     });
   }
@@ -138,7 +134,7 @@ function resolveValidityField(
   if (absoluteRaw != null && absoluteRaw !== '') {
     return {
       key: 'validity',
-      label: 'Validade',
+      label: i18n.t('documentVersion:detailsField.validade'),
       value: formatMaybeDateValue(absoluteRaw),
     };
   }
@@ -146,24 +142,27 @@ function resolveValidityField(
   if (inferredDate || (projected && hasPrazo)) {
     return {
       key: 'validity',
-      label: 'Validade',
-      value: formatDateOnly(inferredDate?.date) ?? projected ?? 'Não determinada',
-      hint: 'Inferida (assinatura/emissão + prazo)',
+      label: i18n.t('documentVersion:detailsField.validade'),
+      value:
+        formatDateOnly(inferredDate?.date) ??
+        projected ??
+        i18n.t('documentVersion:detailsField.validadeNaoDeterminada'),
+      hint: i18n.t('documentVersion:detailsField.validadeInferidaHint'),
     };
   }
 
   if (projected) {
     return {
       key: 'validity',
-      label: 'Validade',
+      label: i18n.t('documentVersion:detailsField.validade'),
       value: projected,
     };
   }
 
   return {
     key: 'validity',
-    label: 'Validade',
-    value: 'Não determinada',
+    label: i18n.t('documentVersion:detailsField.validade'),
+    value: i18n.t('documentVersion:detailsField.validadeNaoDeterminada'),
   };
 }
 
@@ -183,7 +182,11 @@ export function buildStandardDetailsFields(input: {
     (typeof searchMeta?.documentTitle === 'string' && searchMeta.documentTitle.trim()) ||
     formatMetadataValue(byKey.get('titulo'));
   if (title && title !== '—') {
-    fields.push({ key: 'titulo', label: 'Título', value: title });
+    fields.push({
+      key: 'titulo',
+      label: i18n.t('documentVersion:detailsField.titulo'),
+      value: title,
+    });
     used.add('titulo');
   }
 
@@ -195,7 +198,7 @@ export function buildStandardDetailsFields(input: {
     if (!name) continue;
     fields.push({
       key: roleKey,
-      label: resolveMetadataLabel(roleKey),
+      label: resolveMetadataLabel(roleKey, null, i18n.language),
       value: name,
     });
     used.add(roleKey);
@@ -207,7 +210,7 @@ export function buildStandardDetailsFields(input: {
     if (formatted) {
       fields.push({
         key: 'data_assinatura',
-        label: 'Data de assinatura',
+        label: i18n.t('documentVersion:detailsField.dataDeAssinatura'),
         value: formatted,
       });
       used.add('data_assinatura');
@@ -227,7 +230,7 @@ export function buildStandardDetailsFields(input: {
     if (formatted === '—') continue;
     fields.push({
       key,
-      label: resolveMetadataLabel(key),
+      label: resolveMetadataLabel(key, null, i18n.language),
       value: formatted,
     });
     used.add(key);
@@ -266,7 +269,7 @@ export function analysisMetadataToDisplayFields(
 
     byCanonical.set(canonicalKey, {
       key: canonicalKey,
-      label: resolveMetadataLabel(canonicalKey, field.label),
+      label: resolveMetadataLabel(canonicalKey, field.label, i18n.language),
       value: formatted,
     });
   }

@@ -38,7 +38,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
   it('/rules (GovernanceDetailDialog) orienta gestão de membros em Usuários', () => {
     const source = readSrc('features/rules/components/governance/GovernanceDetailDialog.tsx');
     // A frase virou link no meio do texto — "gerenciar em Usuários" — em vez de instrução solta.
-    assert.ok(source.includes('gerenciar em Usuários'));
+    assert.ok(source.includes('.gerenciarEmUsuarios'));
     assert.ok(source.includes('to="/users"'));
     assert.equal(source.includes('Adicionar membro'), false);
     assert.equal(source.includes('onAddMember'), false);
@@ -47,7 +47,7 @@ describe('divisão de responsabilidades /users vs /rules', () => {
 
   it('/rules (RulesPage) não gerencia membros (feito em Usuários)', () => {
     const source = readSrc('features/rules/RulesPage.tsx');
-    assert.ok(source.includes('Conecte grupos de pessoas às categorias'));
+    assert.ok(source.includes("t('rulesPage.descriptionGroups')"));
     assert.equal(source.includes('pendingApprovals'), false);
     assert.equal(source.includes('approveMember'), false);
   });
@@ -55,11 +55,11 @@ describe('divisão de responsabilidades /users vs /rules', () => {
   it('/users (UsersPage) expõe grupos no modal Editar acesso', () => {
     const source = readSrc('features/users/UsersPage.tsx');
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
-    assert.ok(sections.includes('title="Grupos"'));
+    assert.ok(sections.includes('.grupos'));
     assert.ok(source.includes('updateDocumentGroups'));
     assert.ok(source.includes('listDocumentGroups'));
     assert.equal(sections.includes('Grupos de acesso (auth-service)'), false);
-    assert.ok(source.includes("header: 'Grupos'"));
+    assert.ok(source.includes("header: t('usersPage.columns.groups')"));
   });
 
   it('splitUserAccessPayload separa auth-service e grupos documentais', () => {

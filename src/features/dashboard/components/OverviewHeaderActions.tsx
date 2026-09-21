@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import type { DashboardPeriodKey } from '@/types/dashboard-overview';
 import { OverviewPeriodSelector } from './OverviewPeriodSelector';
+import { useTranslation } from 'react-i18next';
 
 type OverviewHeaderActionsProps = {
   period: DashboardPeriodKey;
@@ -11,6 +12,8 @@ type OverviewHeaderActionsProps = {
 };
 
 export function OverviewHeaderActions({ period, onPeriodChange }: OverviewHeaderActionsProps) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   return (
@@ -21,10 +24,11 @@ export function OverviewHeaderActions({ period, onPeriodChange }: OverviewHeader
         variant="secondary"
         size="sm"
         className="h-9"
-        onClick={() => navigate('/biblioteca')}
+        onClick={() => navigate('/library')}
       >
         <Icon name="local_library" size={ICON_SIZE.xs} />
-        Ir para Biblioteca
+
+        {t('overviewHeaderActions.irParaBiblioteca')}
       </Button>
     </div>
   );

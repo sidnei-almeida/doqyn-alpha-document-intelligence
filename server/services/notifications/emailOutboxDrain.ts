@@ -8,6 +8,7 @@ import {
   isEmailChannelEnabled,
 } from '../../config/emailConfig.js';
 import { resolvePublicAppBaseUrl } from '../../config/publicUrlConfig.js';
+import { fetchUserLocalesByIds } from '../../integrations/doqynAuthInternalClient.js';
 import { listOperationalTenantMembers } from '../tenantMemberRepository.js';
 import { logger } from '../../utils/logger.js';
 import { buildNotificationEmail } from './emailTemplate.js';
@@ -65,6 +66,23 @@ async function buildEmailLookup(tenantIds: string[]): Promise<Map<string, string
 }
 
 /**
+ * O idioma de cada destinatário da rodada, numa pergunta só ao auth-service.
+ *
+ * Falhar aqui não segura o aviso: sem resposta, o e-mail sai no idioma padrão. Um aviso em
+ * português para quem lê espanhol é ruim; um aviso que não chega é pior.
+ */
+async function buildLocaleLookup(userIds: string[]): Promise<Map<string, string>> {
+  try {
+    return await fetchUserLocalesByIds([...new Set(userIds)]);
+  } catch (error) {
+    logger.warn('idioma dos destinatários indisponível; e-mail sai no idioma padrão', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return new Map();
+  }
+}
+
+/**
  * Uma passada pelo outbox. Devolve o que aconteceu, para quem chama poder registrar.
  *
  * Cada linha é travada por `findOneAndUpdate` antes do envio: duas instâncias da API drenando ao
@@ -98,6 +116,7 @@ export async function drainEmailOutbox(): Promise<{
   if (pendentes.length === 0) return { sent: 0, failed: 0, retried: 0, throttled: 0 };
 
   const emails = await buildEmailLookup(pendentes.map((linha) => linha.tenantId));
+  const idiomas = await buildLocaleLookup(pendentes.map((linha) => linha.userId));
   const baseUrl = resolvePublicAppBaseUrl();
   let sent = 0;
   let failed = 0;
@@ -105,37 +124,22 @@ export async function drainEmailOutbox(): Promise<{
   let throttled = 0;
 
   /**
-   * Quantos e-mails cada pessoa já recebeu na última hora.
+   * Quantos e-mails a pessoa já recebeu na última hora — contado do próprio outbox, que é o que
+   * todas as réplicas enxergam.
    *
-   * Contado uma vez por rodada, do próprio outbox — quem entregou é a fonte, não um contador em
-   * memória que zera a cada reinício.
+   * Antes a conta era uma foto por rodada, guardada num `Map` local e somada só com o que ESTA
+   * réplica mandasse. Com duas réplicas drenando, cada uma tirava sua foto no começo e nenhuma via
+   * o que a outra estava enviando: o teto por pessoa valia por réplica, não por pessoa.
    */
-  const desdeUmaHora = new Date(agora.getTime() - 60 * 60_000);
-  const enviadosPorUsuario = new Map<string, number>();
-  for (const userId of new Set(pendentes.map((linha) => linha.userId))) {
-    const total = await deliveries.countDocuments({
+  const contarEnviadosNaUltimaHora = async (userId: string): Promise<number> =>
+    deliveries.countDocuments({
       channel: 'email',
       userId,
       status: 'delivered',
-      deliveredAt: { $gte: desdeUmaHora },
+      deliveredAt: { $gte: new Date(Date.now() - 60 * 60_000) },
     } as Record<string, unknown>);
-    enviadosPorUsuario.set(userId, total);
-  }
 
   for (const linha of pendentes) {
-    const jaEnviados = enviadosPorUsuario.get(linha.userId) ?? 0;
-    if (jaEnviados >= EMAIL_MAX_PER_USER_PER_HOUR) {
-      // Adiado, não descartado: o aviso continua verdadeiro na próxima janela.
-      await deliveries.updateOne({ _id: linha._id } as Record<string, unknown>, {
-        $set: {
-          nextAttemptAt: new Date(agora.getTime() + 15 * 60_000),
-          reason: 'Teto de e-mails por hora atingido para este destinatário.',
-        },
-      });
-      throttled += 1;
-      continue;
-    }
-
     const travada = await deliveries.findOneAndUpdate(
       { _id: linha._id, status: linha.status } as Record<string, unknown>,
       { $set: { status: 'sending', lockedAt: agora } },
@@ -143,6 +147,22 @@ export async function drainEmailOutbox(): Promise<{
     );
     // Outra instância pegou primeiro: seguir em frente é o certo, não competir.
     if (!travada) continue;
+
+    // A conta vem depois da trava e imediatamente antes do envio: é o ponto mais tarde possível, e
+    // já inclui o que as outras réplicas marcaram como entregue.
+    if ((await contarEnviadosNaUltimaHora(linha.userId)) >= EMAIL_MAX_PER_USER_PER_HOUR) {
+      // Adiado, não descartado: o aviso continua verdadeiro na próxima janela.
+      await deliveries.updateOne({ _id: linha._id } as Record<string, unknown>, {
+        $set: {
+          status: 'queued',
+          lockedAt: null,
+          nextAttemptAt: new Date(agora.getTime() + 15 * 60_000),
+          reason: 'Teto de e-mails por hora atingido para este destinatário.',
+        },
+      });
+      throttled += 1;
+      continue;
+    }
 
     const destino = emails.get(`${linha.tenantId}:${linha.userId}`);
     if (!destino) {
@@ -174,7 +194,11 @@ export async function drainEmailOutbox(): Promise<{
       continue;
     }
 
-    const { subject, html, text } = buildNotificationEmail(notificacao, baseUrl);
+    const { subject, html, text } = buildNotificationEmail(
+      notificacao,
+      baseUrl,
+      idiomas.get(linha.userId),
+    );
     const resultado = await sendEmailViaResend({
       to: destino,
       subject,
@@ -195,7 +219,6 @@ export async function drainEmailOutbox(): Promise<{
         },
       });
       sent += 1;
-      enviadosPorUsuario.set(linha.userId, (enviadosPorUsuario.get(linha.userId) ?? 0) + 1);
       continue;
     }
 

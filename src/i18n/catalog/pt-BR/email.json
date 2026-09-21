@@ -1,0 +1,66 @@
+{
+  "notification": {
+    "eyebrow": {
+      "document_expiring": "Vencimento",
+      "document_created": "Documento novo",
+      "document_updated": "Documento atualizado",
+      "signature_required": "Assinatura",
+      "document_shared": "Compartilhamento",
+      "access_approved": "Acesso liberado",
+      "access_rejected": "Acesso recusado",
+      "approval_requested": "Aprovação pendente",
+      "approval_decided": "Aprovação decidida",
+      "document_requested": "Documento solicitado",
+      "document_request_fulfilled": "Solicitação atendida",
+      "inbound_share_received": "Recebido de fora",
+      "inbound_share_accepted": "Recebimento aceito",
+      "inbound_share_declined": "Recebimento recusado",
+      "member_joined": "Entrou na empresa"
+    },
+    "eyebrowFallback": "Aviso",
+    "action": {
+      "signature_required": "Abrir para assinar",
+      "member_joined": "Ver em Usuários",
+      "approval_requested": "Revisar pedido",
+      "document_requested": "Ver o que foi pedido",
+      "document_expiring": "Abrir documento"
+    },
+    "actionFallback": "Abrir no DOQYN",
+    "row": {
+      "document": "Documento",
+      "category": "Categoria",
+      "actor": "Por"
+    },
+    "expiry": {
+      "validUntil": "Válido até {{date}}",
+      "expiredOn": "Venceu em {{date}}"
+    },
+    "preferencesHint": "Prefere não receber avisos por e-mail? Ajuste as preferências de notificação no app.",
+    "footNote": "Você recebeu este e-mail porque acompanha este documento no DOQYN, ou porque o aviso é dirigido à sua conta.",
+    "footNoteAccount": "Você recebeu este e-mail porque o aviso é dirigido à sua conta no DOQYN.",
+    "uncategorized": "Sem categoria"
+  },
+  "externalGuest": {
+    "share": {
+      "eyebrow": "Compartilhamento",
+      "title": "{{senderName}} compartilhou um documento com você",
+      "action": "Abrir documento"
+    },
+    "row": {
+      "sharedBy": "Compartilhado por",
+      "expiresAt": "Expira em",
+      "permission": "Permissão",
+      "requestedBy": "Pedido por"
+    },
+    "permission": {
+      "viewOnly": "Somente visualizar",
+      "viewAndDownload": "Visualizar e baixar"
+    },
+    "signature": {
+      "eyebrow": "Assinatura",
+      "title": "{{senderName}} pediu sua assinatura em um documento",
+      "action": "Abrir para assinar"
+    },
+    "footNote": "Você recebeu este e-mail porque este endereço foi indicado em um convite do DOQYN. Se não esperava, pode ignorar — nenhum acesso foi concedido além do link acima."
+  }
+}

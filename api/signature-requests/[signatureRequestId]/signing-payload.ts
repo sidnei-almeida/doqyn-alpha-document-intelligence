@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { resolveRequestLocale } from '../../../server/i18n/index.js';
 import { buildDocumentAuditContext } from '../../../server/audit/buildDocumentAuditContext.js';
 import { getInternalSignatureSigningPayload } from '../../../server/services/signatures/documentSignatureService.js';
 import { emitTrackingEvent } from '../../../server/services/tracking/trackingService.js';
@@ -21,17 +22,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const signatureRequestId = resolveId(req);
   if (!signatureRequestId) {
-    return res.status(400).json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
+    return res
+      .status(400)
+      .json({ message: 'signatureRequestId é obrigatório.', code: 'MISSING_ID' });
   }
 
   try {
-    const payload = await getInternalSignatureSigningPayload(auth.ctx, auth.user, signatureRequestId);
+    const payload = await getInternalSignatureSigningPayload(
+      auth.ctx,
+      auth.user,
+      signatureRequestId,
+      resolveRequestLocale(req, auth.user.locale),
+    );
     const auditCtx = buildDocumentAuditContext(auth.ctx, auth.user);
     await emitTrackingEvent(
       auditCtx,
       {
         action: 'document.signature_internal_opened',
-        description: 'Solicitação de assinatura interna aberta.',
         documentId: payload.documentId,
         versionId: payload.versionId,
         metadata: sanitizeAuditMetadata({

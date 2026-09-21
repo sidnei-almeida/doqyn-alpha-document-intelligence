@@ -2,6 +2,7 @@ import { DrawerSection } from '@/components/ui/DrawerSection';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { formatDateTime } from '@/lib/utils';
 import type { DocumentVersionSummary } from '@/types/document-library';
+import { useTranslation } from 'react-i18next';
 
 type VersionHistorySummaryProps = {
   currentVersionLabel: string;
@@ -16,11 +17,16 @@ export function VersionHistorySummary({
   versions,
   compact = false,
 }: VersionHistorySummaryProps) {
+  const { t } = useTranslation('documentVersion');
+
   if (versions.length === 0) return null;
 
   if (compact) {
     return (
-      <DrawerSection label="Versões" data-testid="update-version-history-summary">
+      <DrawerSection
+        label={t('versionHistorySummary.versoes')}
+        data-testid="update-version-history-summary"
+      >
         <div className="flex flex-wrap items-center gap-1.5">
           {versions.map((version) => (
             <VersionBadge
@@ -40,10 +46,10 @@ export function VersionHistorySummary({
 
   return (
     <DrawerSection
-      label="Histórico de versões"
+      label={t('versionHistorySummary.historicoDeVersoes')}
       aside={
         <span className="font-mono text-micro tabular-nums text-doqyn-subtle">
-          próxima {nextVersionLabel}
+          {t('versionHistorySummary.proxima')} {nextVersionLabel}
         </span>
       }
       data-testid="update-version-history-summary"

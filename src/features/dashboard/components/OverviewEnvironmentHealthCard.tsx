@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { DashboardOverviewResponse } from '@/types/dashboard-overview';
 import { OverviewLinkAction } from './OverviewLinkAction';
 import { OverviewPanelShell } from './OverviewPanelShell';
+import { useTranslation } from 'react-i18next';
 
 type HealthIndicatorProps = {
   label: string;
@@ -29,9 +30,11 @@ function HealthIndicator({
   onAction,
   canManage = true,
 }: HealthIndicatorProps) {
+  const { t } = useTranslation('dashboard');
+
   const restricted = !ok && !canManage;
   const resolvedDetail =
-    detail ?? (restricted ? 'Configuração gerenciada pelo administrador' : undefined);
+    detail ?? (restricted ? t('overviewEnvironmentHealthCard.managedByAdmin') : undefined);
 
   return (
     <div className="overview-row flex items-center justify-between gap-3 py-3 pl-4 pr-1">
@@ -43,9 +46,11 @@ function HealthIndicator({
         {ok ? (
           <span className="overview-status-mark overview-status-mark--ok">OK</span>
         ) : restricted ? (
-          <span className="overview-status-mark">Restrito</span>
+          <span className="overview-status-mark">
+            {t('overviewEnvironmentHealthCard.restrito')}
+          </span>
         ) : (
-          <span className="overview-status-tag">Atenção</span>
+          <span className="overview-status-tag">{t('overviewEnvironmentHealthCard.atencao')}</span>
         )}
         {!ok && canManage && actionLabel && onAction && (
           <OverviewLinkAction onClick={onAction}>{actionLabel}</OverviewLinkAction>
@@ -66,12 +71,14 @@ export function OverviewEnvironmentHealthCard({
   bucketNameMasked,
   canManageGovernance = false,
 }: OverviewEnvironmentHealthCardProps) {
+  const { t } = useTranslation('dashboard');
+
   const navigate = useNavigate();
 
   return (
     <OverviewPanelShell
-      title="Saúde do ambiente"
-      subtitle="Integridade operacional"
+      title={t('overviewEnvironmentHealthCard.saudeDoAmbiente')}
+      subtitle={t('overviewEnvironmentHealthCard.subtitle')}
       titleId="overview-health-title"
       bodyClassName="flex flex-col"
       data-testid="overview-environment-health"
@@ -83,25 +90,25 @@ export function OverviewEnvironmentHealthCard({
             aqui levava a uma tela onde não há esse botão. Falta storage é assunto de quem
             opera o deploy, então o indicador acusa e para por aí. */}
         <HealthIndicator
-          label="Storage"
+          label={t('overviewEnvironmentHealthCard.storage')}
           ok={health.hasStorageConfigured}
           detail={
             health.hasStorageConfigured
-              ? 'Armazenamento configurado'
-              : 'Indisponível no ambiente. Contate o suporte'
+              ? t('overviewEnvironmentHealthCard.storageOk')
+              : t('overviewEnvironmentHealthCard.storageMissing')
           }
         />
         <HealthIndicator
-          label="Categorias"
+          label={t('overviewEnvironmentHealthCard.categorias')}
           ok={health.hasActiveCategories}
           detail={
             health.hasActiveCategories
-              ? 'Categorias ativas no ambiente'
+              ? t('overviewEnvironmentHealthCard.categoriesOk')
               : canManageGovernance
-                ? 'Crie ou ative categorias'
-                : 'Aguardando configuração pelo administrador'
+                ? t('overviewEnvironmentHealthCard.categoriesAction')
+                : t('overviewEnvironmentHealthCard.awaitingAdmin')
           }
-          actionLabel="Regras"
+          actionLabel={t('overviewEnvironmentHealthCard.rulesAction')}
           onAction={
             !health.hasActiveCategories && canManageGovernance
               ? () => navigate('/rules')
@@ -110,16 +117,16 @@ export function OverviewEnvironmentHealthCard({
           canManage={canManageGovernance}
         />
         <HealthIndicator
-          label="Regras de IA"
+          label={t('overviewEnvironmentHealthCard.regrasDeIa')}
           ok={health.hasActiveExtractionRules}
           detail={
             health.hasActiveExtractionRules
-              ? 'Extração configurada no ambiente'
+              ? t('overviewEnvironmentHealthCard.extractionOk')
               : canManageGovernance
-                ? 'Ative regras de análise'
-                : 'Aguardando configuração pelo administrador'
+                ? t('overviewEnvironmentHealthCard.extractionAction')
+                : t('overviewEnvironmentHealthCard.awaitingAdmin')
           }
-          actionLabel="Upload e IA"
+          actionLabel={t('overviewEnvironmentHealthCard.uploadAiAction')}
           onAction={
             !health.hasActiveExtractionRules && canManageGovernance
               ? () => navigate('/settings?section=upload-ia')
@@ -145,7 +152,8 @@ export function OverviewEnvironmentHealthCard({
 
       {bucketNameMasked && (
         <p className={cn('overview-row-meta mt-auto pl-4 pt-3')}>
-          Bucket <span className="font-mono text-micro text-doqyn-subtle">{bucketNameMasked}</span>
+          {t('overviewEnvironmentHealthCard.bucket')}{' '}
+          <span className="font-mono text-micro text-doqyn-subtle">{bucketNameMasked}</span>
         </p>
       )}
     </OverviewPanelShell>

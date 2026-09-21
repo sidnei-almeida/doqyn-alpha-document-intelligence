@@ -5,6 +5,7 @@ import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { listGovernanceViewableCategoryIds } from '../tenancy/governanceAccessIndex.js';
 import { tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import { buildAccessibleDocumentQuery } from './dashboardOverviewService.js';
+import { readStorageQuotaBytes } from './tenantStorageQuotaService.js';
 
 export type TenantUsageResponse = {
   generatedAt: string;
@@ -18,26 +19,6 @@ export type TenantUsageResponse = {
     quotaBytes: number | null;
   };
 };
-
-/**
- * Cota de armazenamento do espaço.
- *
- * ATENÇÃO: hoje isto é só um número para a tela. Nada no caminho de upload lê
- * este valor, então estourar a cota não bloqueia envio — a barra informa, não
- * governa. Quando existir cobrança por plano, o teto passa a sair do registro
- * do tenant (como `tenant.quotas`) e esta constante vira o padrão de quem não
- * tem plano atribuído.
- */
-const DEFAULT_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024 * 1024;
-
-function readStorageQuotaBytes(): number | null {
-  const raw = process.env.TENANT_STORAGE_QUOTA_BYTES?.trim();
-  if (!raw) return DEFAULT_STORAGE_QUOTA_BYTES;
-  // Zero (ou lixo) desliga a barra em vez de mostrar um teto inventado.
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return Math.floor(parsed);
-}
 
 const EMPTY_USAGE: Omit<TenantUsageResponse, 'generatedAt'> = {
   documents: 0,
@@ -127,6 +108,8 @@ export async function getTenantUsage(input: {
   const originalBytes = storageRows[0]?.originalBytes ?? 0;
   const previewBytes = storageRows[0]?.previewBytes ?? 0;
 
+  // `totalBytes` é o que ocupa o disco; a cota governa só `originalBytes`, que é o que o tenant
+  // mandou. Ver `tenantStorageQuotaService`: miniatura é trabalho do sistema, não envio de ninguém.
   return {
     generatedAt,
     documents,

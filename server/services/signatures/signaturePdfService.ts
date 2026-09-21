@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import QRCode from 'qrcode';
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from 'pdf-lib';
+import { getServerT, normalizeServerLocale, type ServerLocale } from '../../i18n/index.js';
 import type { TrackingSecurityContext } from '../tracking/securityContext.js';
 import {
   buildCompactStampLines,
@@ -13,7 +14,6 @@ import {
 import {
   resolveSignatureStampTargetPage,
   SIGNATURE_CERTIFICATE_PAGE_MARKER,
-  SIGNATURE_CERTIFICATE_PAGE_TITLE,
 } from './signaturePdfPageUtils.js';
 
 export { SIGNATURE_STAMP_MARKER };
@@ -28,8 +28,19 @@ const RULE = rgb(0.82, 0.83, 0.84);
 const BRASS = rgb(0.76, 0.627, 0.353);
 const PAPER = rgb(1, 1, 1);
 
-export const SIGNATURE_CONSENT_TEXT =
-  'Declaro que li o documento apresentado e concordo em assiná-lo eletronicamente por meio da plataforma DOQYN. Estou ciente de que minha assinatura será vinculada a este documento com data, hora e evidências técnicas de auditoria.';
+/**
+ * A declaração que a pessoa aceita, no idioma em que ela a leu.
+ *
+ * É a mesma frase que o portal mostra ao lado da caixa de aceite, e a que vai impressa no
+ * certificado e gravada na evidência. As três precisam ser idênticas: um aceite dado a um texto
+ * e registrado com outro é um registro que se contradiz.
+ */
+export function signatureConsentText(locale: string | null | undefined): string {
+  return getServerT(locale, 'signaturePdf')('consentText');
+}
+
+/** A declaração em pt-BR — o texto de todo aceite gravado antes de haver outro idioma. */
+export const SIGNATURE_CONSENT_TEXT = signatureConsentText('pt-BR');
 
 export type GenerateSignedPdfInput = {
   originalPdfBuffer: Buffer;
@@ -51,10 +62,17 @@ export type GenerateSignedPdfInput = {
   issuerOrganizationName?: string;
   /** Assinaturas anteriores na mesma versão — carimbos empilhados no rodapé. */
   previousStamps?: SignatureStampData[];
+  /** Idioma do aceite: carimbo, certificado e declaração saem nele. */
+  locale?: string | null;
 };
 
-function formatSignedAt(date: Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
+/**
+ * O fuso continua o de São Paulo, com `BRT` escrito ao lado, em qualquer idioma: é o horário que
+ * o registro sempre usou, e trocar de fuso pelo idioma faria duas assinaturas do mesmo minuto
+ * mostrarem horas diferentes. O idioma muda só a ordem de dia, mês e hora.
+ */
+function formatSignedAt(date: Date, locale: ServerLocale): string {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',
     timeStyle: 'short',
     timeZone: 'America/Sao_Paulo',
@@ -217,12 +235,13 @@ function drawCompactStamp(input: {
   page: PDFPage;
   layout: ReturnType<typeof computeSignatureStampLayouts>[number];
   stamp: SignatureStampData;
+  locale: ServerLocale;
   font: PDFFont;
   boldFont: PDFFont;
   monoFont: PDFFont;
 }) {
   const metrics = getSignatureStampMetrics();
-  const [name, when, code] = buildCompactStampLines(input.stamp);
+  const [name, when, code] = buildCompactStampLines(input.stamp, input.locale);
   const { x, y, width, height } = input.layout;
 
   // Papel do carimbo: quase opaco, para o carimbo ler sobre qualquer conteúdo.
@@ -282,6 +301,7 @@ function drawStampsOnPage(input: {
   currentStamp: SignatureStampData;
   completedSignatureCount: number;
   previousStamps?: SignatureStampData[];
+  locale: ServerLocale;
   font: PDFFont;
   boldFont: PDFFont;
   monoFont: PDFFont;
@@ -294,6 +314,7 @@ function drawStampsOnPage(input: {
       page: input.page,
       layout,
       stamp: input.currentStamp,
+      locale: input.locale,
       font: input.font,
       boldFont: input.boldFont,
       monoFont: input.monoFont,
@@ -310,6 +331,7 @@ function drawStampsOnPage(input: {
       page: input.page,
       layout,
       stamp: stampsToDraw[index]!,
+      locale: input.locale,
       font: input.font,
       boldFont: input.boldFont,
       monoFont: input.monoFont,
@@ -324,6 +346,11 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
   evidencePayload: Record<string, unknown>;
   evidenceHashSha256: string;
 }> {
+  const locale = normalizeServerLocale(input.locale);
+  const t = getServerT(locale, 'signaturePdf');
+  const upper = (key: string) => t(key).toLocaleUpperCase(locale);
+  const consentText = t('consentText');
+
   const originalDocumentHashSha256 = createHash('sha256')
     .update(input.originalPdfBuffer)
     .digest('hex');
@@ -350,6 +377,7 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
     currentStamp,
     completedSignatureCount,
     previousStamps: input.previousStamps,
+    locale,
     font: regularFont,
     boldFont,
     monoFont,
@@ -373,7 +401,7 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
 
   drawTracked({
     page: certPage,
-    text: 'CERTIFICADO DE ASSINATURA ELETRÔNICA',
+    text: upper('certificate.heading'),
     x: MARGIN,
     y: height - 92,
     size: 7,
@@ -396,13 +424,19 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
   });
 
   y -= 6;
-  certPage.drawText(`Assinado por ${input.signerName} · ${formatSignedAt(input.signedAt)} BRT`, {
-    x: MARGIN,
-    y,
-    size: 9.5,
-    font: regularFont,
-    color: INK_SOFT,
-  });
+  certPage.drawText(
+    t('certificate.signedBy', {
+      name: input.signerName,
+      date: formatSignedAt(input.signedAt, locale),
+    }),
+    {
+      x: MARGIN,
+      y,
+      size: 9.5,
+      font: regularFont,
+      color: INK_SOFT,
+    },
+  );
 
   // O fio do cabeçalho para antes do selo: linha atravessando o QR lê como erro de impressão.
   y -= 18;
@@ -442,33 +476,33 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
   });
 
   const signerRows: Array<[string, string]> = [
-    ['SIGNATÁRIO', input.signerName],
-    ['E-MAIL', input.signerEmailMasked],
+    [upper('label.signer'), input.signerName],
+    [upper('label.email'), input.signerEmailMasked],
     ...(input.signerPhoneMasked
-      ? ([['TELEFONE', input.signerPhoneMasked]] as Array<[string, string]>)
+      ? ([[upper('label.phone'), input.signerPhoneMasked]] as Array<[string, string]>)
       : []),
     ...(input.organizationName
-      ? ([['ORGANIZAÇÃO', input.organizationName]] as Array<[string, string]>)
+      ? ([[upper('label.organization'), input.organizationName]] as Array<[string, string]>)
       : []),
     ...(input.issuerOrganizationName
-      ? ([['SOLICITADO POR', input.issuerOrganizationName]] as Array<[string, string]>)
+      ? ([[upper('label.requestedBy'), input.issuerOrganizationName]] as Array<[string, string]>)
       : []),
-    ['DATA E HORA', `${formatSignedAt(input.signedAt)} (BRT)`],
+    [upper('label.dateTime'), `${formatSignedAt(input.signedAt, locale)} (BRT)`],
   ];
 
   const evidenceRows: Array<[string, string]> = [
-    ['IP', input.securityContext?.ipAddressMasked ?? '—'],
-    ['LOCAL APROXIMADO', locationParts.length ? locationParts.join(', ') : '—'],
+    [upper('label.ip'), input.securityContext?.ipAddressMasked ?? '—'],
+    [upper('label.location'), locationParts.length ? locationParts.join(', ') : '—'],
     [
-      'NAVEGADOR',
+      upper('label.browser'),
       `${input.securityContext?.browser ?? '—'} ${input.securityContext?.browserVersion ?? ''}`.trim(),
     ],
     [
-      'SISTEMA',
+      upper('label.system'),
       `${input.securityContext?.os ?? '—'} ${input.securityContext?.osVersion ?? ''}`.trim(),
     ],
-    ['DISPOSITIVO', input.securityContext?.deviceType ?? '—'],
-    ['MÉTODO', 'Assinatura eletrônica DOQYN'],
+    [upper('label.device'), input.securityContext?.deviceType ?? '—'],
+    [upper('label.method'), t('methodValue')],
   ];
 
   const columnWidth = (contentWidth - 28) / 2;
@@ -497,7 +531,7 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
 
   drawTracked({
     page: certPage,
-    text: 'IDENTIFICADORES E INTEGRIDADE',
+    text: upper('identifiersHeading'),
     x: MARGIN,
     y,
     size: 7,
@@ -508,11 +542,11 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
   y -= 18;
 
   const technicalRows: Array<[string, string]> = [
-    ['Documento', input.documentId],
-    ['Versão', input.versionId],
-    ['Solicitação', input.signatureRequestId],
-    ['Assinatura', input.signatureId],
-    ['SHA-256 do original', originalDocumentHashSha256],
+    [t('technical.document'), input.documentId],
+    [t('technical.version'), input.versionId],
+    [t('technical.request'), input.signatureRequestId],
+    [t('technical.signature'), input.signatureId],
+    [t('technical.originalHash'), originalDocumentHashSha256],
   ];
 
   for (const [label, value] of technicalRows) {
@@ -537,7 +571,7 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
 
   drawTracked({
     page: certPage,
-    text: 'DECLARAÇÃO DE ACEITE',
+    text: upper('consentHeading'),
     x: MARGIN,
     y,
     size: 7,
@@ -548,7 +582,7 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
   y -= 16;
   y = drawParagraph({
     page: certPage,
-    text: SIGNATURE_CONSENT_TEXT,
+    text: consentText,
     x: MARGIN,
     y,
     maxWidth: contentWidth,
@@ -561,16 +595,18 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
   const priorSignatures = completedSignatureCount + (input.previousStamps?.length ?? 0);
   if (priorSignatures > 0) {
     y -= 14;
-    certPage.drawText(
-      priorSignatures === 1
-        ? 'Este documento já possuía 1 assinatura anterior.'
-        : `Este documento já possuía ${priorSignatures} assinaturas anteriores.`,
-      { x: MARGIN, y, size: 8.5, font: regularFont, color: INK_SOFT },
-    );
+    certPage.drawText(t('priorSignatures', { count: priorSignatures }), {
+      x: MARGIN,
+      y,
+      size: 8.5,
+      font: regularFont,
+      color: INK_SOFT,
+    });
   }
 
+  const pageTitle = t('certificate.pageTitle');
   drawRule(certPage, MARGIN, 74, contentWidth);
-  certPage.drawText('Valide esta assinatura em', {
+  certPage.drawText(t('validateAt'), {
     x: MARGIN,
     y: 58,
     size: 8,
@@ -588,8 +624,8 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
     lineHeight: 10,
     color: INK,
   });
-  certPage.drawText(SIGNATURE_CERTIFICATE_PAGE_TITLE, {
-    x: width - MARGIN - regularFont.widthOfTextAtSize(SIGNATURE_CERTIFICATE_PAGE_TITLE, 7.5),
+  certPage.drawText(pageTitle, {
+    x: width - MARGIN - regularFont.widthOfTextAtSize(pageTitle, 7.5),
     y: 46,
     size: 7.5,
     font: regularFont,
@@ -615,8 +651,10 @@ export async function generateSignedPdf(input: GenerateSignedPdfInput): Promise<
     originalDocumentHashSha256,
     signedPdfHashSha256,
     securityContext: input.securityContext ?? null,
+    // O método fica em pt-BR em toda evidência: é identificador do registro, não frase para ler.
     method: 'Assinatura eletrônica DOQYN',
-    consentText: SIGNATURE_CONSENT_TEXT,
+    consentText,
+    consentLocale: locale,
     previousSignatureCount: completedSignatureCount + (input.previousStamps?.length ?? 0),
   };
 

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { getConfidenceLevel } from '../utils/documentNaming';
 
@@ -8,20 +9,21 @@ interface ConfidenceBadgeProps {
 
 const LEVEL_CONFIG = {
   high: {
-    label: 'Alta confiança',
+    labelKey: 'confidenceBadge.high',
     className: 'border-doqyn-success-border bg-doqyn-success-bg text-doqyn-success',
   },
   review: {
-    label: 'Revisar',
+    labelKey: 'confidenceBadge.review',
     className: 'border-doqyn-warning-border bg-doqyn-warning-bg text-doqyn-warning',
   },
   low: {
-    label: 'Requer revisão',
+    labelKey: 'confidenceBadge.low',
     className: 'border-doqyn-danger-border bg-doqyn-danger-bg text-doqyn-danger',
   },
 } as const;
 
 export function ConfidenceBadge({ score, className }: ConfidenceBadgeProps) {
+  const { t } = useTranslation('documentSend');
   const level = getConfidenceLevel(score);
   const config = LEVEL_CONFIG[level];
 
@@ -33,7 +35,7 @@ export function ConfidenceBadge({ score, className }: ConfidenceBadgeProps) {
         className,
       )}
     >
-      {config.label}
+      {t(config.labelKey)}
     </span>
   );
 }

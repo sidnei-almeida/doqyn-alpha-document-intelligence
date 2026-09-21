@@ -1,7 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { summarizeWorkflowLogMessage } from '../src/features/document-send/utils/workflowLogHelpers.ts';
 import { sanitizeAuditMetadataForDisplay } from '../src/features/audit/utils/auditDisplay.ts';
@@ -9,6 +6,7 @@ import {
   buildTrackingEventsQuery,
   formatTrackingAction,
 } from '../src/features/tracking/utils/trackingDisplay.ts';
+import { initI18nForTests } from './helpers/i18nForTests.ts';
 
 describe('workflow logs minimalistas', () => {
   it('summarizeWorkflowLogMessage prioriza friendlyTitle', () => {
@@ -45,6 +43,7 @@ describe('tracking page helpers', () => {
   });
 
   it('formatTrackingAction usa labels em português', () => {
+    initI18nForTests();
     assert.equal(formatTrackingAction('document.preview_viewed'), 'Preview visualizado');
     assert.equal(formatTrackingAction('document.download_denied'), 'Download negado');
   });

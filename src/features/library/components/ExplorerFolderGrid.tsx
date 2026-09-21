@@ -4,6 +4,7 @@ import { ExplorerFolderCard } from './ExplorerFolderCard';
 import { ExplorerHomeSection } from './ExplorerHomeSection';
 import type { LibraryFolder, LibraryViewMode } from '../types/library';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useTranslation } from 'react-i18next';
 
 type ExplorerFolderGridProps = {
   folders: LibraryFolder[];
@@ -21,18 +22,23 @@ export function ExplorerFolderGrid({
   onFolderContextMenu,
   onFolderInfo,
 }: ExplorerFolderGridProps) {
+  const { t } = useTranslation('library');
+
   if (folders.length === 0) {
     return (
-      <ExplorerHomeSection title="Pastas inteligentes" data-testid="explorer-folder-grid-empty">
+      <ExplorerHomeSection
+        title={t('explorerFolderGrid.pastasInteligentes')}
+        data-testid="explorer-folder-grid-empty"
+      >
         <EmptyState
-          title="Nenhuma pasta inteligente configurada"
+          title={t('explorerFolderGrid.nenhumaPastaInteligenteConfigurada')}
           description={
             <>
-              Crie categorias em{' '}
+              {t('explorerFolderGrid.crieCategoriasEm')}{' '}
               <Link to="/rules" className="text-doqyn-accent-active hover:underline">
-                Regras
+                {t('explorerFolderGrid.regras')}
               </Link>{' '}
-              para organizar documentos por classificação da IA.
+              {t('explorerFolderGrid.paraOrganizarDocumentosPor')}
             </>
           }
           className="py-10"
@@ -42,7 +48,10 @@ export function ExplorerFolderGrid({
   }
 
   return (
-    <ExplorerHomeSection title="Pastas inteligentes" data-testid="explorer-folder-grid">
+    <ExplorerHomeSection
+      title={t('explorerFolderGrid.pastasInteligentes2')}
+      data-testid="explorer-folder-grid"
+    >
       <div
         // Registro, não mosaico: as pastas empilham como linhas de índice. Em
         // tela larga viram duas colunas para não desperdiçar a metade direita,

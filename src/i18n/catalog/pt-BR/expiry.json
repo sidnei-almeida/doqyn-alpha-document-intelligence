@@ -1,0 +1,42 @@
+{
+  "documentExpiryEditor": {
+    "adicionarCampoForaDa": "Adicionar campo fora da regra",
+    "campoForaDaRegra": "Campo fora da regra",
+    "carregandoFichaDeMetadados": "Carregando ficha de metadados…",
+    "chaveDoCampo": "Chave do campo",
+    "chaveExNumeroApolice": "chave (ex.: numero_apolice)",
+    "missingRequiredInCategory_one": "{{count}} campo obrigatório de \"{{category}}\" sem preenchimento.",
+    "missingRequiredInCategory_other": "{{count}} campos obrigatórios de \"{{category}}\" sem preenchimento.",
+    "missingRequired_one": "{{count}} campo obrigatório sem preenchimento.",
+    "missingRequired_other": "{{count}} campos obrigatórios sem preenchimento.",
+    "naoFoiPossivelCarregar": "Não foi possível carregar os metadados deste documento.",
+    "remover": "Remover",
+    "rotuloDoCampo": "Rótulo do campo",
+    "rotuloExibido": "rótulo exibido",
+    "valorDoCampo": "Valor do campo",
+    "voceNaoTemPermissao": "Você não tem permissão para editar os metadados deste documento.",
+    "renameFailed": "Não foi possível renomear o documento.",
+    "source": {
+      "missing": "Faltando",
+      "manual": "Manual",
+      "extracted": "Extraído"
+    },
+    "notice": {
+      "noDate": "Sem data de vencimento gravada. Enquanto o campo estiver vazio, nenhum alerta desta categoria dispara para este documento.",
+      "expiredDays_one": "Vencido há {{count}} dia.",
+      "expiredDays_other": "Vencido há {{count}} dias.",
+      "today": "Vence hoje.",
+      "inDays_one": "Vence em {{count}} dia.",
+      "inDays_other": "Vence em {{count}} dias."
+    },
+    "validityLabel": "Data de vencimento",
+    "noChanges": "Nenhuma alteração para salvar.",
+    "savedWithAlerts": "Metadados salvos. Os alertas da categoria passam a valer para este documento.",
+    "saved": "Metadados salvos.",
+    "saveFailed": "Não foi possível salvar os metadados.",
+    "notProvided": "Não informado",
+    "saving": "Salvando…",
+    "saveMetadata": "Salvar metadados",
+    "placeholderValor": "valor"
+  }
+}

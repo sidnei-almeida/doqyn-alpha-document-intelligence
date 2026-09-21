@@ -1,12 +1,10 @@
 import type { Job } from 'bullmq';
-import {
-  startEmbeddingWorker,
-  type EmbeddingQueueJobPayload,
-} from '../queues/embeddingQueue.js';
+import { startEmbeddingWorker, type EmbeddingQueueJobPayload } from '../queues/embeddingQueue.js';
 import { embedChunksMatching } from '../services/documentChunkEmbeddingService.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
 import { tenantScopeFilterFromContext } from '../tenancy/tenantQuery.js';
 import { logger } from '../utils/logger.js';
+import { onShutdown } from '../runtime/shutdown.js';
 
 export async function processEmbeddingJob(job: Job<EmbeddingQueueJobPayload>): Promise<void> {
   const { tenantId, documentId, versionId, userId, membershipId } = job.data;
@@ -43,6 +41,10 @@ export async function runEmbeddingWorkerLoop(): Promise<void> {
       message: error instanceof Error ? error.message : 'unknown',
     });
   });
+
+  // No SIGTERM o worker para de pegar job novo e espera o que está em mãos terminar, em vez
+  // de ser morto no meio e deixar a vaga do tenant presa até o prazo vencer.
+  onShutdown('worker de embedding', () => worker.close());
 
   logger.info('Embedding worker aguardando jobs');
 }

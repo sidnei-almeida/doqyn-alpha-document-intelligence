@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { getAuthBasePath } from '@/auth/authConfig';
 import { authFetch } from '@/auth/apiAuth';
 import { mapMeSessionToAuthUser } from '@/auth/mapMeSession';
@@ -58,7 +59,7 @@ export async function loginRequest(input: LoginInput): Promise<AuthUser> {
     throw new ApiError({
       status: 401,
       code: 'AUTH_REQUIRED',
-      message: 'Não foi possível carregar a sessão após login.',
+      message: i18n.t('auth:error.falhaCarregarSessao'),
     });
   }
   return mapMeSessionToAuthUser(session);

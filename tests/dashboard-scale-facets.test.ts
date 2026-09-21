@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { buildAccessibleDocumentQuery } from '../server/services/dashboardOverviewService.js';
+import { buildDocumentOwnershipFilter } from '../server/tenancy/documentOwnership.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -122,6 +123,16 @@ describe('dashboard — escopo de tenant na consulta de documentos', () => {
     const query = buildAccessibleDocumentQuery(businessStorage, user, true, []);
 
     assert.equal(query.$and, undefined);
-    assert.ok(JSON.stringify(query.$or).includes('tenant_a'));
+    // O escopo empresarial é `tenantId` estrito desde 7272e83: o ramo `companyId` do `$or` casava
+    // documento órfão, que em coleção compartilhada seria visível para todos os tenants.
+    assert.deepEqual(
+      Object.fromEntries(
+        Object.entries(buildDocumentOwnershipFilter(businessStorage)).map(([field]) => [
+          field,
+          query[field],
+        ]),
+      ),
+      buildDocumentOwnershipFilter(businessStorage),
+    );
   });
 });

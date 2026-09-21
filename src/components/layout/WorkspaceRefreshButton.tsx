@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type WorkspaceRefreshButtonProps = {
   onClick: () => void;
@@ -12,9 +13,12 @@ type WorkspaceRefreshButtonProps = {
 /** Botão de atualizar padronizado para headers de workspace. */
 export function WorkspaceRefreshButton({
   onClick,
-  label = 'Atualizar',
+  label: labelProp,
   className,
 }: WorkspaceRefreshButtonProps) {
+  const { t } = useTranslation('components');
+  const label = labelProp ?? t('workspaceRefreshButton.label');
+
   return (
     <Tooltip label={label}>
       <button

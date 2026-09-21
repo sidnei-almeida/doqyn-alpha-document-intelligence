@@ -1,8 +1,8 @@
 import type { Collection } from 'mongodb';
 import type { AuthUser } from '../auth/types.js';
 import { isMongoNativeConfigured } from '../db/mongoClient.js';
-import type { MongoDocument, MongoDocumentVersion } from '../db/types.js';
-import { DOCUMENT_AUDIT_ACTION_LABELS } from '../audit/documentAuditTypes.js';
+import type { MongoDocument } from '../db/types.js';
+import { renderAuditText, SERVER_DEFAULT_LOCALE } from '../i18n/index.js';
 import { isDocumentAdmin, loadDocumentAccessContext } from '../tenancy/documentAccess.js';
 import { listGovernanceViewableCategoryIds } from '../tenancy/governanceAccessIndex.js';
 import { getTenantCollections } from '../tenancy/getTenantCollections.js';
@@ -193,6 +193,13 @@ type DocumentFacets = {
   statusCounts: Map<string, number>;
   categories: { categoryId: string; categoryName: string; count: number }[];
   documentsWithoutCategory: number;
+};
+
+type StorageTotals = {
+  originalFiles: number;
+  previewFiles: number;
+  originalSizeBytes: number;
+  previewSizeBytes: number;
 };
 
 type FacetCountRow = { count?: number };
@@ -548,9 +555,41 @@ export async function getDashboardOverview(input: {
             >)
           : Promise.resolve(0),
         listOperationalTenantMembers(tenantId),
+        // Soma no Mongo, como as outras facetas: trazer toda versão do tenant para o Node só para
+        // somar bytes crescia com o acervo a cada abertura do painel.
         collections.documentVersions
-          .find(scope as Record<string, unknown>)
-          .project({ file: 1, storage: 1 })
+          .aggregate<StorageTotals>([
+            { $match: scope as Record<string, unknown> },
+            {
+              $group: {
+                _id: null,
+                originalFiles: {
+                  $sum: { $cond: [{ $eq: ['$storage.primary.status', 'stored'] }, 1, 0] },
+                },
+                originalSizeBytes: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ['$storage.primary.status', 'stored'] },
+                      { $ifNull: ['$file.sizeBytes', 0] },
+                      0,
+                    ],
+                  },
+                },
+                previewFiles: {
+                  $sum: { $cond: [{ $eq: ['$storage.preview.status', 'ready'] }, 1, 0] },
+                },
+                previewSizeBytes: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ['$storage.preview.status', 'ready'] },
+                      { $ifNull: ['$storage.preview.sizeBytes', 0] },
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ])
           .toArray(),
       ]);
 
@@ -567,21 +606,13 @@ export async function getDashboardOverview(input: {
       usersPending,
     };
 
-    let originalFiles = 0;
-    let previewFiles = 0;
-    let originalSizeBytes = 0;
-    let previewSizeBytes = 0;
-
-    for (const version of storageVersions as MongoDocumentVersion[]) {
-      if (version.storage?.primary?.status === 'stored') {
-        originalFiles += 1;
-        originalSizeBytes += version.file?.sizeBytes ?? 0;
-      }
-      if (version.storage?.preview?.status === 'ready') {
-        previewFiles += 1;
-        previewSizeBytes += version.storage.preview.sizeBytes ?? 0;
-      }
-    }
+    const { originalFiles, previewFiles, originalSizeBytes, previewSizeBytes } =
+      storageVersions[0] ?? {
+        originalFiles: 0,
+        previewFiles: 0,
+        originalSizeBytes: 0,
+        previewSizeBytes: 0,
+      };
 
     const bucketRaw =
       collections.tenant.storage?.bucketName ?? collections.tenant.storage?.bucketAlias;
@@ -600,7 +631,7 @@ export async function getDashboardOverview(input: {
     .map((event) => ({
       id: event.id,
       action: event.action,
-      label: DOCUMENT_AUDIT_ACTION_LABELS[event.action] ?? event.description,
+      label: renderAuditText(SERVER_DEFAULT_LOCALE, event.action, 'label') ?? event.description,
       documentId: event.documentId,
       documentName:
         typeof event.metadata?.documentName === 'string' ? event.metadata.documentName : undefined,

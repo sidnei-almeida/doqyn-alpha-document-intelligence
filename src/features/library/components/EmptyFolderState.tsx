@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useTranslation } from 'react-i18next';
 
 type EmptyFolderStateProps = {
   hasActiveFilters: boolean;
@@ -21,22 +22,27 @@ type EmptyFolderStateProps = {
  */
 export function EmptyFolderState({
   hasActiveFilters,
-  title = 'Esta pasta ainda está vazia',
-  description = 'Envie um documento para o DOQYN analisar e classificar.',
+  title: titleProp,
+  description: descriptionProp,
   showUploadActions = true,
   onClearFilters,
   onUploadClick,
-  uploadButtonLabel = 'Enviar documento',
+  uploadButtonLabel: uploadButtonLabelProp,
 }: EmptyFolderStateProps) {
+  const { t } = useTranslation('library');
+  const title = titleProp ?? t('emptyFolderState.title');
+  const description = descriptionProp ?? t('emptyFolderState.description');
+  const uploadButtonLabel = uploadButtonLabelProp ?? t('emptyFolderState.upload');
+
   if (hasActiveFilters) {
     return (
       <div data-testid="library-empty-state">
         <EmptyState
-          title="Nenhum documento para os filtros atuais"
-          description="Ajuste a busca ou os filtros para ampliar os resultados."
+          title={t('emptyFolderState.nenhumDocumentoParaOs')}
+          description={t('emptyFolderState.ajusteABuscaOu')}
           action={
             <Button type="button" variant="secondary" size="sm" onClick={onClearFilters}>
-              Limpar filtros
+              {t('emptyFolderState.limparFiltros')}
             </Button>
           }
         />
@@ -65,7 +71,7 @@ export function EmptyFolderState({
                 {uploadButtonLabel}
               </Button>
               <p className="text-caption text-doqyn-subtle">
-                Você também pode arrastar arquivos para esta janela.
+                {t('emptyFolderState.voceTambemPodeArrastar')}
               </p>
             </div>
           ) : undefined

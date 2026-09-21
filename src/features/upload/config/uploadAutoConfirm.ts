@@ -1,5 +1,9 @@
 /** Resultado da análise que determina o próximo passo na fila da Biblioteca. */
-export type PostAnalysisAction = 'auto_confirm' | 'open_review' | 'ai_pause' | 'fail';
+/**
+ * `reject` existe por causa do documento vazio: o tenant pode dizer que folha sem texto não entra
+ * no acervo. Não é `fail` — nada quebrou —, e não é `open_review`, porque a política já decidiu.
+ */
+export type PostAnalysisAction = 'auto_confirm' | 'open_review' | 'ai_pause' | 'reject' | 'fail';
 
 /**
  * Interpreta o valor bruto da configuração (testável sem import.meta).

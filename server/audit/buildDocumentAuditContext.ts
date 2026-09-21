@@ -26,5 +26,6 @@ export function buildDocumentAuditContext(
     // só porque o handler não se lembrou de passá-lo.
     requestId: requestId ?? ctx.requestId,
     startedAt: ctx.startedAt,
+    actorLocale: user.locale ?? user.tenantDefaultLocale,
   };
 }

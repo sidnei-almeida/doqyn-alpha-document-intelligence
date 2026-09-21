@@ -1,9 +1,10 @@
 import { Badge } from '@/components/ui/Badge';
 import { TableRowActionsMenu } from '@/components/ui/TableRowActionsMenu';
 import { UserAvatar } from '@/components/ui/UserAvatar';
-import { formatContactMeta } from '@/features/directory/components/ContactRow';
+import { useFormatContactMeta } from '@/features/directory/components/ContactRow';
 import type { FrequentContact } from '@/features/directory/api/frequentContactsApi';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export type ContactAction = 'share' | 'signature' | 'request' | 'hide';
 
@@ -30,6 +31,9 @@ export function ContactCard({
   contact: FrequentContact;
   onAction: (action: ContactAction, contact: FrequentContact) => void;
 }) {
+  const { t } = useTranslation('contacts');
+  const formatContactMeta = useFormatContactMeta();
+
   // Nem toda origem registra o e-mail. Sem ele não há para onde mandar o que quer que seja, e uma
   // ação ativa ofereceria um caminho que falha no envio.
   const semEndereco = contact.scope === 'external' && !contact.email;
@@ -52,24 +56,24 @@ export function ContactCard({
         <TableRowActionsMenu
           actions={[
             {
-              label: 'Compartilhar documento…',
+              label: t('contactCard.acoes.compartilhar'),
               onClick: () => onAction('share', contact),
               hidden: semEndereco,
             },
             {
-              label: 'Solicitar assinatura…',
+              label: t('contactCard.acoes.assinatura'),
               onClick: () => onAction('signature', contact),
               hidden: semEndereco,
             },
             {
-              label: 'Pedir documento…',
+              label: t('contactCard.acoes.pedir'),
               onClick: () => onAction('request', contact),
               hidden: semEndereco,
             },
             {
               // "Remover da lista", e não "excluir": o histórico de trocas continua registrado, e
               // é ele que responde auditoria. O rótulo promete exatamente o que acontece.
-              label: 'Remover da lista',
+              label: t('contactCard.acoes.remover'),
               onClick: () => onAction('hide', contact),
               tone: 'danger',
             },
@@ -85,7 +89,7 @@ export function ContactCard({
           <p className="truncate font-mono text-micro text-doqyn-muted">@{contact.username}</p>
         ) : null}
         <p className="truncate text-micro text-doqyn-subtle">
-          {contact.email ?? 'sem e-mail nesta troca'}
+          {contact.email ?? t('contactCard.semEmail')}
         </p>
       </div>
 
@@ -93,16 +97,16 @@ export function ContactCard({
         {contact.scope === 'external' ? (
           // O aceite é a diferença que muda o que acontece depois de enviar, e por isso está no
           // cartão e não só no título da seção — o cartão é o que a pessoa lê antes de clicar.
-          <Badge variant="neutral">De fora</Badge>
+          <Badge variant="neutral">{t('contactCard.deFora')}</Badge>
         ) : null}
-        {contact.saved ? <Badge variant="brand">Salvo</Badge> : null}
+        {contact.saved ? <Badge variant="brand">{t('contactCard.salvo')}</Badge> : null}
       </div>
 
       <p className="register-label text-doqyn-subtle">
         {/* Salvo e nunca acionado não tem data de troca. "0 trocas · última hoje" seria mentira
             sobre a única coisa que a linha afirma. */}
         {contact.interactions === 0
-          ? 'salvo à mão · nenhuma troca ainda'
+          ? t('contactCard.salvoSemTroca')
           : formatContactMeta(contact.interactions, contact.lastInteractionAt)}
       </p>
     </article>

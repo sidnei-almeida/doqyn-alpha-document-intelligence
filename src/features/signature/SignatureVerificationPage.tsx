@@ -8,6 +8,8 @@ import {
   GuestRegisterRow,
   GuestSeal,
 } from '@/features/guest-portal/GuestPortalShell';
+import { formatDate } from '@/i18n/formats';
+import { useTranslation } from 'react-i18next';
 
 type VerificationResult = {
   valid: boolean;
@@ -23,9 +25,7 @@ type VerificationResult = {
 };
 
 function formatDateTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  return formatDate(iso, { dateStyle: 'short', timeStyle: 'short' }) || iso;
 }
 
 function HashRow({ label, value }: { label: string; value: string }) {
@@ -43,6 +43,8 @@ function HashRow({ label, value }: { label: string; value: string }) {
  * o resto é a prova, em registro.
  */
 export function SignatureVerificationPage() {
+  const { t } = useTranslation('signature');
+
   const { verificationCode = '' } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +57,9 @@ export function SignatureVerificationPage() {
         const data = await fetchPublicSignatureVerification(verificationCode);
         if (!cancelled) setResult(data as VerificationResult);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Validação indisponível.');
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : t('signatureVerificationPage.unavailable'));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -63,18 +67,20 @@ export function SignatureVerificationPage() {
     return () => {
       cancelled = true;
     };
-  }, [verificationCode]);
+  }, [verificationCode, t]);
 
   if (loading) {
     return (
-      <GuestPortalShell subtitle="Validação de assinatura">
+      <GuestPortalShell subtitle={t('signatureVerificationPage.subtitle')}>
         <div className="guest-state" data-testid="signature-verification">
           <Icon
             name="progress_activity"
             size={ICON_SIZE.md}
             className="animate-spin text-doqyn-muted"
           />
-          <p className="type-caption text-doqyn-subtle">Conferindo o código…</p>
+          <p className="type-caption text-doqyn-subtle">
+            {t('signatureVerificationPage.conferindoOCodigo')}
+          </p>
         </div>
       </GuestPortalShell>
     );
@@ -83,16 +89,20 @@ export function SignatureVerificationPage() {
   if (error || !result) {
     return (
       <GuestPortalShell
-        subtitle="Validação de assinatura"
-        footNote="A validação é pública: qualquer pessoa com o código pode conferir a assinatura."
+        subtitle={t('signatureVerificationPage.subtitle')}
+        footNote={t('signatureVerificationPage.footNote')}
       >
         <section className="guest-card guest-card--narrow" data-testid="signature-verification">
-          <p className="register-label text-doqyn-subtle">Código não confere</p>
-          <h1 className="guest-title">Nenhuma assinatura com este código</h1>
-          <p className="type-body mt-3 text-doqyn-muted">{error ?? 'Assinatura não encontrada.'}</p>
+          <p className="register-label text-doqyn-subtle">
+            {t('signatureVerificationPage.codigoNaoConfere')}
+          </p>
+          <h1 className="guest-title">{t('signatureVerificationPage.nenhumaAssinaturaComEste')}</h1>
+          <p className="type-body mt-3 text-doqyn-muted">
+            {error ?? t('signatureVerificationPage.notFound')}
+          </p>
           {verificationCode ? <p className="verify-code mt-6">{verificationCode}</p> : null}
           <p className="type-caption mt-6 text-doqyn-subtle">
-            Confira o código impresso no certificado, no fim do documento assinado.
+            {t('signatureVerificationPage.confiraOCodigoImpresso')}
           </p>
         </section>
       </GuestPortalShell>
@@ -103,23 +113,37 @@ export function SignatureVerificationPage() {
 
   return (
     <GuestPortalShell
-      subtitle="Validação de assinatura"
-      headerAside={<GuestSeal>{valid ? 'Assinatura válida' : 'Assinatura inválida'}</GuestSeal>}
-      footNote="A validação é pública: qualquer pessoa com o código pode conferir a assinatura."
+      subtitle={t('signatureVerificationPage.subtitle')}
+      headerAside={
+        <GuestSeal>
+          {valid
+            ? t('signatureVerificationPage.sealValid')
+            : t('signatureVerificationPage.sealInvalid')}
+        </GuestSeal>
+      }
+      footNote={t('signatureVerificationPage.footNote')}
     >
       <section className="guest-card" data-testid="signature-verification">
-        <p className="register-label text-doqyn-subtle">Atestado de assinatura eletrônica</p>
+        <p className="register-label text-doqyn-subtle">
+          {t('signatureVerificationPage.atestadoDeAssinaturaEletronica')}
+        </p>
 
         <div className="verify-verdict" data-valid={valid}>
           <Icon name={valid ? 'verified' : 'gpp_maybe'} size={28} aria-hidden />
           <div className="min-w-0">
             <h1 className="guest-title">
-              {valid ? 'Esta assinatura é válida' : 'Esta assinatura não está válida'}
+              {valid
+                ? t('signatureVerificationPage.verdictValid')
+                : t('signatureVerificationPage.verdictInvalid')}
             </h1>
             <p className="type-body mt-1 text-doqyn-muted">
               {valid
-                ? `Assinada por ${result.signerNameMasked} em ${formatDateTime(result.signedAt)}.`
-                : 'O registro existe, mas foi invalidado ou cancelado depois de emitido.'}
+                ? t('signatureVerificationPage.signedByAt', {
+                    signer: result.signerNameMasked,
+                    // A frase termina em ponto, e a hora em espanhol já termina em "p.m.".
+                    date: formatDateTime(result.signedAt).replace(/\.$/, ''),
+                  })
+                : t('signatureVerificationPage.invalidatedDetail')}
             </p>
           </div>
         </div>
@@ -127,24 +151,46 @@ export function SignatureVerificationPage() {
         <p className="verify-code">{result.verificationCode}</p>
 
         <dl className="guest-register">
-          <GuestRegisterRow label="Signatário" value={result.signerNameMasked} />
-          <GuestRegisterRow label="E-mail" value={result.signerEmailMasked} />
-          <GuestRegisterRow label="Assinado em" value={formatDateTime(result.signedAt)} />
-          <GuestRegisterRow label="Método" value={result.method} />
           <GuestRegisterRow
-            label="Integridade"
-            value={result.integrityStatus === 'ok' ? 'Conferida' : 'Invalidada'}
+            label={t('signatureVerificationPage.signatario')}
+            value={result.signerNameMasked}
+          />
+          <GuestRegisterRow
+            label={t('signatureVerificationPage.eMail')}
+            value={result.signerEmailMasked}
+          />
+          <GuestRegisterRow
+            label={t('signatureVerificationPage.assinadoEm')}
+            value={formatDateTime(result.signedAt)}
+          />
+          {/* O servidor manda o método em pt-BR, como está gravado na evidência; só existe um. */}
+          <GuestRegisterRow
+            label={t('signatureVerificationPage.metodo')}
+            value={t('signatureVerificationPage.methodDoqyn')}
+          />
+          <GuestRegisterRow
+            label={t('signatureVerificationPage.integridade')}
+            value={
+              result.integrityStatus === 'ok'
+                ? t('signatureVerificationPage.integrityOk')
+                : t('signatureVerificationPage.integrityInvalid')
+            }
             tone={result.integrityStatus === 'ok' ? 'default' : 'warning'}
           />
         </dl>
 
         <div className="verify-hashes">
           <p className="type-caption text-doqyn-subtle">
-            As impressões digitais abaixo identificam o arquivo. Confira-as contra o documento que
-            você tem em mãos para saber se é exatamente o mesmo que foi assinado.
+            {t('signatureVerificationPage.asImpressoesDigitaisAbaixo')}
           </p>
-          <HashRow label="SHA-256 do original" value={result.originalDocumentHashSha256} />
-          <HashRow label="SHA-256 do assinado" value={result.signedPdfHashSha256} />
+          <HashRow
+            label={t('signatureVerificationPage.sha256DoOriginal')}
+            value={result.originalDocumentHashSha256}
+          />
+          <HashRow
+            label={t('signatureVerificationPage.sha256DoAssinado')}
+            value={result.signedPdfHashSha256}
+          />
         </div>
       </section>
     </GuestPortalShell>

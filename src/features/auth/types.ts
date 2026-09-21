@@ -20,4 +20,7 @@ export type AuthUser = {
   avatarUpdatedAt?: string;
   avatarStatus?: 'active' | 'removed' | null;
   avatarUrl?: string;
+  /** Idioma (BCP-47) e fuso (IANA) do perfil. Vencem o que estiver no navegador. */
+  locale?: string;
+  timeZone?: string | null;
 };

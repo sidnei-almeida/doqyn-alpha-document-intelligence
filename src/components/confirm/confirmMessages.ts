@@ -1,20 +1,59 @@
-/** Textos padronizados para confirmações destrutivas */
-export const CONFIRM_DELETE_WORD = 'EXCLUIR';
+/**
+ * Textos padronizados para confirmações destrutivas.
+ *
+ * As frases moram em `src/i18n/catalog/<locale>/confirm.json`; aqui ficam só a montagem e as decisões
+ * que um catálogo não expressa — qual `variant` usar, e quais confirmações exigem digitar uma
+ * palavra antes de prosseguir.
+ *
+ * Duas coisas mudaram junto com a extração, e valem registro:
+ *
+ * **O plural saiu do código.** `buildMoveToTrashConfirm` decidia entre "este documento" e
+ * "N documentos" com um ternário, e depois capitalizava a primeira letra com
+ * `charAt(0).toUpperCase()` porque a frase começava pelo trecho variável. Isso já era frágil em
+ * português e não sobreviveria a nenhum outro idioma: em inglês a ordem das palavras muda, e a
+ * letra a capitalizar deixa de ser a primeira do trecho. Agora são duas frases inteiras no
+ * catálogo, cada uma escrita por extenso, e quem escolhe é o `Intl.PluralRules`.
+ *
+ * **`buildDeleteGroupConfirm` ganhou plural que não tinha.** Dizia "1 membro(s)", com o
+ * parêntese que existe justamente para não ter de escolher. Agora escolhe.
+ */
+import { i18n } from '@/i18n';
+
+const NS = 'confirm';
+
+function t(key: string, params?: Record<string, unknown>): string {
+  return i18n.t(`${NS}:${key}`, params ?? {});
+}
+
+/**
+ * A palavra que a pessoa digita para liberar uma ação irreversível.
+ *
+ * Precisa vir do catálogo, e o motivo só aparece traduzindo: numa interface em inglês, o
+ * diálogo mandava digitar `EXCLUIR`. O ponto de digitar uma palavra é a fricção deliberada de
+ * ler o que se está prestes a fazer — uma palavra em idioma estrangeiro troca essa fricção por
+ * cópia mecânica, que é o contrário do que o portão existe para provocar.
+ *
+ * Resolve na chamada, e não no import, porque é constante de módulo: `DELETE` em inglês,
+ * `ELIMINAR` em espanhol, e o diálogo compara contra o que ele mesmo mostrou.
+ */
+export function confirmDeleteWord(): string {
+  return t('deleteWord');
+}
 
 export function buildRemoveFromGroupConfirm(memberName: string, groupName: string) {
   return {
-    title: 'Remover membro do grupo?',
-    description: `${memberName} perderá acesso às categorias liberadas para o grupo ${groupName}. Esta ação pode ser revertida arrastando o membro de volta.`,
-    confirmLabel: 'Remover do grupo',
+    title: t('removeFromGroup.title'),
+    description: t('removeFromGroup.description', { memberName, groupName }),
+    confirmLabel: t('removeFromGroup.confirmLabel'),
     variant: 'warning' as const,
   };
 }
 
 export function buildRemoveGroupFromCategoryConfirm(groupName: string, categoryName: string) {
   return {
-    title: 'Remover acesso do grupo?',
-    description: `Todos os membros do grupo ${groupName} perderão acesso à categoria ${categoryName}.`,
-    confirmLabel: 'Remover acesso',
+    title: t('removeGroupFromCategory.title'),
+    description: t('removeGroupFromCategory.description', { groupName, categoryName }),
+    confirmLabel: t('removeGroupFromCategory.confirmLabel'),
     variant: 'warning' as const,
   };
 }
@@ -27,49 +66,50 @@ export function buildDeleteCategoryConfirm(categoryName: string) {
   // seria menor que o real — pequeno demais para uma decisão irreversível. Quantos se moveram é o
   // servidor que responde, depois.
   return {
-    title: 'Excluir categoria?',
-    description: `A categoria "${categoryName}" e as regras dela serão removidas. Todos os documentos dentro dela vão para Sem categoria, e nenhum documento é apagado.`,
-    confirmLabel: 'Excluir categoria',
-    confirmationText: CONFIRM_DELETE_WORD,
+    title: t('deleteCategory.title'),
+    description: t('deleteCategory.description', { categoryName }),
+    confirmLabel: t('deleteCategory.confirmLabel'),
+    confirmationText: confirmDeleteWord(),
     variant: 'danger' as const,
   };
 }
 
 export function buildMoveToTrashConfirm(count: number) {
-  const label = count === 1 ? 'este documento' : `${count} documentos`;
   return {
-    title: 'Mover para a lixeira?',
-    description: `${label.charAt(0).toUpperCase()}${label.slice(1)} será movido para a lixeira. Você poderá restaurar durante o período de retenção; depois o documento será desativado.`,
-    confirmLabel: 'Mover para lixeira',
+    title: t('moveToTrash.title'),
+    description: t('moveToTrash.description', { count }),
+    confirmLabel: t('moveToTrash.confirmLabel'),
     variant: 'warning' as const,
   };
 }
 
 export function buildDeleteGroupConfirm(groupName: string, memberCount: number) {
   return {
-    title: 'Excluir grupo?',
-    description: `O grupo "${groupName}" será removido. ${memberCount} membro(s) perderão as permissões associadas a este grupo, e as categorias vinculadas serão atualizadas.`,
-    confirmLabel: 'Excluir grupo',
-    confirmationText: CONFIRM_DELETE_WORD,
+    title: t('deleteGroup.title'),
+    description: t('deleteGroup.description', { groupName, count: memberCount }),
+    confirmLabel: t('deleteGroup.confirmLabel'),
+    confirmationText: confirmDeleteWord(),
     variant: 'danger' as const,
   };
 }
 
 export function buildRejectApprovalConfirm(name: string) {
   return {
-    title: 'Recusar solicitação?',
-    description: `${name} não terá acesso à empresa. Esta ação não pode ser desfeita automaticamente: será necessário enviar um novo convite.`,
-    confirmLabel: 'Recusar',
-    confirmationText: CONFIRM_DELETE_WORD,
+    title: t('rejectApproval.title'),
+    description: t('rejectApproval.description', { name }),
+    confirmLabel: t('rejectApproval.confirmLabel'),
+    confirmationText: confirmDeleteWord(),
     variant: 'danger' as const,
   };
 }
 
 export function buildRemoveMemberConfirm(name: string) {
   return {
-    title: 'Remover membro da empresa?',
-    description: `${name} perderá todo o acesso a documentos e grupos imediatamente. Esta ação é irreversível sem um novo convite.`,
-    confirmLabel: 'Remover membro',
+    title: t('removeMember.title'),
+    description: t('removeMember.description', { name }),
+    confirmLabel: t('removeMember.confirmLabel'),
+    /* A palavra a digitar é o nome da pessoa, não uma constante: é o que obriga a olhar
+       para quem está sendo removido antes de confirmar. Não se traduz. */
     confirmationText: name,
     variant: 'danger' as const,
   };
@@ -77,19 +117,19 @@ export function buildRemoveMemberConfirm(name: string) {
 
 export function buildSuspendMemberConfirm(name: string) {
   return {
-    title: 'Suspender acesso?',
-    description: `${name} não poderá acessar documentos até que o acesso seja reativado por um administrador.`,
-    confirmLabel: 'Suspender',
+    title: t('suspendMember.title'),
+    description: t('suspendMember.description', { name }),
+    confirmLabel: t('suspendMember.confirmLabel'),
     variant: 'warning' as const,
   };
 }
 
 export function buildRevokeSignatureRequestConfirm(signerName: string) {
-  const label = signerName.trim() || 'o signatário';
+  const name = signerName.trim() || t('revokeSignatureRequest.unnamedSigner');
   return {
-    title: 'Revogar solicitação?',
-    description: `O convite de assinatura para ${label} será cancelado e o link deixará de funcionar.`,
-    confirmLabel: 'Revogar',
+    title: t('revokeSignatureRequest.title'),
+    description: t('revokeSignatureRequest.description', { signerName: name }),
+    confirmLabel: t('revokeSignatureRequest.confirmLabel'),
     variant: 'danger' as const,
   };
 }

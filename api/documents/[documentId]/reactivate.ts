@@ -39,7 +39,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auditCtx,
       {
         action: 'document.reactivated',
-        description: 'Documento reativado da seção Desativados.',
         documentId,
         metadata: sanitizeAuditMetadata({ source: 'api' }),
       },

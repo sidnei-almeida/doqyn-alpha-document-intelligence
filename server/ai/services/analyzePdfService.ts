@@ -10,8 +10,10 @@ import type {
   ClassificationResult,
   DocumentClassRule,
   DocumentNamingRoles,
+  MetadataExtractionResult,
   ProcessingLogItem,
   RetrievedChunk,
+  SuggestedCategory,
 } from '../types/documentAi.types.js';
 import { AiAnalysisError } from '../utils/errors.js';
 import { assertAiProviderConfigured } from '../utils/aiProvider.js';
@@ -28,19 +30,35 @@ import {
 import { logger } from '../../utils/logger.js';
 import { extractTextFromDocument } from './documentTextExtractor.js';
 import {
+  detectDocumentLanguage,
+  type DocumentLanguageContext,
+} from '../utils/detectDocumentLanguage.js';
+import {
   buildTextExtractionReviewResponse,
   isInsufficientTextAfterOcr,
   isVisionOcrFailure,
 } from './visionOcrFailureReview.js';
 import { bufferMeta, pipelineInfo, pipelineWarn, previewText } from '../utils/pipelineDebug.js';
 import { getExtractionTokenBudget, isExtractionRefinementEnabled } from '../utils/aiConfig.js';
-import { getGroqClassifierModel, getGroqExtractorModel, getGroqModel } from './groqClient.js';
+import {
+  getGroqClassifierModel,
+  getGroqExtractorModel,
+  getGroqModel,
+  type GroqPromptContext,
+} from './groqClient.js';
 import { getInferenceProviderName } from '../providers/inferenceProvider.js';
 import { createTokenBudget } from '../utils/tokenBudget.js';
 import { refineExtraction } from './extractionRefinementLoop.js';
 import { resolveExpiryProvenance } from '../utils/expiryProvenance.js';
 import { recordDocumentExpiryProvenance } from '../../metrics/prometheus.js';
+import { isUncategorizedCategory } from '../../../shared/systemCategory.js';
 import { reviewFailedClassification } from './classificationReviewAgent.js';
+import { suggestCategoryForDocument } from './categorySuggestionAgent.js';
+import { getTenantUploadPolicy } from '../../services/settings/uploadPolicySettings.js';
+import {
+  DEFAULT_TENANT_UPLOAD_POLICY,
+  type CategorySuggestionMode,
+} from '../../../shared/uploadPolicy.js';
 import {
   type AnalyzeRequestContext,
   createLog,
@@ -78,7 +96,7 @@ const UNCLASSIFIED_NAMING_CLASS: DocumentClassRule = {
 };
 
 /**
- * Nome proposto para o documento que a classificação não soube encaixar.
+ * Leitura do documento que a classificação não soube encaixar.
  *
  * O nome vinha atrelado à classe: sem classe, `recommendedFileName` era `null` e
  * o arquivo ficava com o nome que veio do disco — `dwadaw.png` para um atestado
@@ -87,17 +105,35 @@ const UNCLASSIFIED_NAMING_CLASS: DocumentClassRule = {
  * estavam amarradas: em que pasta isto mora, e como isto se chama. A segunda não
  * depende da primeira.
  *
- * Devolve `null` quando o extrator também não soube dizer o que é. Nome ruim
- * inventado sobre nada é pior que o nome original, que ao menos foi escolhido
- * por alguém.
+ * O `fileName` devolve `null` quando o extrator também não soube dizer o que é.
+ * Nome ruim inventado sobre nada é pior que o nome original, que ao menos foi
+ * escolhido por alguém.
+ *
+ * A extração inteira sai junto porque o resumo vinha aqui e morria aqui: o
+ * prompt do extrator sempre pede "resumo" e `validateMetadataResult` sempre o
+ * grava em `metadata.resumo`, mas esta função devolvia só nome e papéis. O ramo
+ * sem classe então respondia `extraction: null`, o cliente sintetizava
+ * `metadata: {}` para satisfazer o schema da confirmação, e o documento nascia
+ * com a ficha vazia — sem o parágrafo que a IA tinha acabado de escrever sobre
+ * ele. A classe de mentira não tem campo nenhum, então esse `metadata` só pode
+ * conter o resumo: não há dado de regra nenhuma vazando por aqui.
  */
 async function proposeNameWithoutClass(input: {
   analysisProvider: ReturnType<typeof resolveAnalysisProvider>;
   chunks: RetrievedChunk[];
   classification: ClassificationResult;
   originalFileName: string;
-  context: { requestId?: string; jobId: string; companyId: string; database?: string };
-}): Promise<{ fileName: string | null; roles: DocumentNamingRoles | undefined }> {
+  context: {
+    requestId?: string;
+    jobId: string;
+    companyId: string;
+    database?: string;
+  } & DocumentLanguageContext;
+}): Promise<{
+  fileName: string | null;
+  roles: DocumentNamingRoles | undefined;
+  extraction: MetadataExtractionResult | null;
+}> {
   try {
     const extraction = await input.analysisProvider.extractMetadata({
       chunks: input.chunks,
@@ -108,7 +144,7 @@ async function proposeNameWithoutClass(input: {
 
     const roles = extraction.naming;
     if (!roles?.tipo || (roles.sujeitos.length === 0 && !roles.dataReferencia)) {
-      return { fileName: null, roles };
+      return { fileName: null, roles, extraction };
     }
 
     return {
@@ -120,18 +156,103 @@ async function proposeNameWithoutClass(input: {
         namingRoles: roles,
       }),
       roles,
+      extraction,
     };
   } catch (error) {
     // Falhar aqui não pode derrubar a análise: o documento já vai para revisão
     // de qualquer jeito, e sem nome proposto ele apenas volta ao que era antes.
-    logger.warn('nome sem classe não pôde ser proposto', {
+    logger.warn('leitura sem classe não pôde ser feita', {
       jobId: input.context.jobId,
       companyId: input.context.companyId,
       errorName: (error as Error)?.name,
       errorMessage: (error as Error)?.message,
     });
-    return { fileName: null, roles: undefined };
+    return { fileName: null, roles: undefined, extraction: null };
   }
+}
+
+/**
+ * A extração que o ramo sem classe devolve ao cliente.
+ *
+ * `requiresReview` é sempre `true` aqui — não há classe, então há o que revisar por definição. O
+ * motivo da classificação entra em `reviewReasons` para a revisão dizer por que parou, em vez de
+ * mostrar a lista vazia que o cliente sintetizava.
+ */
+function buildUnclassifiedExtraction(input: {
+  extraction: MetadataExtractionResult | null;
+  classification: ClassificationResult;
+}): MetadataExtractionResult | null {
+  if (!input.extraction) return null;
+
+  const reason = input.classification.reviewReason || input.classification.reason;
+
+  return {
+    ...input.extraction,
+    documentType: input.extraction.naming?.tipo ?? input.classification.documentType ?? null,
+    missingFields: [],
+    requiresReview: true,
+    reviewReasons: reason ? [reason] : input.extraction.reviewReasons,
+  };
+}
+
+/**
+ * Pede a proposta de categoria quando o tenant configurou isso.
+ *
+ * A política mora no tenant (`tenants.settings.uploadPolicy`), e não em variável de ambiente,
+ * porque é decisão de quem administra a empresa e não do servidor: uma organização quer a pasta
+ * nascendo sozinha, a do lado quer aprovar cada uma.
+ *
+ * Falha de leitura da política não derruba a análise — o padrão de fábrica (`suggest`) é o que
+ * vale nesse caso, pelo mesmo motivo que `normalizeTenantUploadPolicy` aceita entrada parcial.
+ */
+async function suggestCategoryWhenConfigured(input: {
+  /** `true` quando o documento já tem pasta: não há o que propor, e a política nem é lida. */
+  skip: boolean;
+  companyId: string;
+  chunks: RetrievedChunk[];
+  classes: DocumentClassRule[];
+  classification: ClassificationResult;
+  context: GroqPromptContext & { outputLocale?: string };
+}): Promise<SuggestedCategory | null> {
+  if (input.skip) return null;
+
+  let mode: CategorySuggestionMode = DEFAULT_TENANT_UPLOAD_POLICY.categorySuggestionMode;
+
+  try {
+    mode = (await getTenantUploadPolicy(input.companyId)).categorySuggestionMode;
+  } catch (error) {
+    logger.warn('política de upload não pôde ser lida; usando o padrão para a sugestão', {
+      requestId: input.context.requestId,
+      jobId: input.context.jobId,
+      companyId: input.companyId,
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  if (mode === 'off') return null;
+
+  const outcome = await suggestCategoryForDocument({
+    chunks: input.chunks,
+    classes: input.classes,
+    classification: input.classification,
+    context: input.context,
+  });
+
+  if (outcome.suggestion) {
+    logger.info('categoria sugerida pela IA', {
+      requestId: input.context.requestId,
+      jobId: input.context.jobId,
+      companyId: input.companyId,
+      mode,
+      suggestedName: outcome.suggestion.name,
+      keywordsCount: outcome.suggestion.keywords.length,
+      existingClassesCount: input.classes.length,
+      tokens: outcome.usage.totalTokens,
+    });
+  }
+
+  return outcome.suggestion;
 }
 
 function createStageTimer() {
@@ -160,6 +281,8 @@ export async function analyzePdfBuffer(input: {
   ownerUserId?: string;
   jobId?: string;
   requestContext?: AnalyzeRequestContext;
+  /** Idioma de quem enviou: resumo e tipo do nome sugerido saem nele. Ausente, português. */
+  outputLocale?: string;
 }): Promise<AnalyzePdfResponse> {
   assertAiProviderConfigured();
   const analysisProvider = resolveAnalysisProvider();
@@ -239,11 +362,18 @@ export async function analyzePdfBuffer(input: {
 
   textCharCount = extracted.charCount;
   const pageCount = extracted.pageCount;
+  // Antes da classificação e sem modelo: decide só se o prompt ganha instrução de idioma.
+  const documentLanguage = detectDocumentLanguage(extracted.text);
+  const languageContext: DocumentLanguageContext = {
+    documentLanguage,
+    outputLocale: input.outputLocale,
+  };
   timer.mark('textExtraction');
 
   logAnalyzeStage('analyze-pdf texto extraído', context, {
     textCharCount,
     pageCount,
+    documentLanguage,
     truncated: extracted.truncated,
     textSource: extracted.source,
     ocrFallbackUsed: extracted.ocrFallbackUsed,
@@ -329,6 +459,28 @@ export async function analyzePdfBuffer(input: {
   }
 
   const documentClassRules = rulesLoad.rules;
+
+  /**
+   * "Sem categoria" não é uma pasta que o modelo possa escolher.
+   *
+   * Ela é o destino de fracasso — onde o documento cai quando ninguém soube classificá-lo —, e
+   * estava indo ao classificador como se fosse uma prateleira legítima, com a descrição
+   * "Documentos que chegaram sem classificação. Reclassifique quando souber onde eles moram."
+   * Lida como opção, essa frase descreve perfeitamente qualquer documento difícil: o modelo
+   * arquivava ali com confiança e o assunto morria.
+   *
+   * O custo era duplo. O documento não ganhava nome nem metadado, porque a regra padrão dessa
+   * pasta não descreve nada; e a proposta de categoria nova nunca era pedida, porque do ponto de
+   * vista do código a classificação tinha dado certo. Um currículo virava "Sem categoria" em vez
+   * de virar a pasta "Currículos" que faltava.
+   *
+   * Fora da lista, ela volta a ser o que é: para onde a confirmação manda quem sobrou, e uma pasta
+   * que alguém escolhe à mão. O classificador não a vê mais.
+   */
+  const classifiableRules = documentClassRules.filter(
+    (rule) => !isUncategorizedCategory({ id: rule.id, name: rule.name }),
+  );
+
   timer.mark('rulesLoad');
 
   if (rulesLoad.usedMockFallback) {
@@ -367,7 +519,7 @@ export async function analyzePdfBuffer(input: {
 
   const classificationChunks = selectChunksForClassification({
     chunks,
-    classes: documentClassRules,
+    classes: classifiableRules,
   });
 
   logs.push(
@@ -382,24 +534,52 @@ export async function analyzePdfBuffer(input: {
   pipelineInfo('analyzePdf', 'pré-classificação', {
     jobId,
     rulesCount: documentClassRules.length,
+    classifiableRulesCount: classifiableRules.length,
     rulesSource: rulesLoad.source,
     chunksCount,
     classificationChunks: classificationChunks.length,
-    classNames: documentClassRules.map((r) => r.name),
+    classNames: classifiableRules.map((r) => r.name),
   });
 
   groqCalled = true;
   let classification = await analysisProvider.classify({
     chunks: classificationChunks,
-    classes: documentClassRules,
+    classes: classifiableRules,
     context: {
       requestId: context.requestId,
       jobId,
       companyId: input.companyId,
       database: rulesLoad.database,
+      ...languageContext,
     },
   });
   timer.mark('classification');
+
+  /**
+   * Cinto de segurança: "Sem categoria" nunca é resposta de classificação.
+   *
+   * O modelo não a recebe mais na lista, e `classifyDocumentWithRules` recusa id fora das
+   * permitidas — então isto não deveria disparar. Existe porque a alternativa, se disparar, é o
+   * documento ser dado como classificado e perder tanto a extração quanto a proposta de pasta
+   * nova, que é exatamente o defeito que a filtragem veio corrigir. Cair aqui é um bug em outro
+   * lugar, e o log diz isso com todas as letras.
+   */
+  if (classification.classId && isUncategorizedCategory({ id: classification.classId })) {
+    logger.warn('classificador devolveu a pasta de sistema; tratando como sem classe', {
+      requestId: context.requestId,
+      jobId,
+      companyId: input.companyId,
+      classId: classification.classId,
+    });
+
+    classification = {
+      ...classification,
+      classId: null,
+      className: null,
+      requiresReview: true,
+      reason: 'Nenhuma categoria configurada serve para este documento.',
+    };
+  }
 
   pipelineInfo('analyzePdf', 'classificação concluída', {
     jobId,
@@ -449,6 +629,7 @@ export async function analyzePdfBuffer(input: {
         truncated: extracted.truncated,
         source: extracted.source,
         ocrFallbackUsed: extracted.ocrFallbackUsed,
+        detectedLanguage: documentLanguage,
       },
       classification,
       extraction: null,
@@ -476,7 +657,7 @@ export async function analyzePdfBuffer(input: {
   ) {
     const review = await reviewFailedClassification({
       chunks: classificationChunks,
-      classes: documentClassRules,
+      classes: classifiableRules,
       classification,
       context: {
         requestId: context.requestId,
@@ -533,8 +714,46 @@ export async function analyzePdfBuffer(input: {
         jobId,
         companyId: input.companyId,
         database: rulesLoad.database,
+        ...languageContext,
       },
     });
+
+    /**
+     * Terceiro passe: se nenhuma pasta serve, qual deveria existir?
+     *
+     * Os dois passes anteriores só sabem responder com uma pasta que já existe, então um tenant
+     * recém-criado — ou um tipo que ninguém previu, como um boleto numa empresa que só cadastrou
+     * "Contratos" — sempre terminava em "Sem categoria". A proposta não vira pasta aqui: ela viaja
+     * na classificação e se materializa na revisão, ou na confirmação quando o tenant escolheu
+     * `auto_create`.
+     *
+     * Custa uma chamada, e só em documento que já ia para revisão de qualquer jeito. O tenant que
+     * desligou a sugestão não paga nada.
+     */
+    const suggestedCategory = await suggestCategoryWhenConfigured({
+      // Só quando NÃO há pasta.
+      //
+      // Este ramo também recebe o documento que achou pasta mas ficou em revisão por confiança
+      // baixa, e para ele a proposta é contraditória: ela afirma que nenhuma categoria serve
+      // enquanto a classificação aponta uma. Custava uma chamada à Groq por documento duvidoso,
+      // que é exatamente a faixa mais comum — e a cota diária é o recurso escasso aqui.
+      skip: Boolean(classification.classId),
+      companyId: input.companyId,
+      chunks: classificationChunks,
+      classes: classifiableRules,
+      classification,
+      context: {
+        requestId: context.requestId,
+        jobId,
+        companyId: input.companyId,
+        database: rulesLoad.database,
+        outputLocale: input.outputLocale,
+      },
+    });
+
+    if (suggestedCategory) {
+      classification = { ...classification, suggestedCategory };
+    }
 
     const durations = timer.finish();
     logAnalyzeStage('analyze-pdf revisão necessária após classificação', context, {
@@ -548,6 +767,7 @@ export async function analyzePdfBuffer(input: {
       reason: classification.reason,
       namingRolesType: proposed.roles?.tipo ?? null,
       recommendedFileName: proposed.fileName,
+      suggestedCategoryName: suggestedCategory?.name ?? null,
       stageDurationsMs: durations,
     });
 
@@ -569,6 +789,16 @@ export async function analyzePdfBuffer(input: {
       );
     }
 
+    if (suggestedCategory) {
+      logs.push(
+        createLog(
+          'Categoria sugerida',
+          `Nenhuma categoria configurada serve para este documento. A IA propõe criar "${suggestedCategory.name}": ${suggestedCategory.description}`,
+          'done',
+        ),
+      );
+    }
+
     return {
       jobId,
       status: 'requires_review',
@@ -583,9 +813,11 @@ export async function analyzePdfBuffer(input: {
         truncated: extracted.truncated,
         source: extracted.source,
         ocrFallbackUsed: extracted.ocrFallbackUsed,
+        detectedLanguage: documentLanguage,
       },
       classification,
-      extraction: null,
+      // A leitura sem classe vem junto: é ela que carrega o resumo que o extrator escreveu.
+      extraction: buildUnclassifiedExtraction({ extraction: proposed.extraction, classification }),
       logs,
     };
   }
@@ -636,6 +868,7 @@ export async function analyzePdfBuffer(input: {
         truncated: extracted.truncated,
         source: extracted.source,
         ocrFallbackUsed: extracted.ocrFallbackUsed,
+        detectedLanguage: documentLanguage,
       },
       classification: {
         ...classification,
@@ -681,6 +914,7 @@ export async function analyzePdfBuffer(input: {
       jobId,
       companyId: input.companyId,
       database: rulesLoad.database,
+      ...languageContext,
     },
   });
   const extraction = refined.extraction;
@@ -826,6 +1060,7 @@ export async function analyzePdfBuffer(input: {
       truncated: extracted.truncated,
       source: extracted.source,
       ocrFallbackUsed: extracted.ocrFallbackUsed,
+      detectedLanguage: documentLanguage,
     },
     classification,
     extraction,

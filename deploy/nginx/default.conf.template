@@ -6,6 +6,12 @@
 # DNS interno Docker — necessário para balancear múltiplas réplicas (compose scale).
 resolver 127.0.0.11 valid=10s ipv6=off;
 
+# Tempo de cada requisição no log. Sem `rt=` a lentidão do upload era palpite: o formato padrão
+# da imagem não registra duração. `urt` é só a espera pela API ou pelo auth; a diferença para
+# `rt` é o cliente mandando o corpo ou recebendo a resposta.
+log_format doqyn_timed '$remote_addr - [$time_local] "$request" $status $body_bytes_sent '
+                       'rt=$request_time urt=$upstream_response_time "$http_user_agent"';
+
 upstream doqyn_api {
   zone doqyn_api 64k;
   least_conn;
@@ -36,6 +42,7 @@ server {
   location = /nginx-health {
     access_log off;
     add_header Content-Type text/plain;
+    add_header X-Content-Type-Options nosniff always;
     return 200 "ok\n";
   }
 
@@ -58,6 +65,8 @@ server {
   ssl_certificate     /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN}/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN}/privkey.pem;
 
+  access_log /var/log/nginx/access.log doqyn_timed;
+
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_prefer_server_ciphers off;
   ssl_session_cache shared:SSL:10m;
@@ -68,8 +77,53 @@ server {
   # qualquer subdomínio futuro que ainda não tenha certificado.
   add_header Strict-Transport-Security "max-age=15768000" always;
 
-  client_max_body_size 30m;
+  # Token de compartilhamento, assinatura e convite anda no caminho da URL (/share/<token>,
+  # /sign/<token>, /invite/<token>): sem Referrer-Policy ele saía no Referer de qualquer recurso
+  # carregado dali. X-Frame-Options fecha clickjacking do botão de assinar — o app não usa iframe.
+  #
+  # A CSP saiu de Report-Only. O que ela precisa aceitar, e por quê:
+  #   script-src 'self'        — não há mais script inline: o boot do tema e do idioma virou
+  #                              `/boot.js` justamente para isto ('unsafe-inline' não barra XSS)
+  #   'wasm-unsafe-eval'       — o worker do pdf.js instancia WebAssembly para decodificar JPEG2000
+  #   style-src 'unsafe-inline'— estilo inline do React/Tailwind; sem nonce por página não há como
+  #   img-src blob:            — miniatura e página renderizada do PDF saem como blob
+  #   connect-src https:       — o PUT do upload vai direto ao R2, noutro domínio
+  #   worker-src blob:         — o worker do pdf.js é carregado como blob
+  # `add_header` num `location` apaga todos estes — repetir lá.
+  add_header X-Frame-Options DENY always;
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy no-referrer always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+  # Folga sobre os 50 MB do upload (MAX_UPLOAD_MB): o corpo multipart pesa mais que o arquivo.
+  client_max_body_size 60m;
   root /usr/share/nginx/html;
+
+  # Rotas antigas em português → as novas, em inglês. 301 de verdade, e não redirect no app: há
+  # link desses endereços em e-mail já entregue e em convite em circulação. A query é preservada
+  # sozinha pelo `permanent`. A lista é `src/app/legacyRoutes.ts`, e `tests/legacy-routes.test.ts`
+  # confere que cada entrada dela está aqui. O específico vem antes do geral.
+  rewrite ^/biblioteca/compartilhados(/.*)?$ /library/shared$1 permanent;
+  rewrite ^/biblioteca/assinaturas(/.*)?$ /library/signatures$1 permanent;
+  rewrite ^/biblioteca/recentes(/.*)?$ /library/recent$1 permanent;
+  rewrite ^/biblioteca/favoritos(/.*)?$ /library/favorites$1 permanent;
+  rewrite ^/biblioteca/lixeira(/.*)?$ /library/trash$1 permanent;
+  rewrite ^/biblioteca/desativados(/.*)?$ /library/deactivated$1 permanent;
+  rewrite ^/biblioteca(/.*)?$ /library$1 permanent;
+  rewrite ^/pedidos(/.*)?$ /requests$1 permanent;
+  rewrite ^/contatos(/.*)?$ /contacts$1 permanent;
+  rewrite ^/notificacoes(/.*)?$ /notifications$1 permanent;
+  rewrite ^/termos(/.*)?$ /terms$1 permanent;
+  rewrite ^/convite(/.*)?$ /invite$1 permanent;
+  rewrite ^/criar-empresa(/.*)?$ /signup/company$1 permanent;
+  rewrite ^/criar-acesso-cpf(/.*)?$ /signup/individual$1 permanent;
+  rewrite ^/confirmar-cadastro(/.*)?$ /verify-email$1 permanent;
+  rewrite ^/verificar-email(/.*)?$ /verify-email$1 permanent;
+  rewrite ^/confirmar-email(/.*)?$ /confirm-email-change$1 permanent;
+  rewrite ^/acesso(/.*)?$ /access$1 permanent;
+  rewrite ^/assinaturas(/.*)?$ /signatures$1 permanent;
+  rewrite ^/matriz(/.*)?$ /access-matrix$1 permanent;
 
   # O nginx não conhece `.mjs` e o serve como `application/octet-stream`. O navegador recusa
   # módulo ES com esse tipo, e o pdf.js cai no "fake worker": renderiza na thread principal.
@@ -77,9 +131,22 @@ server {
   # Resolvido por `location`, e não por um bloco `types` — este SUBSTITUI o mapa inteiro de tipos
   # em vez de acrescentar. Declarar só o `mjs` apagava `text/html` junto, e o navegador passava a
   # BAIXAR o index.html em vez de abrir o app.
+  # O boot do tema e do idioma não tem hash no nome: cache longo serviria a versão velha depois de
+  # um deploy. Curto e revalidado, que ele tem 2 KB.
+  location = /boot.js {
+    add_header Cache-Control "public, max-age=300, must-revalidate";
+    add_header Strict-Transport-Security "max-age=15768000" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
+  }
+
   location ~ \.mjs$ {
     default_type application/javascript;
     add_header Cache-Control "public, max-age=31536000, immutable";
+    # O `add_header` acima faz o nginx descartar os do `server`: sem repetir, o .mjs saía sem HSTS.
+    add_header Strict-Transport-Security "max-age=15768000" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
   }
   index index.html;
 
@@ -88,11 +155,16 @@ server {
     return 403;
   }
 
+  # X-Forwarded-For SOBRESCRITO com o endereço do socket, e não `$proxy_add_x_forwarded_for`: este
+  # anexa ao que o cliente mandou, e os serviços liam a entrada da esquerda — um header inventado por
+  # requisição trocava o IP e zerava os limites por IP do auth. Não há proxy nosso antes do nginx.
+  # CF-Connecting-IP apagado pelo mesmo motivo: sem Cloudflare na frente, quem manda é o cliente.
   location /api/ {
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header CF-Connecting-IP "";
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header Connection "";
     proxy_read_timeout 120s;
@@ -103,7 +175,7 @@ server {
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_pass http://doqyn_auth/auth/;
   }
@@ -112,7 +184,7 @@ server {
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-For $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_pass http://doqyn_auth/oauth/;
   }

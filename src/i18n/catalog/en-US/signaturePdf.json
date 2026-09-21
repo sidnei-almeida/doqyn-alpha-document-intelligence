@@ -1,0 +1,38 @@
+{
+  "certificate": {
+    "heading": "Electronic signature certificate",
+    "pageTitle": "Electronic Signature Certificate",
+    "signedBy": "Signed by {{name}} · {{date}} BRT"
+  },
+  "label": {
+    "signer": "Signer",
+    "email": "Email",
+    "phone": "Phone",
+    "organization": "Organization",
+    "requestedBy": "Requested by",
+    "dateTime": "Date and time",
+    "ip": "IP",
+    "location": "Approximate location",
+    "browser": "Browser",
+    "system": "System",
+    "device": "Device",
+    "method": "Method"
+  },
+  "methodValue": "DOQYN electronic signature",
+  "identifiersHeading": "Identifiers and integrity",
+  "technical": {
+    "document": "Document",
+    "version": "Version",
+    "request": "Request",
+    "signature": "Signature",
+    "originalHash": "Original SHA-256"
+  },
+  "consentHeading": "Declaration of acceptance",
+  "consentText": "I declare that I have read the document presented and agree to sign it electronically through the DOQYN platform. I am aware that my signature will be linked to this document with the date, time and technical audit evidence.",
+  "priorSignatures_one": "This document already had {{count}} previous signature.",
+  "priorSignatures_other": "This document already had {{count}} previous signatures.",
+  "validateAt": "Verify this signature at",
+  "stamp": {
+    "signedAt": "Signed {{date}}"
+  }
+}

@@ -6,6 +6,7 @@ import {
   buildVectorSearchPostFilter,
 } from '../server/services/documentChunkVectorSearch.js';
 import { getVectorIndexFilterPaths } from '../server/db/vectorIndexes.js';
+import { buildDocumentOwnershipFilter } from '../server/tenancy/documentOwnership.js';
 import { VECTOR_INDEX_NAME } from '../server/ai/embeddings/embeddingConfig.js';
 import type { TenantStorageContext } from '../server/tenancy/tenantStorage.js';
 
@@ -84,7 +85,10 @@ describe('buildVectorSearchFilter', () => {
 describe('buildVectorSearchPostFilter', () => {
   it('reconfere com o filtro canônico de propriedade', () => {
     const filter = buildVectorSearchPostFilter(businessStorage, { documentId: 'doc_1' });
-    assert.deepEqual(filter.$or, [{ tenantId: 'tenant_a' }, { companyId: 'tenant_a' }]);
+    const ownership = buildDocumentOwnershipFilter(businessStorage);
+    for (const [field, value] of Object.entries(ownership)) {
+      assert.deepEqual(filter[field], value, `o pós-filtro perdeu "${field}" do filtro canônico`);
+    }
     assert.equal(filter.documentId, 'doc_1');
     assert.equal(filter.isCurrentVersion, true);
   });
@@ -117,6 +121,10 @@ describe('buildVectorSearchPipeline', () => {
 
   it('expõe o score do Atlas e reconfere o escopo depois do ranking', () => {
     assert.deepEqual(pipeline[1].$set, { score: { $meta: 'vectorSearchScore' } });
-    assert.ok(pipeline[2].$match.$or);
+    assert.deepEqual(
+      pipeline[2].$match,
+      buildVectorSearchPostFilter(businessStorage, undefined, undefined),
+      'o $match depois do ranking precisa repetir o escopo do estágio de busca',
+    );
   });
 });

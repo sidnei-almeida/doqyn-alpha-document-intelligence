@@ -25,6 +25,24 @@ export type EvidenceSnippet = {
   snippet: string;
 };
 
+/**
+ * Categoria que o modelo propõe quando nenhuma das configuradas serve.
+ *
+ * Não é classe: é um rascunho de classe. Vira categoria de verdade só quando alguém clica na
+ * revisão, ou quando o tenant configurou `categorySuggestionMode: 'auto_create'`. Até lá viaja na
+ * classificação como texto, sem id e sem regra.
+ */
+export type SuggestedCategory = {
+  /** Uma a três palavras, do jeito que vai aparecer como pasta: "Boletos", "Atestados Médicos". */
+  name: string;
+  /** O que mora nesta pasta, em uma frase — é a descrição que o classificador vai ler depois. */
+  description: string;
+  /** Termos que identificam o tipo no texto. No máximo oito. */
+  keywords: string[];
+  /** Por que nenhuma das pastas existentes servia. Texto para quem revisa, não para o modelo. */
+  reason: string;
+};
+
 export type ClassificationResult = {
   classId: string | null;
   className: string | null;
@@ -46,6 +64,14 @@ export type ClassificationResult = {
   errorCode?: string;
   /** Motivo de revisão legível para UI/logs. */
   reviewReason?: string;
+  /**
+   * Proposta de categoria nova, quando nem o classificador nem a segunda leitura acharam pasta.
+   *
+   * Ausente quando o tenant desligou a sugestão, quando alguma classe serviu, ou quando o modelo
+   * não soube propor nada aproveitável — proposta inventada sobre nada custa uma pasta errada para
+   * sempre, e pasta errada é mais cara que pasta faltando.
+   */
+  suggestedCategory?: SuggestedCategory | null;
 };
 
 export type ExtractedMetadataField = {
@@ -119,6 +145,8 @@ export type AnalyzePdfResponse = {
     ocrFallbackUsed?: boolean;
     ocrPagesProcessed?: number;
     ocrDurationMs?: number;
+    /** Idioma detectado no texto, sem modelo. `und` quando não dá para decidir. */
+    detectedLanguage?: import('../utils/detectDocumentLanguage.js').DocumentLanguage;
   };
   classification: ClassificationResult;
   extraction: MetadataExtractionResult | null;

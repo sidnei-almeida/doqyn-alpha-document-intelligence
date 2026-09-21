@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { DEV_TENANT_ID, REGISTRY_COLLECTIONS } from './constants.js';
 import { getMongoDatabaseName } from './database.js';
 import { closeMongoConnection, getDb } from './mongoClient.js';
+import { TEXT_SORT_COLLATION } from '../utils/textCollation.js';
 import { ensureDevTenantSeed } from '../services/tenantsService.js';
 import { ensureSidneiDevTenantMember } from '../services/tenantMembersService.js';
 import {
@@ -19,25 +20,10 @@ type SeedCounts = {
 };
 
 async function ensureRegistryIndexes() {
-  const db = await getDb();
-
-  await db
-    .collection(REGISTRY_COLLECTIONS.tenants)
-    .createIndexes([
-      { key: { tenantId: 1 }, unique: true },
-      { key: { taxIdHash: 1 }, unique: true },
-      { key: { slug: 1 }, unique: true },
-      { key: { status: 1 } },
-      { key: { tenantType: 1, status: 1 } },
-    ]);
-
-  await db
-    .collection(REGISTRY_COLLECTIONS.tenantMembers)
-    .createIndexes([
-      { key: { tenantId: 1, status: 1 } },
-      { key: { tenantId: 1, emailNormalized: 1 }, unique: true },
-      { key: { authUserId: 1, status: 1 } },
-    ]);
+  // A lista canônica é a mesma do job de produção. A cópia que morava aqui criava `taxIdHash` e
+  // `(tenantId, emailNormalized)` únicos totais, sem o filtro parcial que o registry exige.
+  const { ensureRegistryTenantIndexes } = await import('./tenantIndexes.js');
+  await ensureRegistryTenantIndexes();
 
   const { ensureUserDocumentFavoritesIndexes } = await import('./userDocumentFavoritesIndexes.js');
   await ensureUserDocumentFavoritesIndexes();
@@ -63,6 +49,8 @@ async function ensureRegistryIndexes() {
   await ensureDocumentUploadApprovalIndexes();
   const { ensureAnalysisJobIndexes } = await import('./analysisJobIndexes.js');
   await ensureAnalysisJobIndexes();
+  const { ensureExternalEmailOutboxIndexes } = await import('./externalEmailOutboxIndexes.js');
+  await ensureExternalEmailOutboxIndexes();
 }
 
 async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {
@@ -114,16 +102,19 @@ async function ensureTenantDataIndexes(names: ResolvedTenantCollectionNames) {
       ]);
   }
 
-  await db
-    .collection(names.documents)
-    .createIndexes([
-      { key: { tenantId: 1, status: 1, updatedAt: -1 } },
-      { key: { tenantId: 1, ownerUserId: 1, updatedAt: -1 } },
-      { key: { tenantId: 1, classId: 1, updatedAt: -1 } },
-      { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
-      { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
-      { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
-    ]);
+  await db.collection(names.documents).createIndexes([
+    { key: { tenantId: 1, status: 1, updatedAt: -1 } },
+    { key: { tenantId: 1, ownerUserId: 1, updatedAt: -1 } },
+    { key: { tenantId: 1, classId: 1, updatedAt: -1 } },
+    { key: { tenantId: 1, 'searchMeta.people.nameNormalized': 1 } },
+    { key: { tenantId: 1, 'searchMeta.validityDate': 1 } },
+    { key: { tenantId: 1, 'searchMeta.dates.kind': 1, 'searchMeta.dates.date': 1 } },
+    // Ordenação por texto: mesma collation da consulta (ver `tenantIndexes.ts`).
+    { key: { tenantId: 1, currentFileName: 1 }, collation: TEXT_SORT_COLLATION },
+    { key: { tenantId: 1, ownerUserId: 1, currentFileName: 1 }, collation: TEXT_SORT_COLLATION },
+    { key: { tenantId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
+    { key: { tenantId: 1, ownerUserId: 1, className: 1 }, collation: TEXT_SORT_COLLATION },
+  ]);
 
   await db
     .collection(names.documentVersions)

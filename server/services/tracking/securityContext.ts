@@ -37,21 +37,35 @@ function headerValue(headers: VercelRequest['headers'], name: string): string | 
   return typeof raw === 'string' ? raw : undefined;
 }
 
-/** Resolve IP do cliente com prioridade para proxies conhecidos. */
+/** Só com Cloudflare de fato na frente — hoje não há, e o cliente escreve esse header à vontade. */
+function trustsCloudflareHeaders(): boolean {
+  return process.env.TRUST_CLOUDFLARE?.trim().toLowerCase() === 'true';
+}
+
+/**
+ * Resolve IP do cliente pelo que o nosso proxy escreveu.
+ *
+ * Este IP vai para a evidência da assinatura e para a trilha de auditoria encadeada. Antes a ordem
+ * era `CF-Connecting-IP`, depois a entrada mais à esquerda do `X-Forwarded-For` — as duas escritas
+ * pelo cliente —, e o `X-Real-IP` que o nginx define a partir do socket vinha por último. Agora ele
+ * vem primeiro; do `X-Forwarded-For` vale a entrada da direita, a do último salto.
+ */
 export function resolveClientIp(
   req: Pick<VercelRequest, 'headers'> & { socket?: VercelRequest['socket'] },
 ): string | undefined {
-  const cfConnectingIp = headerValue(req.headers, 'cf-connecting-ip');
-  if (cfConnectingIp?.trim()) return cfConnectingIp.trim();
-
-  const forwarded = headerValue(req.headers, 'x-forwarded-for');
-  if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
+  if (trustsCloudflareHeaders()) {
+    const cfConnectingIp = headerValue(req.headers, 'cf-connecting-ip');
+    if (cfConnectingIp?.trim()) return cfConnectingIp.trim();
   }
 
   const realIp = headerValue(req.headers, 'x-real-ip');
   if (realIp?.trim()) return realIp.trim();
+
+  const forwarded = headerValue(req.headers, 'x-forwarded-for');
+  if (forwarded) {
+    const last = forwarded.split(',').at(-1)?.trim();
+    if (last) return last;
+  }
 
   return req.socket?.remoteAddress ?? undefined;
 }
@@ -94,7 +108,9 @@ function mapWindowsVersion(ntVersion: string): string | undefined {
   }
 }
 
-export function parseUserAgentDetails(userAgent?: string): Pick<
+export function parseUserAgentDetails(
+  userAgent?: string,
+): Pick<
   TrackingSecurityContext,
   'userAgent' | 'browser' | 'browserVersion' | 'os' | 'osVersion' | 'deviceType'
 > {
@@ -184,14 +200,19 @@ function resolveApproximateGeo(
   req: Pick<VercelRequest, 'headers'>,
   clientIp?: string,
 ): Pick<TrackingSecurityContext, 'country' | 'region' | 'city' | 'timezone'> {
-  const fromHeaders = {
-    country: headerValue(req.headers, 'cf-ipcountry') ?? undefined,
-    region: headerValue(req.headers, 'cf-region') ?? undefined,
-    city: headerValue(req.headers, 'cf-ipcity') ?? undefined,
-  };
+  // Mesma regra do IP: header de Cloudflare só vale com Cloudflare de fato na frente. Sem isso o
+  // próprio cliente escolhia o país e a cidade que apareciam na trilha e na evidência da
+  // assinatura — só rótulo, sem limite atrelado, mas rótulo que se lê como fato depois.
+  if (trustsCloudflareHeaders()) {
+    const fromHeaders = {
+      country: headerValue(req.headers, 'cf-ipcountry') ?? undefined,
+      region: headerValue(req.headers, 'cf-region') ?? undefined,
+      city: headerValue(req.headers, 'cf-ipcity') ?? undefined,
+    };
 
-  if (fromHeaders.country || fromHeaders.city) {
-    return fromHeaders;
+    if (fromHeaders.country || fromHeaders.city) {
+      return fromHeaders;
+    }
   }
 
   if (!clientIp || isPrivateOrLoopbackIp(clientIp)) {
@@ -203,9 +224,7 @@ function resolveApproximateGeo(
 
 function resolveTimezone(req: Pick<VercelRequest, 'headers'>): string | undefined {
   return (
-    headerValue(req.headers, 'x-timezone') ??
-    headerValue(req.headers, 'cf-timezone') ??
-    undefined
+    headerValue(req.headers, 'x-timezone') ?? headerValue(req.headers, 'cf-timezone') ?? undefined
   );
 }
 
@@ -272,7 +291,9 @@ export function encryptIpForSecurityAudit(ip: string): string | undefined {
   return Buffer.concat([iv, tag, encrypted]).toString('base64url');
 }
 
-export function buildSecurityAuditRestricted(clientIp?: string): Record<string, unknown> | undefined {
+export function buildSecurityAuditRestricted(
+  clientIp?: string,
+): Record<string, unknown> | undefined {
   if (!clientIp?.trim()) return undefined;
   const encrypted = encryptIpForSecurityAudit(clientIp);
   if (!encrypted) return undefined;

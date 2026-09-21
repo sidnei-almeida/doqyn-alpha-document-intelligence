@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 import { cloneAccessFormState, isAccessFormDirty } from '../src/features/users/accessFormState.js';
 import {
   ASSIGNABLE_PLATFORM_ROLES,
-  PLATFORM_ROLE_LABELS,
+  PLATFORM_ROLE_PRIORITY,
 } from '../src/features/users/platformRoleLabels.js';
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
@@ -58,15 +58,17 @@ describe('modal Editar acesso — UX e dirty state', () => {
     assert.ok(dialog.includes('EditAccessDialog'));
     assert.ok(dialog.includes('PlatformRolesSection'));
     assert.ok(dialog.includes('isAccessFormDirty'));
-    assert.ok(dialog.includes('Descartar alterações'));
+    assert.ok(dialog.includes("editAccessDialog.discard.title'"));
     assert.ok(sections.includes("from '@/components/ui/Checkbox'"));
     assert.equal(sections.includes('type="checkbox"'), false);
   });
 
   it('roles exibem labels amigáveis mantendo valores internos', () => {
-    assert.equal(PLATFORM_ROLE_LABELS.company_admin.label, 'Administrador da empresa');
-    assert.equal(PLATFORM_ROLE_LABELS.individual_admin.label, 'Administrador da conta');
-    assert.equal(PLATFORM_ROLE_LABELS.user.label, 'Usuário');
+    // O rótulo mora em `common`, o catálogo embutido: cabeçalho e configurações não carregam `users`.
+    const ptCommon = JSON.parse(readSrc('i18n/catalog/pt-BR/common.json'));
+    assert.equal(ptCommon.platformRole.company_admin.label, 'Administrador da empresa');
+    assert.equal(ptCommon.platformRole.individual_admin.label, 'Administrador da conta');
+    assert.equal(ptCommon.platformRole.user.label, 'Usuário');
     const chips = readSrc('components/ui/PlatformRoleChips.tsx');
     assert.ok(chips.includes('getPlatformRoleLabel'));
     assert.ok(chips.includes('{label}'));
@@ -78,7 +80,7 @@ describe('modal Editar acesso — UX e dirty state', () => {
     // O papel global foi eliminado do produto. A tela de usuários não oferece rótulo, checkbox nem
     // aviso para ele — se voltar a existir um papel de plataforma atribuível por sessão humana,
     // este teste quebra antes de a UI voltar a prometê-lo.
-    const platformRoleKeys = Object.keys(PLATFORM_ROLE_LABELS);
+    const platformRoleKeys = [...PLATFORM_ROLE_PRIORITY];
     assert.deepEqual(platformRoleKeys.sort(), ['company_admin', 'individual_admin', 'user']);
     assert.deepEqual(ASSIGNABLE_PLATFORM_ROLES, ['company_admin', 'user']);
 
@@ -103,20 +105,20 @@ describe('modal Editar acesso — UX e dirty state', () => {
 
     const dialog = readSrc('features/users/components/EditAccessDialog.tsx');
     assert.ok(dialog.includes('disabled={!dirty || saving}'));
-    assert.ok(dialog.includes('Alterações não salvas'));
+    assert.ok(dialog.includes("editAccessDialog.unsaved'"));
   });
 
   it('grupos vazios mostram empty state com CTA para Regras', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('GroupsEmptyState'));
-    assert.ok(sections.includes('Nenhum grupo criado ainda.'));
-    assert.ok(sections.includes('Crie um em Regras e volte aqui.'));
+    assert.ok(sections.includes('.nenhumGrupoCriadoAinda'));
+    assert.ok(sections.includes('.semGrupoAPessoa'));
   });
 
   it('grupos usam cards com Checkbox customizado', () => {
     const sections = readSrc('features/users/components/AccessFormSections.tsx');
     assert.ok(sections.includes('DocumentGroupsSection'));
-    assert.ok(sections.includes('Os mesmos grupos de Regras'));
+    assert.ok(sections.includes('.osMesmosGruposDe'));
     assert.ok(sections.includes('memberCount'));
     assert.equal(sections.includes('type="checkbox"'), false);
   });
@@ -157,10 +159,18 @@ describe('consistência global de checkboxes', () => {
     assert.equal(source.includes('type="checkbox"'), false);
   });
 
-  it('ApproveApprovalDialog reutiliza AccessFormSections', () => {
-    const source = readSrc('features/audit/components/ApproveApprovalDialog.tsx');
-    assert.ok(source.includes('AccessFormSections'));
-    assert.equal(source.includes('type="checkbox"'), false);
+  it('quem monta formulário de acesso reutiliza AccessFormSections', () => {
+    // `ApproveApprovalDialog` virou `PendingApprovalReviewDialog` e deixou de montar formulário:
+    // é ler e decidir, sem caixa para marcar. O reuso ficou entre os dois diálogos que ainda
+    // pedem acesso, e a proibição do checkbox cru vale para o sucessor do mesmo jeito.
+    for (const file of ['EditAccessDialog', 'InviteMemberDialog']) {
+      const source = readSrc(`features/users/components/${file}.tsx`);
+      assert.ok(source.includes('AccessFormSections'), `${file} deveria reusar AccessFormSections`);
+      assert.equal(source.includes('type="checkbox"'), false);
+    }
+
+    const review = readSrc('features/audit/components/PendingApprovalReviewDialog.tsx');
+    assert.equal(review.includes('type="checkbox"'), false);
   });
 
   it('GovernanceDetailDialog usa Checkbox nas permissões', () => {

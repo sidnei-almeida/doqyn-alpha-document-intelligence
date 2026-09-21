@@ -1,5 +1,6 @@
 import { authFetch } from '@/auth/apiAuth';
 import type { TenantUploadPolicy } from '@shared/uploadPolicy';
+import { parseApiError } from '@/lib/apiErrors';
 
 export type UploadPolicyResponse = {
   policy: TenantUploadPolicy;
@@ -8,8 +9,7 @@ export type UploadPolicyResponse = {
 
 async function parseJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = (await response.json().catch(() => null)) as { message?: string } | null;
-    throw new Error(error?.message ?? `HTTP ${response.status}`);
+    throw await parseApiError(response);
   }
   return (await response.json()) as T;
 }

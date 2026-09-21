@@ -10,6 +10,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { i18n } from '@/i18n';
 import { useAuth } from '@/auth/useAuth';
 import { canConfirmDocumentMetadata } from '@/lib/documentAdminAccess';
 import { invalidateLibraryQueries } from '@/features/library/utils/libraryQueryInvalidation';
@@ -155,12 +156,12 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       // upload já mostra "Salvo na Biblioteca" no próprio arquivo; repetir isso num aviso com o
       // nome inteiro do arquivo era ruído em cima de ruído.
       if (uploadSpaceId && savedClassId && uploadSpaceId !== savedClassId) {
-        toast.success(`Salvo em ${savedClassName}.`, {
+        toast.success(i18n.t('upload:provider.savedIn', { category: savedClassName }), {
           description: resolvedFinalName,
           action: folderTargetId
             ? {
-                label: 'Abrir pasta',
-                onClick: () => navigate(`/biblioteca?space=${encodeURIComponent(folderTargetId)}`),
+                label: i18n.t('upload:provider.openFolder'),
+                onClick: () => navigate(`/library?space=${encodeURIComponent(folderTargetId)}`),
               }
             : undefined,
         });
@@ -209,6 +210,8 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       const validationError = validateConfirmableAnalysis(raw, {
         manualClassId,
         documentRequestId: item.context?.documentRequestId,
+        // Em `auto_create` a pasta proposta é categoria válida: quem a cria é o servidor.
+        categorySuggestionMode: reviewSettings.categorySuggestionMode,
       });
       if (validationError) {
         dispatch({ type: 'error', id: item.id, message: validationError });
@@ -226,7 +229,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
       });
 
       if (resolvedFinalName === '—') {
-        const message = 'Informe um nome válido para o arquivo.';
+        const message = i18n.t('upload:provider.invalidName');
         dispatch({ type: 'error', id: item.id, message });
         toast.error(message);
         return;
@@ -288,13 +291,11 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
           filesRef.current.delete(item.id);
           setReviewItemId((current) => (current === item.id ? null : current));
           await queryClient.invalidateQueries({ queryKey: ['audit-pending'] });
-          toast.success(
-            `"${resolvedFinalName}" enviado para aprovação. Um administrador revisará na Auditoria.`,
-          );
+          toast.success(i18n.t('upload:provider.sentForApproval', { name: resolvedFinalName }));
         }
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Não foi possível salvar o documento.';
+          error instanceof Error ? error.message : i18n.t('upload:provider.saveFailed');
         dispatch({ type: 'error', id: item.id, message });
         toast.error(message);
       } finally {
@@ -400,7 +401,11 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
     async (next: UploadQueueItem) => {
       const file = filesRef.current.get(next.id);
       if (!file) {
-        dispatch({ type: 'error', id: next.id, message: 'Arquivo indisponível. Tente novamente.' });
+        dispatch({
+          type: 'error',
+          id: next.id,
+          message: i18n.t('upload:provider.fileUnavailable'),
+        });
         tryPumpQueue();
         return;
       }
@@ -478,14 +483,31 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        /**
+         * Recusa por política: o tenant disse que folha sem texto não entra no acervo.
+         *
+         * Termina como erro na fila porque é o estado terminal que já mostra o motivo e oferece
+         * remover — mas o texto diz "recusado", não "falhou": nada quebrou aqui. O arquivo
+         * provisório nunca é promovido e expira sozinho.
+         */
+        if (action === 'reject') {
+          dispatch({
+            type: 'error',
+            id: next.id,
+            message: i18n.t('upload:emptyDocument.rejectedByPolicy'),
+          });
+          tryPumpQueue();
+          return;
+        }
+
         // Os dois casos abaixo estacionam o arquivo e **seguem com o lote**. O que espera decisão
         // humana sai da esteira; quem está limpo não paga por ele.
         if (action === 'open_review') {
           dispatch({ type: 'status', id: next.id, status: 'review' });
           setReviewItemId((current) => current ?? next.id);
-          toast.info('Análise concluída. Revise e confirme para salvar na Biblioteca.', {
+          toast.info(i18n.t('upload:provider.reviewReady'), {
             action: {
-              label: 'Revisar',
+              label: i18n.t('upload:uploadQueueDrawer.revisar'),
               onClick: () => setReviewItemId(next.id),
             },
           });
@@ -524,7 +546,7 @@ export function UploadQueueProvider({ children }: { children: ReactNode }) {
             ? uploadAnalyzeStillRunningMessage()
             : error instanceof Error
               ? error.message
-              : 'Erro ao analisar o documento.';
+              : i18n.t('upload:provider.analyzeFailed');
         dispatch({ type: 'error', id: next.id, message });
         tryPumpQueue();
       }

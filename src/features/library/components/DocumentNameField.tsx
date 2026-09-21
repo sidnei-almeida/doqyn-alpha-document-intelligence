@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { DrawerSection } from '@/components/ui/DrawerSection';
 import { renameDocument } from '@/features/expiry/api/expiryApi';
 import { showApiErrorToast, showAppToast } from '@/shared/feedback/appFeedback';
+import { useTranslation } from 'react-i18next';
 
 type DocumentNameFieldProps = {
   documentId: string;
@@ -21,6 +22,8 @@ type DocumentNameFieldProps = {
  * chama-se Y" em vez de dois documentos sem relação.
  */
 export function DocumentNameField({ documentId, fileName, canEdit }: DocumentNameFieldProps) {
+  const { t } = useTranslation('library');
+
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(fileName);
 
@@ -32,7 +35,7 @@ export function DocumentNameField({ documentId, fileName, canEdit }: DocumentNam
     mutationFn: (nextName: string) => renameDocument(documentId, nextName),
     onSuccess: async (result) => {
       setDraft(result.fileName);
-      showAppToast({ type: 'success', title: 'Nome atualizado.' });
+      showAppToast({ type: 'success', title: t('documentNameField.updated') });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['documents'] }),
         queryClient.invalidateQueries({ queryKey: ['document-detail', documentId] }),
@@ -47,7 +50,7 @@ export function DocumentNameField({ documentId, fileName, canEdit }: DocumentNam
   const canSave = canEdit && isDirty && trimmed.length > 0 && !mutation.isPending;
 
   return (
-    <DrawerSection label="Nome do documento" className="border-t-0 pt-0">
+    <DrawerSection label={t('documentNameField.nomeDoDocumento')} className="border-t-0 pt-0">
       {canEdit ? (
         <form
           className="flex items-end gap-2"
@@ -67,13 +70,13 @@ export function DocumentNameField({ documentId, fileName, canEdit }: DocumentNam
                 // exigir apagar o texto de volta na mão.
                 if (event.key === 'Escape') setDraft(fileName);
               }}
-              aria-label="Nome do documento"
+              aria-label={t('documentNameField.nomeDoDocumento2')}
               className="text-label"
               disabled={mutation.isPending}
             />
           </label>
           <Button type="submit" variant="secondary" size="sm" disabled={!canSave}>
-            {mutation.isPending ? 'Salvando…' : 'Renomear'}
+            {mutation.isPending ? t('documentNameField.saving') : t('documentNameField.rename')}
           </Button>
         </form>
       ) : (
@@ -82,7 +85,7 @@ export function DocumentNameField({ documentId, fileName, canEdit }: DocumentNam
 
       {isDirty && canEdit ? (
         <p className="mt-1.5 text-caption text-doqyn-subtle">
-          As versões anteriores continuam com o nome que tinham.
+          {t('documentNameField.asVersoesAnterioresContinuam')}
         </p>
       ) : null}
     </DrawerSection>

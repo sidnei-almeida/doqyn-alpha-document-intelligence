@@ -1,4 +1,6 @@
 import 'dotenv/config';
+// Antes de tudo: desliga o Redis para a suíte. Ver o porquê em `testEnv.ts`.
+import './testEnv.js';
 import { randomUUID } from 'node:crypto';
 import { COLLECTIONS, REGISTRY_COLLECTIONS } from '../../server/db/constants.js';
 import { getDb } from '../../server/db/mongoClient.js';

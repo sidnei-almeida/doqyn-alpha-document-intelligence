@@ -13,9 +13,11 @@ import {
   shouldPauseForReview,
 } from '../../document-send/utils/reviewWorkflowSettings';
 import type { PostAnalysisAction } from '../config/uploadAutoConfirm';
+import { emptyDocumentReason } from '@/features/document-send/services/emptyDocument';
 import type { UploadQueueItem, UploadQueueItemAnalysis } from '../types';
 import type { BulkUploadItem } from '../../document-send/types/bulk';
 import { analysisFailureMessage, needsManualReviewConfirmation } from './uploadQueueAnalysis';
+import { commonPhrase } from '@/i18n/commonPhrase';
 
 export type AnalysisOutcomeStatus = 'analyzed' | 'requires_review' | 'ai_paused' | 'failed';
 
@@ -171,7 +173,7 @@ export function getAnalysisClassificationError(
   }
 
   if (metadata.analysisStatus === 'failed' || raw.status === 'failed') {
-    return metadata.classificationReason || 'A análise não foi concluída.';
+    return metadata.classificationReason || commonPhrase('uploadQueue.notCompleted');
   }
 
   // Ausência de classe não entra aqui de propósito: quem chama isto trata o retorno como erro que
@@ -197,7 +199,7 @@ export function resolveAnalysisOutcome(
       classificationError:
         getAnalysisClassificationError(raw, metadata) ??
         raw.classification.reason ??
-        'A análise não foi concluída.',
+        commonPhrase('uploadQueue.notCompleted'),
     };
   }
 
@@ -223,39 +225,51 @@ export function getAutoSaveBlockers(params: AutoSaveParams): string[] {
   const blockers: string[] = [];
   const { isAuthenticated, metadata, rawAnalysis } = params;
 
-  if (!isAuthenticated) blockers.push('Usuário não autenticado.');
+  // Códigos, não frases: a lista decide se o documento salva sozinho e nunca vai para a tela.
+  if (!isAuthenticated) blockers.push('not_authenticated');
   if (!metadata || !rawAnalysis) {
-    blockers.push('Análise indisponível.');
+    blockers.push('analysis_unavailable');
     return blockers;
   }
 
   if (policyRequiresPerItemChoice(settings.defaultNamingPolicy) && !params.perItem?.namingMode) {
-    blockers.push('Escolha de nome por arquivo necessária.');
+    blockers.push('per_item_naming_required');
   }
 
   if (settings.defaultNamingPolicy === 'manual_required' && !params.perItem?.manualName?.trim()) {
-    blockers.push('Nome manual obrigatório.');
+    blockers.push('manual_name_required');
   }
 
   if (metadata.analysisStatus !== 'completed') {
-    blockers.push('Análise marcada como revisão pela API.');
+    blockers.push('metadata_requires_review');
   }
   if (rawAnalysis.status !== 'completed') {
-    blockers.push('Status da análise não é concluído.');
+    blockers.push('analysis_not_completed');
   }
   if (rawAnalysis.classification.requiresReview) {
-    blockers.push('Classificação marcada para revisão.');
+    blockers.push('classification_requires_review');
   }
   if (
     settings.pauseOnLowConfidence &&
     rawAnalysis.classification.confidence < MIN_CLASSIFICATION_CONFIDENCE
   ) {
-    blockers.push(
-      `Confiança abaixo do mínimo (${Math.round(rawAnalysis.classification.confidence * 100)}%).`,
-    );
+    blockers.push('low_confidence');
   }
-  if (!rawAnalysis.classification.classId) {
-    blockers.push('Classe não retornada pela análise.');
+  /**
+   * Sem pasta não há o que salvar — a não ser que o tenant tenha escolhido criar a proposta.
+   *
+   * Sem esta exceção, `auto_create` nunca chegava ao servidor: o documento sem classe era barrado
+   * aqui, ia para a revisão, e lá a pessoa era obrigada a escolher uma pasta à mão — o que grava
+   * `manualClassId` e faz a criação automática nem ser tentada.
+   */
+  if (
+    !rawAnalysis.classification.classId &&
+    !(
+      settings.categorySuggestionMode === 'auto_create' &&
+      rawAnalysis.classification.suggestedCategory?.name?.trim()
+    )
+  ) {
+    blockers.push('missing_class');
   }
 
   const effectiveMode = resolveEffectiveNamingForItem(settings, params.perItem);
@@ -264,21 +278,21 @@ export function getAutoSaveBlockers(params: AutoSaveParams): string[] {
     effectiveMode === 'ai_suggested' &&
     !rawAnalysis.recommendedFileName?.trim()
   ) {
-    blockers.push('Nome sugerido ausente.');
+    blockers.push('missing_suggested_name');
   }
   if (!settings.aiRenameEnabled && !rawAnalysis.originalFileName?.trim()) {
-    blockers.push('Nome original ausente.');
+    blockers.push('missing_original_name');
   }
   if (!rawAnalysis.extraction) {
-    blockers.push('Metadados não extraídos.');
+    blockers.push('missing_extraction');
   }
   if (settings.pauseOnLowConfidence && rawAnalysis.extraction?.requiresReview) {
-    blockers.push('Metadados marcados para revisão.');
+    blockers.push('extraction_requires_review');
   }
 
   const missingFields = rawAnalysis.extraction?.missingFields ?? metadata.missingFields ?? [];
   if (settings.pauseOnMissingFields && missingFields.length > 0) {
-    blockers.push(`Campos ausentes: ${missingFields.join(', ')}.`);
+    blockers.push('missing_fields');
   }
 
   if (
@@ -289,7 +303,7 @@ export function getAutoSaveBlockers(params: AutoSaveParams): string[] {
     })
   ) {
     if (blockers.length === 0) {
-      blockers.push('Documento não elegível para salvamento automático.');
+      blockers.push('not_eligible');
     }
   }
 
@@ -360,6 +374,36 @@ export function resolveQueueAnalysisAction(
     return 'fail';
   }
 
+  /**
+   * Documento vazio decide antes de tudo o mais.
+   *
+   * Sem texto não há classe, resumo nem nome sugerido — os testes que vêm depois iam todos dar
+   * "falta alguma coisa" e mandar para a revisão, onde a tela não dizia o que tinha acontecido.
+   * Aqui a política do tenant responde de uma vez: perguntar, salvar assim mesmo, ou recusar.
+   */
+  if (emptyDocumentReason(raw)) {
+    if (settings.emptyDocumentMode === 'auto_reject') return 'reject';
+
+    /**
+     * `auto_save` não vence a política de nomeação.
+     *
+     * Quem exige nome escolhido a cada arquivo já disse que nenhum documento entra sem alguém
+     * digitar o nome, e a folha em branco é o caso em que a IA menos tem o que sugerir. Salvando
+     * direto, a confirmação recusava por nome inválido e o item terminava como erro — pior que a
+     * revisão, porque não explicava nada.
+     */
+    const namingNeedsHuman =
+      settings.aiRenameEnabled &&
+      (policyRequiresPerItemChoice(settings.defaultNamingPolicy) ||
+        settings.defaultNamingPolicy === 'manual_required');
+
+    if (settings.emptyDocumentMode === 'auto_save' && !namingNeedsHuman) {
+      return 'auto_confirm';
+    }
+
+    return 'open_review';
+  }
+
   const pauseInput = { metadata, rawAnalysis: raw };
 
   if (shouldPauseForReview(settings, pauseInput)) {
@@ -416,35 +460,6 @@ export function normalizeUploadQueueAnalysis(
     },
     raw,
   };
-}
-
-export function getReviewReasonFromBlockers(
-  item: Pick<BulkUploadItem, 'errorMessage' | 'result' | 'metadata' | 'perItemNaming'>,
-  settings: WorkflowReviewSettings = DEFAULT_WORKFLOW_REVIEW_SETTINGS,
-): string {
-  if (item.errorMessage) return item.errorMessage;
-
-  const raw = item.result;
-  const metadata = item.metadata;
-  if (!raw || !metadata) return 'Análise indisponível.';
-
-  const blockers = getAutoSaveBlockers({
-    isAuthenticated: true,
-    metadata,
-    rawAnalysis: raw,
-    settings,
-    perItem: item.perItemNaming,
-  });
-
-  if (blockers.length > 0) {
-    return blockers[0];
-  }
-
-  if (raw.status === 'requires_review' || metadata.analysisStatus === 'requires_review') {
-    return raw.classification.reason || 'Resultado marcado para revisão pela análise.';
-  }
-
-  return 'Revisão necessária antes do salvamento.';
 }
 
 export { analysisFailureMessage, needsManualReviewConfirmation };

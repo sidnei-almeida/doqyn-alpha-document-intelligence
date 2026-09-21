@@ -19,13 +19,19 @@ export type MetadataDisplayField = {
   hint?: string;
 };
 
+export type VersionComparisonLabelKey =
+  | 'versionComparisonPanel.linhas.name'
+  | 'versionComparisonPanel.linhas.category'
+  | 'versionComparisonPanel.linhas.version'
+  | 'versionComparisonPanel.linhas.summary';
+
+/** Linha fixa leva `labelKey`, traduzida na tela; linha de metadado leva o `label` extraído. */
 export type VersionComparisonRow = {
   key: string;
-  label: string;
   currentValue: string;
   newValue: string;
   changed: boolean;
-};
+} & ({ label: string; labelKey?: never } | { labelKey: VersionComparisonLabelKey; label?: never });
 
 export type UpdateVersionAnalysisResult = {
   file: File;

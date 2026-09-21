@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 import type { DoqynVerifiedSession } from './providers/doqynAuthProvider.js';
-import { redisGetJson, redisSetJson } from '../redis/redisClient.js';
+import {
+  redisDel,
+  redisGetJson,
+  redisSetAddWithTtl,
+  redisSetJson,
+  redisSetMembers,
+} from '../redis/redisClient.js';
 
 function readBool(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim() === '') return defaultValue;
@@ -39,5 +45,43 @@ export async function setCachedDoqynSession(
   session: DoqynVerifiedSession,
 ): Promise<void> {
   if (!isSessionCacheEnabled()) return;
-  await redisSetJson(buildSessionCacheKey(sessionToken), session, getSessionCacheTtlSeconds());
+  const cacheKey = buildSessionCacheKey(sessionToken);
+  const ttl = getSessionCacheTtlSeconds();
+  await redisSetJson(cacheKey, session, ttl);
+  await redisSetAddWithTtl(buildUserSessionIndexKey(session.user.id), cacheKey, ttl);
+}
+
+function buildUserSessionIndexKey(userId: string): string {
+  return `session-user:${userId}`;
+}
+
+/**
+ * Esquece toda sessão em cache de um usuário. Chamado pelo auth-service quando revoga sessão.
+ *
+ * Sem isto, logout, reset de senha, bloqueio ou remoção de membro derrubavam a sessão no Postgres,
+ * mas o alpha continuava aceitando o cookie pelo que tinha em Redis até o TTL vencer. O cache é por
+ * token, e o auth não guarda o token cru — por isso o índice por usuário.
+ */
+export async function invalidateCachedDoqynSessionsForUser(userId: string): Promise<number> {
+  const indexKey = buildUserSessionIndexKey(userId);
+  const cacheKeys = await redisSetMembers(indexKey);
+  await redisDel(...cacheKeys, indexKey);
+  return cacheKeys.length;
+}
+
+/**
+ * Esquece a sessão em cache para que a próxima requisição releia o auth-service.
+ *
+ * Existe por causa do idioma. A sessão fica em cache por 45 segundos, e dentro dessa janela o
+ * `AuthUser` guardado ainda carrega o locale antigo — então alguém que acabou de mudar para
+ * inglês podia disparar um compartilhamento e ver o e-mail sair em português. Quarenta e cinco
+ * segundos é pouco, mas é exatamente o intervalo em que a pessoa está testando se a troca
+ * funcionou.
+ *
+ * Serve para qualquer dado de sessão que o usuário edita e vê de volta — nome, avatar, papel —,
+ * não só para o idioma.
+ */
+export async function invalidateCachedDoqynSession(sessionToken: string): Promise<void> {
+  if (!isSessionCacheEnabled()) return;
+  await redisDel(buildSessionCacheKey(sessionToken));
 }

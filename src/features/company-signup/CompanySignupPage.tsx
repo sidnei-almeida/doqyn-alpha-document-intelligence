@@ -21,15 +21,15 @@ import { submitCompanySignup } from './api/companySignupApi';
 import {
   buildCompanySignupPayload,
   buildCompanySignupReviewSections,
-  COMPANY_SIGNUP_REVIEW_COPY,
+  COMPANY_SIGNUP_REVIEW_COPY_KEYS,
   validateCompanySignupForm,
   type CompanySignupFormValues,
 } from './companySignupReview';
-
-const COMPANY_AUTHORIZATION_TEXT =
-  'Declaro que possuo autorização para cadastrar esta empresa ou atuar como administrador inicial no DOQYN.';
+import { useTranslation } from 'react-i18next';
 
 export function CompanySignupPage() {
+  const { t } = useTranslation('auth');
+
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
@@ -110,7 +110,10 @@ export function CompanySignupPage() {
     ],
   );
 
-  const reviewSections = useMemo(() => buildCompanySignupReviewSections(formValues), [formValues]);
+  const reviewSections = useMemo(
+    () => buildCompanySignupReviewSections(formValues, t),
+    [formValues, t],
+  );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,7 +128,7 @@ export function CompanySignupPage() {
     // O servidor aceitaria e resolveria a colisão com sufixo numérico — que é justamente o
     // silêncio que este campo existe para acabar.
     if (!usernameAvailable) {
-      setError('Escolha um nome de usuário disponível para continuar.');
+      setError(t('signup.usernameUnavailable'));
       return;
     }
 
@@ -140,7 +143,7 @@ export function CompanySignupPage() {
       if (validation.field === 'companyAuthorization') {
         setAuthorizationError(validation.error ?? null);
       }
-      setError(validation.error ?? 'Revise os campos do formulário.');
+      setError(validation.error ?? t('signup.reviewFields'));
       return;
     }
 
@@ -150,7 +153,7 @@ export function CompanySignupPage() {
   async function handleConfirmSubmit() {
     if (submitting || !formValues.acceptedTerms) {
       if (!formValues.acceptedTerms) {
-        setTermsError('É necessário aceitar os Termos e Condições de Uso para continuar.');
+        setTermsError(t('signup.termsRequired'));
       }
       return;
     }
@@ -168,19 +171,20 @@ export function CompanySignupPage() {
       // devolveria a pessoa ao login sem explicar por quê.
       if (result.emailVerificationRequired && result.verificationTicket) {
         storeVerificationTicket(result.verificationTicket);
-        toast.success(result.message ?? 'Empresa criada. Confirme seu e-mail para entrar.');
-        navigate('/confirmar-cadastro', {
+        // A frase do servidor é português e existe para log; a confirmação sai do catálogo.
+        toast.success(t('companySignupPage.createdVerify'));
+        navigate('/verify-email', {
           replace: true,
-          state: { ticket: result.verificationTicket },
+          state: { ticket: result.verificationTicket, emailSent: result.emailSent },
         });
         return;
       }
 
-      toast.success(result.message ?? 'Empresa cadastrada com sucesso.');
+      toast.success(t('companySignupPage.created'));
       await refreshUser();
-      navigate('/biblioteca', { replace: true });
+      navigate('/library', { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Falha ao cadastrar empresa.';
+      const message = err instanceof Error ? err.message : t('companySignupPage.failed');
       setError(message);
       showApiErrorToast(err, message);
     } finally {
@@ -191,30 +195,35 @@ export function CompanySignupPage() {
   return (
     <>
       <AuthHeading
-        title="Cadastrar minha empresa"
-        description="Use esta opção se a sua empresa ainda não tem um ambiente no DOQYN."
+        title={t('companySignupPage.cadastrarMinhaEmpresa')}
+        description={t('companySignupPage.useEstaOpcaoSe')}
       />
 
       <form onSubmit={handleSubmit}>
         <div className="mb-5 border-b border-doqyn-border-subtle pb-2.5 font-mono text-micro uppercase tracking-[0.14em] text-doqyn-subtle">
-          Dados da empresa
+          {t('companySignupPage.dadosDaEmpresa')}
         </div>
 
         <div className="space-y-4">
           <Input
             id="companyName"
-            label="Nome da empresa"
+            label={t('companySignupPage.nomeDaEmpresa')}
             autoComplete="organization"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             required
           />
-          <CountrySelect id="country" label="País" value={country} onChange={handleCountryChange} />
+          <CountrySelect
+            id="country"
+            label={t('companySignupPage.pais')}
+            value={country}
+            onChange={handleCountryChange}
+          />
           <TaxIdInput
             id="taxId"
             country={country}
             personType="company"
-            label={getTaxIdSpec(country, 'company').label}
+            label={t(getTaxIdSpec(country, 'company').labelKey)}
             value={taxId}
             onChange={setTaxId}
             required
@@ -223,7 +232,7 @@ export function CompanySignupPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="firstName"
-              label="Nome do responsável"
+              label={t('companySignupPage.nomeDoResponsavel')}
               autoComplete="given-name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -231,7 +240,7 @@ export function CompanySignupPage() {
             />
             <Input
               id="lastName"
-              label="Sobrenome"
+              label={t('companySignupPage.sobrenome')}
               autoComplete="family-name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
@@ -248,7 +257,7 @@ export function CompanySignupPage() {
 
           <Input
             id="email"
-            label="E-mail corporativo"
+            label={t('companySignupPage.eMailCorporativo')}
             autoComplete="email"
             type="email"
             value={email}
@@ -258,12 +267,12 @@ export function CompanySignupPage() {
           />
           {fromAuthenticatedSession && (
             <p className="type-label -mt-2 text-doqyn-muted">
-              E-mail confirmado pela conta com que você entrou.
+              {t('companySignupPage.eMailConfirmadoPela')}
             </p>
           )}
           <WhatsappInput
             id="whatsapp"
-            label="WhatsApp"
+            label={t('companySignupPage.whatsapp')}
             country={country}
             value={whatsapp}
             onChange={setWhatsapp}
@@ -273,7 +282,7 @@ export function CompanySignupPage() {
             <>
               <Input
                 id="password"
-                label="Senha"
+                label={t('companySignupPage.senha')}
                 autoComplete="new-password"
                 type="password"
                 value={password}
@@ -283,7 +292,7 @@ export function CompanySignupPage() {
               />
               <Input
                 id="confirmPassword"
-                label="Confirmar senha"
+                label={t('companySignupPage.confirmarSenha')}
                 autoComplete="new-password"
                 type="password"
                 value={confirmPassword}
@@ -316,7 +325,7 @@ export function CompanySignupPage() {
             wrapperClassName="border-0 bg-transparent px-0 py-1"
             label={
               <span className="text-sm leading-relaxed text-doqyn-muted">
-                {COMPANY_AUTHORIZATION_TEXT}
+                {t('companySignupPage.authorizationText')}
               </span>
             }
             description={
@@ -334,23 +343,23 @@ export function CompanySignupPage() {
         ) : null}
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-doqyn-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link to="/acesso" className={AUTH_QUIET_BUTTON}>
-            Voltar
+          <Link to="/access" className={AUTH_QUIET_BUTTON}>
+            {t('companySignupPage.voltar')}
           </Link>
           <button type="submit" disabled={resolvingSession} className={AUTH_PRIMARY_BUTTON}>
-            Cadastrar empresa
+            {t('companySignupPage.cadastrarEmpresa')}
           </button>
         </div>
       </form>
 
       <ReviewBeforeSubmitDialog
         open={reviewOpen}
-        title={COMPANY_SIGNUP_REVIEW_COPY.title}
-        description={COMPANY_SIGNUP_REVIEW_COPY.description}
-        attentionMessage={COMPANY_SIGNUP_REVIEW_COPY.attentionMessage}
+        title={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.title)}
+        description={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.description)}
+        attentionMessage={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.attentionMessage)}
         sections={reviewSections}
         submitting={submitting}
-        confirmLabel={COMPANY_SIGNUP_REVIEW_COPY.confirmLabel}
+        confirmLabel={t(COMPANY_SIGNUP_REVIEW_COPY_KEYS.confirmLabel)}
         onCancel={() => {
           if (!submitting) setReviewOpen(false);
         }}
@@ -361,12 +370,12 @@ export function CompanySignupPage() {
       />
 
       <AuthFooterLink>
-        Já tenho conta.{' '}
+        {t('companySignupPage.jaTenhoConta')}{' '}
         <Link
           to="/login"
           className="text-doqyn-accent-active underline-offset-4 transition-colors hover:underline"
         >
-          Entrar
+          {t('companySignupPage.entrar')}
         </Link>
       </AuthFooterLink>
     </>

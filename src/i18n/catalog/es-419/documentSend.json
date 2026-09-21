@@ -1,0 +1,160 @@
+{
+  "analysisError": {
+    "uploadStorageTitle": "Falló la subida al almacenamiento",
+    "uploadStorageMessage": "No se pudo subir el documento al almacenamiento. Inténtalo de nuevo.",
+    "semAcompanhamentoTitle": "Análisis sin seguimiento",
+    "falhaNaAnaliseTitle": "Falló el análisis",
+    "resultadoIndisponivelTitle": "Resultado del análisis no disponible",
+    "resultadoIndisponivelMessage": "El análisis terminó sin resultado disponible. Inténtalo de nuevo.",
+    "respostaInvalidaFila": "Respuesta inválida del servidor (cola asíncrona)",
+    "respostaInvalida": "Respuesta inválida del servidor",
+    "respostaInvalidaSalvar": "Respuesta inválida al guardar el documento.",
+    "respostaInvalidaAprovacao": "Respuesta inválida al enviar el documento para aprobación.",
+    "respostaInvalidaAtualizar": "Respuesta inválida al actualizar el documento.",
+    "naoFoiPossivelAnalisarTitle": "No se pudo analizar el documento",
+    "prepareUploadFailed": "Error al preparar la carga del documento",
+    "storageFailed": "No se pudo enviar el documento al almacenamiento.",
+    "analysisFailed": "Falló el análisis del documento.",
+    "noResult": "El análisis terminó sin resultado disponible.",
+    "analyzeFailed": "Error al analizar el documento"
+  },
+  "documentNamingSection": {
+    "digiteONomeFinal": "Escribe el nombre final del archivo",
+    "modoDeNomeacaoDo": "Modo de nomenclatura del archivo",
+    "nomeDoArquivoSalvo": "Nombre del archivo guardado",
+    "previewDoNomeFinal": "Vista previa del nombre final",
+    "sugestaoDaIaOpcional": "Sugerencia de la IA (opcional):"
+  },
+  "metadataField": {
+    "nomeOriginal": "Nombre original",
+    "nomeSugerido": "Nombre sugerido",
+    "classeIdentificada": "Clase identificada",
+    "statusDaAnalise": "Estado del análisis",
+    "confiancaDaClassificacao": "Confianza de la clasificación",
+    "justificativa": "Justificación",
+    "camposAusentes": "Campos ausentes",
+    "versaoSugerida": "Versión sugerida",
+    "textoExtraido": "Texto extraído",
+    "statusDePersistencia": "Estado de persistencia",
+    "armazenamentoDeArquivo": "Almacenamiento del archivo"
+  },
+  "metadataValue": {
+    "analiseConcluida": "Análisis concluido",
+    "requerRevisao": "Requiere revisión",
+    "erroNaAnalise": "Error en el análisis",
+    "caracteres_one": "{{count}} carácter",
+    "caracteres_many": "{{count}} caracteres",
+    "caracteres_other": "{{count}} caracteres",
+    "caracteresTruncado_one": "{{count}} carácter (truncado)",
+    "caracteresTruncado_many": "{{count}} caracteres (truncado)",
+    "caracteresTruncado_other": "{{count}} caracteres (truncado)",
+    "metadadosConfirmados": "Metadatos confirmados",
+    "pendente": "Pendiente"
+  },
+  "reviewWorkflowSettingsPanel": {
+    "aceitaAnalisesConfiaveisApos": "Acepta análisis confiables después del tiempo configurado.",
+    "aguardar": "Esperar",
+    "aplicarEstaConfiguracaoAos": "Aplicar esta configuración a los próximos archivos del lote",
+    "ativarModoAutomatico": "Activar el modo automático",
+    "aumentarSegundos": "Aumentar segundos",
+    "autoSummary": "Auto · {{seconds}} s",
+    "categoriaSugeridaPelaIa": "Categoría sugerida por la IA",
+    "categoriaSugeridaPelaIa2": "Categoría sugerida por la IA",
+    "comportamentoAoEnviarVarios": "Comportamiento al subir varios archivos a la vez.",
+    "configuracoesDaRevisao": "Configuración de la revisión",
+    "configuracoesDaRevisao2": "Configuración de la revisión",
+    "configuracoesDaRevisao3": "Configuración de la revisión",
+    "continuarAutomaticamenteQuandoEstiver": "Continuar automáticamente cuando haya confianza",
+    "controleOQueA": "Controla lo que la IA puede sugerir por su cuenta.",
+    "controleRevisaoAutomaticaNomeacao": "Controla la revisión automática, la nomenclatura y el comportamiento en lote en esta sesión.",
+    "defineQuandoAAnalise": "Define cuándo el análisis puede seguir sin intervención manual.",
+    "diminuirSegundos": "Disminuir segundos",
+    "exigirRevisaoManualCom": "Exigir revisión manual con campos ausentes",
+    "exigirRevisaoManualCom2": "Exigir revisión manual con campos ausentes",
+    "exigirRevisaoManualEm": "Exigir revisión manual con baja confianza",
+    "exigirRevisaoManualEm2": "Exigir revisión manual con baja confianza",
+    "nomeDoDocumento": "Nombre del documento",
+    "nomeDoDocumento2": "Nombre del documento",
+    "nomesSaoSanitizadosSem": "Los nombres se sanean (sin barras ni path traversal), se limitan a unos 180 caracteres y se fuerzan a la extensión .pdf. Los documentos fiscales no entran automáticamente en el nombre sugerido mientras la protección está activa.",
+    "nomesSaoSanitizadosSem2": "Los nombres se sanean (sin barras ni path traversal), se limitan a unos 180 caracteres y se fuerzan a la extensión .pdf. Los documentos fiscales no entran automáticamente en el nombre sugerido mientras la protección está activa.",
+    "nuncaIncluirCpfCnpj": "Nunca incluir el documento fiscal en el nombre sugerido",
+    "oQueFazerQuandoNenhumaCategoria": "Qué hacer cuando ninguna categoría configurada sirve para el documento.",
+    "pararParaRevisaoQuando": "Parar para revisión cuando haya conflicto",
+    "permitirIaSugerirNome": "Permitir que la IA sugiera un nombre estandarizado",
+    "politicaDeNomeacaoPadrao": "Política de nomenclatura predeterminada",
+    "politicaPadraoAplicadaApos": "Política predeterminada aplicada después del análisis de la IA.",
+    "protecaoDeNomes": "Protección de nombres",
+    "revisaoAutomatica": "Revisión automática",
+    "revisaoAutomatica2": "Revisión automática",
+    "secondsSuffix": "seg",
+    "segundosAntesDaRevisao": "Segundos antes de la revisión automática",
+    "seguranca": "Seguridad",
+    "sugestoesDaIa": "Sugerencias de la IA",
+    "sugestoesDaIa2": "Sugerencias de la IA",
+    "uploadEmLote": "Subida en lote",
+    "uploadEmLote2": "Subida en lote"
+  },
+  "confidenceBadge": {
+    "high": "Alta confianza",
+    "review": "Revisar",
+    "low": "Requiere revisión"
+  },
+  "namingMode": {
+    "aiSuggested": {
+      "label": "Nombre sugerido por la IA",
+      "description": "Patrón recomendado con los metadatos extraídos."
+    },
+    "original": {
+      "label": "Nombre original de la carga",
+      "description": "Mantiene el archivo como se subió (saneado)."
+    },
+    "manual": {
+      "label": "Nombre manual",
+      "description": "Escribe el nombre final que quieres."
+    }
+  },
+  "namingPolicy": {
+    "label": {
+      "original": "Mantener nombre original",
+      "aiSuggested": "Usar nombre sugerido por la IA",
+      "askEachFile": "Preguntar en cada archivo",
+      "manualRequired": "Nombre manual obligatorio"
+    },
+    "description": {
+      "original": "Mantiene el archivo como se subió (saneado).",
+      "aiSuggested": "Aplica el nombre estandarizado sugerido por el análisis.",
+      "askEachFile": "Muestra la elección de nombre en la revisión de cada archivo.",
+      "manualRequired": "Exige escribir el nombre final antes de confirmar."
+    }
+  },
+  "documentTypeUnknown": "Indefinido",
+  "confirmError": {
+    "saveFailed": "No se pudo guardar el documento.",
+    "approvalFailed": "No se pudo enviar el documento para aprobación.",
+    "updateFailed": "No se pudo actualizar el documento."
+  },
+  "categorySuggestion": {
+    "label": {
+      "off": "No sugerir",
+      "suggest": "Sugerir en la revisión",
+      "autoCreate": "Crear automáticamente"
+    },
+    "description": {
+      "off": "El documento va a \"Sin categoría\" y alguien lo reclasifica después.",
+      "suggest": "La IA propone la carpeta y quien revisa decide si nace.",
+      "autoCreate": "La IA crea la carpeta al guardar, sin que nadie la vea."
+    }
+  },
+  "reviewWorkflowSettings": {
+    "emptyDocument": {
+      "label": "Documento sin texto",
+      "hint": "Qué hacer cuando el análisis no lee nada: hoja en blanco, escaneo fallido, imagen sin OCR.",
+      "review": "Preguntar en la revisión",
+      "reviewHint": "La revisión abre explicando, y quien revisa guarda o descarta.",
+      "auto_save": "Guardar igual",
+      "auto_saveHint": "Entra en «Sin categoría», sin preguntar.",
+      "auto_reject": "Rechazar automáticamente",
+      "auto_rejectHint": "No entra al acervo; el motivo queda en la cola."
+    }
+  }
+}

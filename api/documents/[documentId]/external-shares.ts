@@ -39,6 +39,7 @@ function readCreateBody(req: VercelRequest) {
     permissions?: { canView?: boolean; canDownload?: boolean };
     expiresAt?: unknown;
     message?: unknown;
+    recipientLocale?: unknown;
   };
   return {
     recipientEmail: typeof body?.recipientEmail === 'string' ? body.recipientEmail : undefined,
@@ -52,6 +53,7 @@ function readCreateBody(req: VercelRequest) {
     permissions: body?.permissions,
     expiresAt: typeof body?.expiresAt === 'string' ? body.expiresAt : undefined,
     message: typeof body?.message === 'string' ? body.message : undefined,
+    recipientLocale: typeof body?.recipientLocale === 'string' ? body.recipientLocale : undefined,
   };
 }
 
@@ -95,6 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         permissions: body.permissions,
         expiresAt: body.expiresAt,
         message: body.message,
+        recipientLocale: body.recipientLocale,
         inviteOrigin: resolveOrigin(req),
       });
 
@@ -103,7 +106,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           auditCtx,
           {
             action: 'document.external_share_created',
-            description: 'Compartilhamento externo criado.',
             documentId,
             versionId: result.currentVersionId,
             metadata: sanitizeAuditMetadata({

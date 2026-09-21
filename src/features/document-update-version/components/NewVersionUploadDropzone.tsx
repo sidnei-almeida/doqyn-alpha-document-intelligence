@@ -8,6 +8,7 @@ import {
   formatFileSize,
   isAllowedAnalysisFile,
 } from '@/features/document-send/utils/validateUpload';
+import { useTranslation } from 'react-i18next';
 
 type NewVersionUploadDropzoneProps = {
   nextVersionLabel: string;
@@ -28,6 +29,8 @@ export function NewVersionUploadDropzone({
   onValidationError,
   fillHeight = false,
 }: NewVersionUploadDropzoneProps) {
+  const { t } = useTranslation('documentVersion');
+
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -35,12 +38,12 @@ export function NewVersionUploadDropzone({
   const handleFile = useCallback(
     (file: File) => {
       if (!isAllowedAnalysisFile(file)) {
-        onValidationError('Envie PDF ou imagem (JPG, PNG ou WebP) para criar uma nova versão.');
+        onValidationError(t('newVersionUploadDropzone.tipoInvalido'));
         return;
       }
       onFileSelected(file);
     },
-    [onFileSelected, onValidationError],
+    [onFileSelected, onValidationError, t],
   );
 
   const openPicker = () => {
@@ -56,7 +59,9 @@ export function NewVersionUploadDropzone({
       data-testid="update-version-upload-dropzone"
     >
       <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
-        <p className="register-label text-doqyn-subtle">Enviar nova versão</p>
+        <p className="register-label text-doqyn-subtle">
+          {t('newVersionUploadDropzone.enviarNovaVersao')}
+        </p>
         <span className="font-mono text-micro tabular-nums text-doqyn-subtle">
           {nextVersionLabel}
         </span>
@@ -72,7 +77,7 @@ export function NewVersionUploadDropzone({
           <div className="min-w-0">
             <p className="truncate text-label font-medium text-doqyn-text">{selectedFile.name}</p>
             <p className="mt-1 font-mono text-micro tabular-nums text-doqyn-subtle">
-              {formatFileSize(selectedFile.size)} · pronto para análise
+              {formatFileSize(selectedFile.size)} {t('newVersionUploadDropzone.prontoParaAnalise')}
             </p>
           </div>
           {onClearFile && (
@@ -80,7 +85,7 @@ export function NewVersionUploadDropzone({
               type="button"
               className="explorer-icon-btn shrink-0"
               onClick={onClearFile}
-              aria-label="Remover arquivo selecionado"
+              aria-label={t('newVersionUploadDropzone.removerArquivoSelecionado')}
             >
               <Icon name="close" size={ICON_SIZE.sm} />
             </button>
@@ -131,10 +136,10 @@ export function NewVersionUploadDropzone({
               precisa ser repetida aqui e no rótulo do bloco. */}
           <Icon name="upload" size={ICON_SIZE.nav} className="text-doqyn-border-strong" />
           <p id={`${inputId}-title`} className="mt-3 text-label font-medium text-doqyn-text">
-            Arraste PDF ou imagem, ou clique para selecionar
+            {t('newVersionUploadDropzone.arrastePdfOuImagem')}
           </p>
           <p className="register-label mt-2 text-doqyn-subtle">
-            PDF · JPG · PNG · WEBP · até {MAX_FILE_SIZE_MB} MB
+            {t('newVersionUploadDropzone.pdfJpgPngWebp')} {MAX_FILE_SIZE_MB} MB
           </p>
         </div>
       )}

@@ -14,6 +14,7 @@ import type {
   DocumentAccessOrigin,
 } from '../api/matrixApi';
 import { ORIGIN_PRIORITY, primaryOrigin } from './accessOrigin';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Documentos nas linhas, pessoas nas colunas.
@@ -26,11 +27,11 @@ import { ORIGIN_PRIORITY, primaryOrigin } from './accessOrigin';
  * volta a significar uma coisa só. O acento fica reservado ao compartilhamento — a única origem
  * que se pode conceder e revogar daqui, e portanto a única interativa.
  */
-const ORIGIN_LABEL: Record<DocumentAccessOrigin, string> = {
-  owner: 'Dono',
-  admin: 'Administrador',
-  governance: 'Regra da categoria',
-  share: 'Compartilhado',
+const ORIGIN_LABEL_KEY: Record<DocumentAccessOrigin, string> = {
+  owner: 'origin.owner',
+  admin: 'origin.admin',
+  governance: 'origin.governance',
+  share: 'origin.share',
 };
 
 const ORIGIN_ICON: Record<DocumentAccessOrigin, string> = {
@@ -54,13 +55,14 @@ function initialsOf(name: string): string {
 
 const VERB_ROWS: Array<{
   key: 'canView' | 'canDownload' | 'canUpdate' | 'canAudit' | 'canShare';
-  label: string;
+  /** Chave do namespace `matrix`. */
+  labelKey: string;
 }> = [
-  { key: 'canView', label: 'Ver' },
-  { key: 'canDownload', label: 'Baixar' },
-  { key: 'canUpdate', label: 'Alterar' },
-  { key: 'canAudit', label: 'Auditar' },
-  { key: 'canShare', label: 'Compartilhar' },
+  { key: 'canView', labelKey: 'verb.canView' },
+  { key: 'canDownload', labelKey: 'verb.canDownload' },
+  { key: 'canUpdate', labelKey: 'verb.canUpdate' },
+  { key: 'canAudit', labelKey: 'verb.canAudit' },
+  { key: 'canShare', labelKey: 'verb.canShare' },
 ];
 
 /**
@@ -93,6 +95,8 @@ function AccessCell({
   onShare: (documentId: string, member: { userId: string; name: string }) => void;
   onRevoke: (documentId: string, shareGrantId: string, memberName: string) => void;
 }) {
+  const { t } = useTranslation('matrix');
+
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -132,7 +136,7 @@ function AccessCell({
         onFocus={() => setOpen(true)}
         onBlur={scheduleClose}
         disabled={isBusy}
-        aria-label={`${member.name}: ${origin ? ORIGIN_LABEL[origin] : 'sem acesso'}`}
+        aria-label={`${member.name}: ${origin ? t(ORIGIN_LABEL_KEY[origin]) : t('noAccess')}`}
         aria-expanded={open}
         className={cn(
           'mx-auto flex h-6 w-6 items-center justify-center rounded-[2px] transition-colors',
@@ -158,14 +162,14 @@ function AccessCell({
         onClose={() => setOpen(false)}
         placement="bottom-start"
         className="w-64"
-        aria-label={`Acesso de ${member.name}`}
+        aria-label={t('accessMatrixTable.accessOf', { name: member.name })}
       >
         <div className="p-3" onMouseEnter={clearTimer} onMouseLeave={scheduleClose}>
           <p className="text-label font-medium text-doqyn-text">{member.name}</p>
           <p className="truncate font-mono text-micro text-doqyn-subtle">{member.email}</p>
 
           <div className="mt-3 border-t border-doqyn-border-subtle pt-2.5">
-            <p className="matrix-head-label">Origem</p>
+            <p className="matrix-head-label">{t('accessMatrixTable.origem')}</p>
             <div className="mt-1.5 space-y-1">
               {cell?.origins.length ? (
                 cell.origins.map((entry) => (
@@ -178,7 +182,7 @@ function AccessCell({
                       size={ICON_SIZE.xs}
                       className="shrink-0 text-doqyn-subtle"
                     />
-                    {ORIGIN_LABEL[entry]}
+                    {t(ORIGIN_LABEL_KEY[entry])}
                     {entry === 'governance' && cell.viaGroupIds.length > 0 && (
                       <span className="truncate text-doqyn-subtle">
                         (
@@ -191,14 +195,16 @@ function AccessCell({
                   </p>
                 ))
               ) : (
-                <p className="text-caption text-doqyn-muted">Sem acesso a este documento.</p>
+                <p className="text-caption text-doqyn-muted">
+                  {t('accessMatrixTable.semAcessoAEste')}
+                </p>
               )}
             </div>
           </div>
 
           {permissions && (
             <div className="mt-3 border-t border-doqyn-border-subtle pt-2.5">
-              <p className="matrix-head-label">Pode</p>
+              <p className="matrix-head-label">{t('accessMatrixTable.pode')}</p>
               <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
                 {VERB_ROWS.map((verb) => {
                   const granted = permissions[verb.key];
@@ -215,7 +221,7 @@ function AccessCell({
                       ) : (
                         <span className="w-4 shrink-0 text-center leading-none">·</span>
                       )}
-                      {verb.label}
+                      {t(verb.labelKey)}
                     </p>
                   );
                 })}
@@ -233,7 +239,7 @@ function AccessCell({
                 }}
                 className="text-caption font-medium text-doqyn-danger hover:underline"
               >
-                Revogar compartilhamento
+                {t('accessMatrixTable.revogarCompartilhamento')}
               </button>
             ) : (
               <button
@@ -244,13 +250,13 @@ function AccessCell({
                 }}
                 className="text-caption font-medium text-doqyn-text hover:underline"
               >
-                Compartilhar com {member.name.split(' ')[0]}
+                {t('accessMatrixTable.compartilharCom')} {member.name.split(' ')[0]}
               </button>
             )}
 
             {cell?.origins.includes('governance') && (
               <Link to="/rules" className="text-caption text-doqyn-muted hover:underline">
-                Este acesso vem da regra. Abrir Regras
+                {t('accessMatrixTable.esteAcessoVemDa')}
               </Link>
             )}
           </div>
@@ -271,6 +277,8 @@ export function AccessMatrixTable({
   onRevoke: (documentId: string, shareGrantId: string, memberName: string) => void;
   busyCellKey: string | null;
 }) {
+  const { t } = useTranslation('matrix');
+
   // Linha e coluna acendem juntas: é o dedo percorrendo a grade, e sem isso
   // ninguém acerta qual coluna é qual sete pessoas adiante.
   const [hoverColumn, setHoverColumn] = useState<string | null>(null);
@@ -292,9 +300,11 @@ export function AccessMatrixTable({
     return (
       <div className="flex min-h-[12rem] flex-col items-center justify-center px-6 py-12 text-center">
         <Icon name="grid_off" size={ICON_SIZE.md} className="mb-4 text-doqyn-border-strong" />
-        <p className="text-label font-medium text-doqyn-text">Nenhum documento nesta seleção</p>
+        <p className="text-label font-medium text-doqyn-text">
+          {t('accessMatrixTable.nenhumDocumentoNestaSelecao')}
+        </p>
         <p className="mt-1.5 max-w-[42ch] text-caption text-doqyn-muted">
-          Ajuste a busca ou a categoria para ver a matriz.
+          {t('accessMatrixTable.ajusteABuscaOu')}
         </p>
       </div>
     );
@@ -316,7 +326,7 @@ export function AccessMatrixTable({
           <thead>
             <tr className="border-b border-doqyn-border-subtle">
               <th className="matrix-sticky-col matrix-head-label z-20 min-w-[18rem] px-4 py-3 text-left">
-                Documento
+                {t('accessMatrixTable.documento')}
               </th>
               {matrix.members.map((member) => (
                 <th
@@ -352,7 +362,7 @@ export function AccessMatrixTable({
                     {document.fileName}
                   </TruncatedText>
                   <p className="mt-1 flex items-center gap-1.5 text-caption text-doqyn-muted">
-                    <span>{document.categoryName ?? 'Sem categoria'}</span>
+                    <span>{document.categoryName ?? t('noCategory')}</span>
                     {document.ownerName && <span>· {document.ownerName}</span>}
                     {document.externalShareCount > 0 && (
                       <Tooltip label={`${document.externalShareCount} link(s) externo(s) ativo(s)`}>
@@ -402,10 +412,12 @@ export function AccessMatrixTable({
         {ORIGIN_PRIORITY.map((origin) => (
           <span key={origin} className="flex items-center gap-1.5 text-caption text-doqyn-muted">
             <Icon name={ORIGIN_ICON[origin]} size={ICON_SIZE.xs} className={ORIGIN_INK[origin]} />
-            {ORIGIN_LABEL[origin]}
+            {t(ORIGIN_LABEL_KEY[origin])}
           </span>
         ))}
-        <span className="font-mono text-micro text-doqyn-subtle">célula vazia = sem acesso</span>
+        <span className="font-mono text-micro text-doqyn-subtle">
+          {t('accessMatrixTable.celulaVaziaSemAcesso')}
+        </span>
       </div>
     </div>
   );

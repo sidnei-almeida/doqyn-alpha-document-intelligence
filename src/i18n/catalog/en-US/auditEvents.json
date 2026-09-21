@@ -1,0 +1,346 @@
+{
+  "document": {
+    "upload_started": {
+      "label": "Upload started"
+    },
+    "upload_completed": {
+      "label": "Upload completed"
+    },
+    "upload_failed": {
+      "label": "Upload failed"
+    },
+    "analysis_started": {
+      "label": "Analysis started",
+      "description": "PDF analysis started."
+    },
+    "analysis_completed": {
+      "label": "Analysis completed",
+      "description": "PDF analysis completed."
+    },
+    "analysis_failed": {
+      "label": "Analysis failed",
+      "description": "PDF analysis failed."
+    },
+    "version_analysis_completed": {
+      "label": "New version analysis completed",
+      "description": "New version analysis completed."
+    },
+    "review_confirmed": {
+      "label": "Review confirmed",
+      "description": "Document created from the automatic analysis confirmed by the user.",
+      "description_manualReview": "Document saved after manual review of the extracted metadata.",
+      "description_newVersion": "New version {{versionLabel}} confirmed after analysis."
+    },
+    "metadata_updated": {
+      "label": "Metadata updated"
+    },
+    "filename_updated": {
+      "label": "File name updated",
+      "description": "Document name changed manually.",
+      "description_confirmation": "File name updated on confirmation."
+    },
+    "category_updated": {
+      "label": "Category updated"
+    },
+    "moved": {
+      "label": "Document moved to another category",
+      "description": "Document moved to {{categoryName}}.",
+      "description_batch": "Document moved to {{categoryName}} (batch).",
+      "description_unknownTarget": "Document moved to another category."
+    },
+    "share_created": {
+      "label": "Share created",
+      "description": "Document shared with a user.",
+      "description_approval": "Document shared after approval."
+    },
+    "share_revoked": {
+      "label": "Share revoked",
+      "description": "Share revoked."
+    },
+    "shared_viewed": {
+      "label": "Shared document viewed"
+    },
+    "shared_downloaded": {
+      "label": "Shared document downloaded"
+    },
+    "share_denied": {
+      "label": "Share denied"
+    },
+    "version_created": {
+      "label": "New version created",
+      "description": "New document version created.",
+      "description_existing": "Version {{versionLabel}} created for an existing document."
+    },
+    "ownership_transferred": {
+      "label": "Ownership transferred",
+      "description": "Ownership transferred to {{ownerName}}."
+    },
+    "preview_generated": {
+      "label": "Preview generated",
+      "description": "Document preview generated.",
+      "description_newVersion": "New version preview generated."
+    },
+    "preview_failed": {
+      "label": "Preview failed",
+      "description": "Could not serve the document preview.",
+      "description_manifest": "Could not build the document preview.",
+      "description_page": "Could not serve a preview page.",
+      "description_generation": "Could not generate the document preview.",
+      "description_client": "Could not display the preview in the browser."
+    },
+    "preview_viewed": {
+      "label": "Preview viewed",
+      "description": "Document preview viewed."
+    },
+    "preview_denied": {
+      "label": "Preview denied"
+    },
+    "viewer_opened": {
+      "label": "Viewer opened",
+      "description": "Document viewer opened."
+    },
+    "viewer_closed": {
+      "label": "Viewer closed",
+      "description": "Document viewer closed."
+    },
+    "print_attempt_blocked": {
+      "label": "Printing blocked",
+      "description": "Print attempt blocked."
+    },
+    "download_attempted": {
+      "label": "Download attempted",
+      "description": "Document download attempted."
+    },
+    "downloaded": {
+      "label": "Downloaded",
+      "description": "Document downloaded."
+    },
+    "download_denied": {
+      "label": "Download denied"
+    },
+    "download_failed": {
+      "label": "Download failed",
+      "description": "Could not download the document."
+    },
+    "storage_promoted": {
+      "label": "File moved to permanent storage",
+      "description": "File moved to permanent storage.",
+      "description_newVersion": "New version file moved to permanent storage."
+    },
+    "trash_moved": {
+      "label": "Document moved to trash",
+      "description": "Document moved to trash.",
+      "description_batch": "Document moved to trash (batch)."
+    },
+    "trash_restored": {
+      "label": "Document restored from trash",
+      "description": "Document restored from trash.",
+      "description_batch": "Document restored from trash (batch)."
+    },
+    "deactivated": {
+      "label": "Document deactivated after trash",
+      "description": "Document deactivated after its time in trash expired."
+    },
+    "reactivated": {
+      "label": "Document reactivated",
+      "description": "Document reactivated from Deactivated.",
+      "description_batch": "Document reactivated from Deactivated (batch)."
+    },
+    "permanent_deleted": {
+      "label": "Document permanently deleted"
+    },
+    "trash_purge_failed": {
+      "label": "Storage purge failed"
+    },
+    "signature_request_created": {
+      "label": "Signature request created",
+      "description": "Electronic signature request created."
+    },
+    "signature_internal_assigned": {
+      "label": "Signature assigned to an internal user",
+      "description": "Signature assigned to an internal user."
+    },
+    "signature_internal_opened": {
+      "label": "Internal signature opened",
+      "description": "Internal signature request opened."
+    },
+    "signature_external_invite_created": {
+      "label": "External signature invitation created",
+      "description": "External signature invitation created."
+    },
+    "signature_external_opened": {
+      "label": "External signature opened",
+      "description": "External signature request opened."
+    },
+    "signature_link_opened": {
+      "label": "Signature link opened"
+    },
+    "signature_preview_viewed": {
+      "label": "Signature preview viewed",
+      "description": "Document preview for internal signature viewed.",
+      "description_external": "Document preview for signature viewed."
+    },
+    "signature_viewed": {
+      "label": "Document for signature viewed",
+      "description": "Document for signature viewed."
+    },
+    "signature_consent_checked": {
+      "label": "Signature consent recorded",
+      "description": "Signature consent recorded."
+    },
+    "signature_completed": {
+      "label": "Electronic signature completed",
+      "description": "Electronic signature completed."
+    },
+    "signature_declined": {
+      "label": "Signature declined"
+    },
+    "signature_request_cancelled": {
+      "label": "Signature request revoked",
+      "description": "Signature request revoked."
+    },
+    "signature_expired": {
+      "label": "Signature request expired"
+    },
+    "signed_pdf_generated": {
+      "label": "Signed PDF generated",
+      "description": "Signed PDF generated."
+    },
+    "signature_verification_opened": {
+      "label": "Signature verification opened",
+      "description": "Public signature verification opened."
+    },
+    "signature_downloaded": {
+      "label": "Signed PDF downloaded",
+      "description": "Signed PDF downloaded by the signer.",
+      "description_internal": "Signed PDF downloaded by an internal user."
+    },
+    "created": {
+      "label": "Document created"
+    },
+    "metadata": {
+      "confirmed": {
+        "label": "Metadata confirmed"
+      },
+      "reviewed_confirmed": {
+        "label": "Review confirmed with changes"
+      },
+      "manually_edited": {
+        "label": "Metadata edited manually",
+        "description": "Metadata edited manually."
+      }
+    },
+    "favorite_added": {
+      "label": "Added to favorites",
+      "description": "Document added to favorites."
+    },
+    "favorite_removed": {
+      "label": "Removed from favorites",
+      "description": "Document removed from favorites."
+    },
+    "external_share_created": {
+      "label": "External share created",
+      "description": "External share created.",
+      "description_regenerated": "New external share link generated."
+    },
+    "external_share_revoked": {
+      "label": "External share revoked",
+      "description": "External share revoked."
+    },
+    "external_share_invite_opened": {
+      "label": "External invitation opened",
+      "description": "External share invitation opened."
+    },
+    "external_share_accepted": {
+      "label": "External invitation accepted",
+      "description": "External share invitation accepted."
+    },
+    "external_share_denied": {
+      "label": "External access denied",
+      "description": "External access denied."
+    },
+    "external_share_viewed": {
+      "label": "External document viewed",
+      "description": "Externally shared document viewed."
+    },
+    "external_share_downloaded": {
+      "label": "External download",
+      "description": "Shared document downloaded externally."
+    }
+  },
+  "access": {
+    "document_denied": {
+      "label": "Access denied",
+      "description": "Access to the document denied."
+    },
+    "document_allowed": {
+      "label": "Access allowed"
+    }
+  },
+  "file_explorer": {
+    "folder_opened": {
+      "label": "Folder opened",
+      "description": "Folder opened in the Library."
+    },
+    "search_performed": {
+      "label": "Search performed",
+      "description": "Search performed in the Library."
+    },
+    "filter_applied": {
+      "label": "Filter applied",
+      "description": "Filter applied in the Library."
+    },
+    "details_opened": {
+      "label": "Details opened",
+      "description": "Document details opened."
+    }
+  },
+  "approval": {
+    "request_approved": {
+      "label": "Request approved",
+      "description": "Request approved."
+    },
+    "request_rejected": {
+      "label": "Request rejected",
+      "description": "Request rejected."
+    }
+  },
+  "user": {
+    "avatar_uploaded": {
+      "label": "Profile photo uploaded",
+      "description": "Profile photo updated."
+    },
+    "avatar_removed": {
+      "label": "Profile photo removed",
+      "description": "Profile photo removed."
+    },
+    "avatar_upload_failed": {
+      "label": "Photo upload failed",
+      "description": "Profile photo upload failed."
+    }
+  },
+  "document_request": {
+    "created": {
+      "label": "Document requested",
+      "description": "Document requested from a user."
+    },
+    "cancelled": {
+      "label": "Request cancelled",
+      "description": "Document request cancelled."
+    },
+    "fulfilled": {
+      "label": "Request fulfilled",
+      "description": "Document request fulfilled."
+    }
+  },
+  "inbound_share": {
+    "accepted": {
+      "label": "Received document accepted",
+      "description": "Accepted the document \"{{documentName}}\" from {{originTenantName}}."
+    },
+    "declined": {
+      "label": "Received document declined",
+      "description": "Declined the document \"{{documentName}}\" from {{originTenantName}}."
+    }
+  }
+}

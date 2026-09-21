@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { buildDocumentListQuery } from '../server/utils/documentListQuery.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,20 +72,27 @@ describe('listDocuments — visibilidade pós-upload', () => {
   });
 
   it('documento jurídico usa classId como categoryId na API', () => {
+    // A ida: o filtro da tela chega como `categoryId` e vira `classId` na consulta.
+    assert.equal(
+      buildDocumentListQuery({ tenantId: 'tenant_a' }, { categoryId: 'cat_juridico' }).classId,
+      'cat_juridico',
+    );
+
+    // A volta: o item devolvido reexpõe `classId` como `categoryId`.
     const mapper = readFileSync(
       join(__dirname, '..', 'server', 'services', 'documentService.ts'),
       'utf8',
     );
     assert.ok(mapper.includes('categoryId: doc.classId'));
-    assert.ok(mapper.includes('if (filters.categoryId) query.classId = filters.categoryId'));
   });
 
   it('filtro Processado inclui processed_with_review', () => {
-    const service = readFileSync(
-      join(__dirname, '..', 'server', 'services', 'documentService.ts'),
-      'utf8',
+    const query = buildDocumentListQuery(
+      { tenantId: 'tenant_a' },
+      { processingStatus: 'processed' },
     );
-    assert.ok(service.includes("'processed', 'processed_with_review'"));
+
+    assert.deepEqual(query.processingStatus, { $in: ['processed', 'processed_with_review'] });
   });
 });
 
@@ -136,11 +144,10 @@ describe('fluxo upload → confirm → listagem (contratos)', () => {
     assert.equal(doc.processingStatus, 'processed');
     assert.equal(canUserListDocument(adminUser, doc, []), true);
 
-    const filter = readFileSync(
-      join(__dirname, '..', 'server', 'services', 'documentService.ts'),
-      'utf8',
+    assert.equal(
+      buildDocumentListQuery({ tenantId: 'tenant_a' }, { categoryId: 'cat_juridico' }).classId,
+      'cat_juridico',
     );
-    assert.ok(filter.includes('if (filters.categoryId) query.classId = filters.categoryId'));
   });
 
   it('auto-confirm off mantém review; auto-confirm on só completa após confirm', () => {

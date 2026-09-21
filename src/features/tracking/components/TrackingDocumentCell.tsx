@@ -4,6 +4,7 @@ import { ICON_SIZE } from '@/lib/iconDefaults';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { VersionBadge } from '@/components/ui/VersionBadge';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type TrackingDocumentCellProps = {
   name: string;
@@ -22,6 +23,8 @@ export function TrackingDocumentCell({
   className,
   documentId,
 }: TrackingDocumentCellProps) {
+  const { t } = useTranslation('tracking');
+
   // Evento antigo pode não ter o rótulo, mas tem o id: o prefixo curto ainda
   // diz qual versão foi tocada, que é a pergunta que a trilha responde.
   const version = versionLabel ?? (versionId ? versionId.slice(0, 8) : undefined);
@@ -37,12 +40,12 @@ export function TrackingDocumentCell({
         // Investigar um evento quase sempre termina em "deixa eu ver esse documento". Sem o
         // atalho, o caminho era copiar o nome e procurar na Biblioteca.
         <Link
-          to={`/biblioteca?preview=${encodeURIComponent(documentId)}`}
+          to={`/library?preview=${encodeURIComponent(documentId)}`}
           // A linha inteira abre o detalhe no lugar; o nome continua sendo
           // atalho para o documento, e não pode disparar as duas coisas.
           onClick={(clickEvent) => clickEvent.stopPropagation()}
           className="tracking-document-name group flex min-w-0 items-center gap-1 text-sm text-doqyn-text hover:text-doqyn-info"
-          title="Abrir documento"
+          title={t('trackingDocumentCell.abrirDocumento')}
         >
           <TruncatedText className="min-w-0">{name}</TruncatedText>
           <Icon

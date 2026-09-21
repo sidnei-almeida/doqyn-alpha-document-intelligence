@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { i18n } from '@/i18n';
 import type { WorkflowReviewSettings } from '@/features/document-send/types/reviewWorkflowSettings';
 import { useUploadPolicy } from '@/features/settings/hooks/useUploadPolicy';
 
@@ -14,8 +15,7 @@ export function useReviewWorkflowSettingsState() {
   const setSettings = useCallback(
     (next: WorkflowReviewSettings) => {
       void savePolicy(next).catch((error: unknown) => {
-        const message =
-          error instanceof Error ? error.message : 'Não foi possível salvar a política.';
+        const message = error instanceof Error ? error.message : i18n.t('upload:policySaveFailed');
         toast.error(message);
       });
     },

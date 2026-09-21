@@ -1,0 +1,39 @@
+{
+  "externalSharePortalPage": {
+    "abrindoOConvite": "Abriendo la invitación…",
+    "acceptAndOpen": "Aceptar y abrir documento",
+    "acessoAte": "Acceso hasta",
+    "aguardandoAceite": "Esperando aceptación",
+    "categoria": "Categoría",
+    "codigo": "Código",
+    "compartilhadoEm": "Compartido el",
+    "conviteDeAcesso": "Invitación de acceso",
+    "conviteIndisponivel": "Invitación no disponible",
+    "esteLinkNaoAbre": "Este enlace ya no abre",
+    "invitedByTenant": "{{name}} te invitó a acceder a un documento en {{tenant}}.",
+    "oAcessoValeSo": "El acceso vale solo para este documento, queda registrado a nombre de tu correo y puede terminarse en cualquier momento por quien lo compartió.",
+    "opening": "Abriendo…",
+    "pecaUmNovoLink": "Pide un nuevo enlace a quien compartió el documento contigo.",
+    "sharedByTenant": "{{name}} compartió un documento contigo a través de {{tenant}}.",
+    "versao": "Versión",
+    "meta": {
+      "title": "Documento compartido · DOQYN",
+      "description": "Accede de forma segura a un documento compartido en DOQYN."
+    },
+    "invalidLink": "Enlace no válido.",
+    "openFailed": "No fue posible abrir este documento compartido.",
+    "acceptFailed": "No fue posible aceptar esta invitación.",
+    "downloadFileName": "documento",
+    "subtitle": "Acceso seguro a documento",
+    "footNote": "Acceso limitado a este documento. Quien lo compartió puede revocar el enlace en cualquier momento.",
+    "noCategory": "Sin categoría",
+    "sharedWithYouIn": "{{name}} compartió este documento contigo en {{tenant}}."
+  },
+  "guestDocumentViewer": {
+    "visualizacaoProtegidaDownloadIndisponivel": "Vista protegida. La descarga no está disponible en esta invitación.",
+    "versionLabel": "Versión {{version}}",
+    "pageOf": "Página {{current}} de {{total}}",
+    "imageBadge": "Imagen",
+    "noPreviewBadge": "Sin vista previa"
+  }
+}

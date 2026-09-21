@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -37,10 +38,10 @@ const EVENTS_PAGE_SIZE = 50;
  * download só libera quem pediu. Uma frase só para os três diria a verdade em um caso e mentiria
  * nos outros dois.
  */
-const APPROVED_MESSAGE: Record<string, string> = {
-  document_upload: 'Documento aprovado e disponível na Biblioteca.',
-  document_download: 'Download liberado para o solicitante.',
-  document_share: 'Compartilhamento aprovado e concedido.',
+const APPROVED_MESSAGE_KEYS: Record<string, string> = {
+  document_upload: 'audit:toast.approved.documentUpload',
+  document_download: 'audit:toast.approved.documentDownload',
+  document_share: 'audit:toast.approved.documentShare',
 };
 
 export function useAuditCenter(documentId?: string) {
@@ -109,22 +110,22 @@ export function useAuditCenter(documentId?: string) {
       return decideApprovalRequest(item.id, 'rejected', reason);
     },
     onSuccess: async () => {
-      toast.success('Solicitação rejeitada.');
+      toast.success(i18n.t('audit:toast.solicitacaoRejeitada'));
       await invalidateAll();
       await queryClient.invalidateQueries({ queryKey: ['audit-pending', tenantId] });
     },
-    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível concluir a ação.'),
+    onError: (error: Error) => showApiErrorToast(error, i18n.t('audit:toast.actionFailed')),
   });
 
   const approveDocumentMutation = useMutation({
     mutationFn: (item: PendingApprovalItem) => decideApprovalRequest(item.id, 'approved'),
     onSuccess: async (_result, item) => {
-      toast.success(APPROVED_MESSAGE[item.type] ?? 'Pedido aprovado.');
+      toast.success(i18n.t(APPROVED_MESSAGE_KEYS[item.type] ?? 'audit:toast.approved.default'));
       await invalidateAll();
       await queryClient.invalidateQueries({ queryKey: ['audit-pending', tenantId] });
       await queryClient.invalidateQueries({ queryKey: ['library-documents'] });
     },
-    onError: (error: Error) => showApiErrorToast(error, 'Não foi possível aprovar o pedido.'),
+    onError: (error: Error) => showApiErrorToast(error, i18n.t('audit:toast.approveFailed')),
   });
 
   const pendingItems = pendingQuery.data ?? [];

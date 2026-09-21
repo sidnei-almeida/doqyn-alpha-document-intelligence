@@ -24,7 +24,7 @@ export type StorageConfig = {
   r2: R2Config | null;
 };
 
-const DEFAULT_MAX_UPLOAD_MB = 25;
+const DEFAULT_MAX_UPLOAD_MB = 50;
 
 function readTrimmed(name: string): string {
   return process.env[name]?.trim() ?? '';

@@ -1,0 +1,44 @@
+{
+  "addContactField": {
+    "adicionarContatoPeloNome": "Add a contact by username",
+    "ninguemComEsseNome": "Nobody with that username. People without a DOQYN account are invited by link when the document is sent.",
+    "salvar": "Save"
+  },
+  "contactCard": {
+    "deFora": "From outside",
+    "salvo": "Saved",
+    "acoes": {
+      "compartilhar": "Share document…",
+      "assinatura": "Request signature…",
+      "pedir": "Request document…",
+      "remover": "Remove from list"
+    },
+    "semEmail": "no email in this exchange",
+    "salvoSemTroca": "saved manually · no exchanges yet"
+  },
+  "contactsPage": {
+    "aListaCresceSozinha": "The list grows on its own as you share, request signatures and ask for documents. To get ahead, save someone by username in the field above.",
+    "carregandoContatos": "Loading contacts",
+    "comQuemVoceTroca": "Who you exchange documents with, from the most active to the least.",
+    "contatos": "Contacts",
+    "daSuaEmpresa": "From your company",
+    "deForaDaqui": "From outside",
+    "irParaABiblioteca": "Go to the Library",
+    "nenhumContatoAinda": "No contacts yet",
+    "pedidoEnviado": "Request sent.",
+    "erroPedido": "Could not send the request.",
+    "hintInterno": "Sharing with these people takes effect right away, with no acceptance step.",
+    "hintExterno": "The document stays in the sender's collection, and access depends on acceptance."
+  },
+  "pickDocumentDialog": {
+    "buscarDocumento": "Search document",
+    "carregando": "Loading…",
+    "noDocuments": "You have no documents yet.",
+    "noMatch": "No document with that name.",
+    "nomeDoArquivo": "File name",
+    "shareWhich": "Share which document?",
+    "signWhich": "Sign which document?",
+    "shareSubtitle": "Choose the document that goes to {{name}}.",
+    "signSubtitle": "Choose the document {{name}} will sign."
+  }
+}

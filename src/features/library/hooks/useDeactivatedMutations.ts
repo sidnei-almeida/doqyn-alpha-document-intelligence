@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/auth/useAuth';
 import { batchReactivateDocuments, reactivateDocument } from '../api/deactivatedApi';
 import { invalidateLibraryQueries } from '../utils/libraryQueryInvalidation';
+import { i18n } from '@/i18n';
 
 export function useDeactivatedMutations() {
   const queryClient = useQueryClient();
@@ -24,13 +25,9 @@ export function useDeactivatedMutations() {
           }))
         : batchReactivateDocuments(documentIds),
     onSuccess: (result) => {
-      toast.success(
-        result.succeeded === 1
-          ? 'Documento recuperado.'
-          : `${result.succeeded} documentos recuperados.`,
-      );
+      toast.success(i18n.t('library:toast.recovered', { count: result.succeeded }));
     },
-    onError: () => toast.error('Não foi possível recuperar o documento.'),
+    onError: () => toast.error(i18n.t('library:toast.falhaRecuperarDocumento')),
     onSettled: invalidate,
   });
 

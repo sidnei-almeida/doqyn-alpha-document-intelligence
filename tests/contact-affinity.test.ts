@@ -88,7 +88,7 @@ describe('afinidade de contato — a ordem sai do que já aconteceu', () => {
     // Quem tem conta DOQYN é achado pelo handle: é a única coluna em texto claro, e a que
     // responde busca digitada. E-mail exato é o caminho de quem **não** tem conta, e misturar os
     // dois num campo só foi o que deixou a tela confusa.
-    assert.ok(field.includes('Adicionar contato pelo nome de usuário'));
+    assert.ok(field.includes('.adicionarContatoPeloNome'));
     assert.ok(field.includes('save.mutate({ username: hit.username })'));
     assert.ok(!/E-mail|email/i.test(field.split('<Input')[1]?.split('/>')[0] ?? ''));
   });

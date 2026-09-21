@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n';
 import type { PlatformRole } from './api/usersApi';
 
 /**
@@ -12,32 +13,32 @@ export type PlatformRoleMeta = {
   description: string;
 };
 
-/** Labels amigáveis para exibição no frontend (valores internos permanecem os slugs do auth). */
-export const PLATFORM_ROLE_LABELS: Record<PlatformRole, PlatformRoleMeta> = {
-  company_admin: {
-    label: 'Administrador da empresa',
-    description: 'Gerencia usuários, grupos e regras da empresa.',
-  },
-  individual_admin: {
-    label: 'Administrador da conta',
-    description: 'Gerencia acesso e documentos da conta individual.',
-  },
-  user: {
-    label: 'Usuário',
-    description: 'Acessa documentos e recursos liberados.',
-  },
+/**
+ * O papel é dado do auth-service; o rótulo é catálogo.
+ *
+ * `getPlatformRoleMeta` resolve na chamada — roda dentro do render de quem lista usuários — e
+ * cai no próprio slug quando o papel é desconhecido, que continua sendo a informação mais
+ * honesta que existe naquele momento.
+ *
+ * As frases moram em `common`, o catálogo embutido: quem chama é o menu do cabeçalho e as
+ * configurações, que não carregam `users`, e com as chaves lá o perfil mostrava
+ * `platformRole.individual_admin.label` no lugar do papel.
+ */
+const PLATFORM_ROLE_KEYS: Record<PlatformRole, string> = {
+  company_admin: 'common:platformRole.company_admin',
+  individual_admin: 'common:platformRole.individual_admin',
+  user: 'common:platformRole.user',
 };
 
 /** Ordem de prioridade para exibir o papel principal do usuário. */
 export const PLATFORM_ROLE_PRIORITY: PlatformRole[] = ['company_admin', 'individual_admin', 'user'];
 
 export function getPlatformRoleMeta(role: string): PlatformRoleMeta {
-  return (
-    PLATFORM_ROLE_LABELS[role as PlatformRole] ?? {
-      label: role,
-      description: 'Papel da plataforma.',
-    }
-  );
+  const base = PLATFORM_ROLE_KEYS[role as PlatformRole];
+  if (!base) {
+    return { label: role, description: i18n.t('common:platformRole.unknownDescription') };
+  }
+  return { label: i18n.t(`${base}.label`), description: i18n.t(`${base}.description`) };
 }
 
 export function getPlatformRoleLabel(role: string): string {
@@ -62,13 +63,14 @@ export function formatPlatformRolesList(roles: string[]): string {
 }
 
 /** Labels para o papel legado do AuthUser (`admin`, `manager`, `user`, `viewer`). */
-const LEGACY_AUTH_ROLE_LABELS: Record<string, string> = {
-  admin: 'Administrador do sistema',
-  manager: 'Administrador da empresa',
-  user: 'Usuário',
-  viewer: 'Visualizador',
+const LEGACY_AUTH_ROLE_KEYS: Record<string, string> = {
+  admin: 'common:legacyAuthRole.admin',
+  manager: 'common:legacyAuthRole.manager',
+  user: 'common:legacyAuthRole.user',
+  viewer: 'common:legacyAuthRole.viewer',
 };
 
 export function getAuthRoleLabel(role: string): string {
-  return LEGACY_AUTH_ROLE_LABELS[role] ?? getPlatformRoleLabel(role);
+  const key = LEGACY_AUTH_ROLE_KEYS[role];
+  return key ? i18n.t(key) : getPlatformRoleLabel(role);
 }

@@ -11,9 +11,13 @@ RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install; fi
 COPY api ./api
 COPY server ./server
 COPY shared ./shared
-COPY scripts/build-server.mjs ./scripts/build-server.mjs
-COPY scripts/ensure-mongodb-indexes.ts ./scripts/ensure-mongodb-indexes.ts
-COPY scripts/lib ./scripts/lib
+# Catálogos de tradução que o servidor importa (build-server copia para dist/).
+COPY src/i18n/catalog ./src/i18n/catalog
+# `scripts/` inteiro, não um arquivo por linha: esta lista tinha de bater com a `SCRIPT_ROOTS` do
+# `build-server.mjs`, e não batia. `enable-expiry-alerts-defaults.ts` estava na lista do build e
+# nunca chegou na imagem — build-server simplesmente não achava o arquivo e seguia calado. Copiar a
+# pasta não engorda `dist/`, porque quem decide o que é compilado continua sendo o `SCRIPT_ROOTS`.
+COPY scripts ./scripts
 
 RUN npm run build:server
 

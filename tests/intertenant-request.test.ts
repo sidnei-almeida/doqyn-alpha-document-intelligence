@@ -109,12 +109,12 @@ describe('pedir documento a outra empresa', () => {
 
     // Um nome sozinho não diz a quem se está entregando documento.
     assert.ok(page.includes('item.crossTenant.requesterTenantName'));
-    assert.ok(page.includes('fora do seu acervo'));
+    assert.ok(page.includes('.foraDoAcervo'));
     // Duas origens, não duas telas. O valor inicial deixou de ser literal porque em PF não há
     // origem interna — o tenant tem um usuário só —, mas as duas continuam no mesmo modal.
     assert.ok(modal.includes("useState<'internal' | 'external'>(defaultScope)"));
-    assert.ok(modal.includes("['internal', 'Alguém da empresa']"));
-    assert.ok(modal.includes("['external', 'De fora daqui']"));
+    assert.ok(modal.includes("['internal', 'requestDocumentModal.scope.internal']"));
+    assert.ok(modal.includes("['external', 'requestDocumentModal.scope.external']"));
     assert.ok(modal.includes('requestedFromEmail'));
     // E a categoria some quando o destino é fora.
     assert.ok(modal.includes('{external ? null : ('));

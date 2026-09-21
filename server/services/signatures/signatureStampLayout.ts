@@ -1,3 +1,5 @@
+import { getServerT, normalizeServerLocale, type ServerLocale } from '../../i18n/index.js';
+
 /** Marcador usado no carimbo compacto — facilita contagem em PDFs já assinados. */
 export const SIGNATURE_STAMP_MARKER = 'DOQYN';
 
@@ -43,8 +45,8 @@ function truncateSignerName(name: string, maxLength = 20): string {
   return `${trimmed.slice(0, maxLength - 1)}…`;
 }
 
-function formatStampDate(date: Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
+function formatStampDate(date: Date, locale: ServerLocale): string {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: '2-digit',
     year: '2-digit',
@@ -58,11 +60,17 @@ function formatStampDate(date: Date): string {
  * Três linhas, em ordem de leitura: quem assinou, quando, e o código que prova.
  * O nome carrega o peso; data e código são registro, em corpo menor.
  */
-export function buildCompactStampLines(stamp: SignatureStampData): string[] {
+export function buildCompactStampLines(
+  stamp: SignatureStampData,
+  locale?: string | null,
+): string[] {
+  const lang = normalizeServerLocale(locale);
   const shortCode = stamp.verificationCode.replace(/^DOQYN-/i, '');
   return [
     truncateSignerName(stamp.signerName),
-    `Assinado em ${formatStampDate(stamp.signedAt)}`,
+    getServerT(lang, 'signaturePdf')('stamp.signedAt', {
+      date: formatStampDate(stamp.signedAt, lang),
+    }),
     `${SIGNATURE_STAMP_MARKER} ${shortCode}`,
   ];
 }

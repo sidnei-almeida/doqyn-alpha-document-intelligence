@@ -1,3 +1,13 @@
+/**
+ * Dois momentos de resolver o idioma, e cada função escolhe o seu.
+ *
+ * `validateCompanySignupForm` roda no envio, fora de qualquer memo, e fala direto com a
+ * instância. `buildCompanySignupReviewSections` roda dentro de um `useMemo` da tela e por isso
+ * recebe o `t`: sem ele na lista de dependências, trocar de idioma com o diálogo aberto deixaria
+ * a revisão no idioma anterior.
+ */
+import type { TFunction } from 'i18next';
+import { i18n } from '@/i18n';
 import type { ReviewSection } from '../../components/ui/ReviewBeforeSubmitDialog';
 import {
   getCountryName,
@@ -5,12 +15,12 @@ import {
   toPhoneApiValue,
   type CountryCode,
 } from '../../lib/identifiers';
-import { DOQYN_TERMS_VERSION } from '../../legal/terms';
+import { acceptedTermsLocale, DOQYN_TERMS_VERSION } from '../../legal/terms';
 import {
   formatBooleanConsent,
   formatDocumentForReview,
   formatPhone,
-  PASSWORD_REVIEW_LABEL,
+  PASSWORD_REVIEW_LABEL_KEY,
   safeDisplayValue,
 } from '../../lib/reviewDisplay';
 
@@ -40,7 +50,7 @@ export function validateCompanySignupForm(values: CompanySignupFormValues): {
   if (!values.acceptedTerms) {
     return {
       valid: false,
-      error: 'É necessário aceitar os Termos e Condições de Uso para continuar.',
+      error: i18n.t('auth:signupValidation.acceptTerms'),
       field: 'acceptedTerms',
     };
   }
@@ -48,13 +58,21 @@ export function validateCompanySignupForm(values: CompanySignupFormValues): {
   if (!values.companyAuthorization) {
     return {
       valid: false,
-      error: 'É necessário confirmar que você possui autorização para cadastrar esta empresa.',
+      error: i18n.t('auth:signupValidation.companyAuthorization'),
       field: 'companyAuthorization',
     };
   }
 
   if (!values.fromAuthenticatedSession && values.password !== values.confirmPassword) {
-    return { valid: false, error: 'As senhas não conferem.' };
+    return { valid: false, error: i18n.t('auth:signupValidation.passwordMismatch') };
+  }
+
+  const taxIdSpec = getTaxIdSpec(values.country, 'company');
+  if (!taxIdSpec.isValid(values.taxId)) {
+    return {
+      valid: false,
+      error: i18n.t('common:taxId.invalid', { label: i18n.t(taxIdSpec.labelKey) }),
+    };
   }
 
   return { valid: true };
@@ -74,6 +92,7 @@ export function buildCompanySignupPayload(values: CompanySignupFormValues) {
     whatsapp: toPhoneApiValue(values.country, values.whatsapp),
     acceptedTerms: true as const,
     acceptedTermsVersion: DOQYN_TERMS_VERSION,
+    acceptedTermsLocale: acceptedTermsLocale(),
   };
 
   if (values.fromAuthenticatedSession) {
@@ -88,15 +107,18 @@ export function buildCompanySignupPayload(values: CompanySignupFormValues) {
   };
 }
 
-export function buildCompanySignupReviewSections(values: CompanySignupFormValues): ReviewSection[] {
+export function buildCompanySignupReviewSections(
+  values: CompanySignupFormValues,
+  t: TFunction,
+): ReviewSection[] {
   return [
     {
-      title: 'Empresa',
+      title: t('auth:review.section.company'),
       fields: [
-        { label: 'Nome da empresa', value: safeDisplayValue(values.companyName) },
-        { label: 'País', value: getCountryName(values.country) },
+        { label: t('auth:review.field.companyName'), value: safeDisplayValue(values.companyName) },
+        { label: t('auth:review.field.country'), value: getCountryName(values.country) },
         {
-          label: getTaxIdSpec(values.country, 'company').label,
+          label: t(getTaxIdSpec(values.country, 'company').labelKey),
           value:
             values.country === 'BR'
               ? formatDocumentForReview(values.taxId, 'CNPJ')
@@ -105,32 +127,32 @@ export function buildCompanySignupReviewSections(values: CompanySignupFormValues
       ],
     },
     {
-      title: 'Administrador',
+      title: t('auth:review.section.administrator'),
       fields: [
         {
-          label: 'Nome completo',
+          label: t('auth:review.field.fullName'),
           value: safeDisplayValue(`${values.firstName} ${values.lastName}`.trim()),
         },
-        { label: 'Nome de usuário', value: safeDisplayValue(values.username) },
-        { label: 'E-mail corporativo', value: safeDisplayValue(values.email) },
-        { label: 'WhatsApp', value: formatPhone(values.whatsapp) },
+        { label: t('auth:review.field.username'), value: safeDisplayValue(values.username) },
+        { label: t('auth:review.field.corporateEmail'), value: safeDisplayValue(values.email) },
+        { label: t('auth:review.field.whatsapp'), value: formatPhone(values.whatsapp) },
       ],
     },
     {
-      title: 'Confirmações',
+      title: t('auth:review.section.confirmations'),
       fields: [
         {
-          label: 'Termos de uso',
+          label: t('auth:review.field.terms'),
           value: values.acceptedTerms
-            ? `Aceito em relação à versão ${DOQYN_TERMS_VERSION}`
-            : 'Não aceito',
+            ? t('auth:review.value.termsAcceptedVersion', { version: DOQYN_TERMS_VERSION })
+            : t('auth:review.value.termsRejected'),
         },
         {
-          label: 'Autorização para cadastro',
+          label: t('auth:review.field.companyAuthorization'),
           value: formatBooleanConsent(
             values.companyAuthorization,
-            'Possuo autorização para cadastrar esta empresa',
-            'Autorização não confirmada',
+            t('auth:review.value.companyAuthorizationAccepted'),
+            t('auth:review.value.companyAuthorizationRejected'),
           ),
         },
       ],
@@ -139,18 +161,18 @@ export function buildCompanySignupReviewSections(values: CompanySignupFormValues
       ? []
       : [
           {
-            title: 'Segurança',
-            fields: [{ label: 'Senha', value: PASSWORD_REVIEW_LABEL }],
+            title: t('auth:review.section.security'),
+            fields: [
+              { label: t('auth:review.field.password'), value: t(PASSWORD_REVIEW_LABEL_KEY) },
+            ],
           },
         ]),
   ];
 }
 
-export const COMPANY_SIGNUP_REVIEW_COPY = {
-  title: 'Revisar cadastro da empresa',
-  description:
-    'Confira os dados antes de criar a empresa no DOQYN. Essas informações serão usadas para configurar o ambiente inicial e o acesso administrativo.',
-  attentionMessage:
-    'Verifique principalmente CNPJ, e-mail e WhatsApp. Informações incorretas podem atrasar a configuração do ambiente.',
-  confirmLabel: 'Confirmar e cadastrar',
+export const COMPANY_SIGNUP_REVIEW_COPY_KEYS = {
+  title: 'auth:companySignupReview.title',
+  description: 'auth:companySignupReview.description',
+  attentionMessage: 'auth:companySignupReview.attentionMessage',
+  confirmLabel: 'auth:companySignupReview.confirmLabel',
 } as const;

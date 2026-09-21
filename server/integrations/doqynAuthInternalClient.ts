@@ -158,6 +158,24 @@ export async function fetchUsernamesByIds(
 }
 
 /**
+ * O idioma de cada conta, para o servidor falar com ela fora da tela — no e-mail.
+ *
+ * Perguntado no envio, e não copiado para o cadastro do tenant: quem troca o idioma no perfil
+ * espera que o próximo aviso já chegue no idioma novo, e uma cópia só acompanharia na próxima
+ * sincronização. Conta que o auth não devolve fica fora do mapa; quem chama cai no padrão.
+ */
+export async function fetchUserLocalesByIds(userIds: string[]): Promise<Map<string, string>> {
+  if (!userIds.length) return new Map();
+
+  const result = await callInternal<{
+    ok: true;
+    users?: Array<{ id: string; locale: string }>;
+  }>('/internal/users/locales', { method: 'POST', body: { userIds } });
+
+  return new Map((result.users ?? []).map((user) => [user.id, user.locale]));
+}
+
+/**
  * O e-mail de um usuário, para o sistema entregar — não para a tela mostrar.
  *
  * A busca por apelido não devolve e-mail de propósito: entregá-lo a quem digitou duas letras faria

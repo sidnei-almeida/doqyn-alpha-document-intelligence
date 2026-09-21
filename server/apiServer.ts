@@ -5,6 +5,7 @@ import { URL } from 'node:url';
 import { initGeoIpCityReader } from './services/tracking/geoIpResolver.js';
 import { connectRedisOnBoot } from './redis/redisClient.js';
 import { startEmailOutboxDrain } from './services/notifications/emailOutboxDrain.js';
+import { startExternalEmailOutboxDrain } from './services/notifications/externalEmailOutbox.js';
 import { scheduleDailyExpirySweep, startExpiryAlertWorker } from './queues/expiryAlertQueue.js';
 import { assertPublicAppBaseUrlInProduction } from './config/publicUrlConfig.js';
 import { logger } from './utils/logger.js';
@@ -30,6 +31,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/health/deep': () => import('../api/health/deep.js'),
   '/api/metrics': () => import('../api/metrics.js'),
   '/api/me': () => import('../api/me.js'),
+  '/api/session/refresh': () => import('../api/session/refresh.js'),
   '/api/documents': () => import('../api/documents/index.js'),
   '/api/documents/upload-url': () => import('../api/documents/upload-url.js'),
   '/api/documents/download': () => import('../api/documents/download.js'),
@@ -49,6 +51,7 @@ const staticRoutes: Record<string, () => Promise<{ default: ApiHandler }>> = {
   '/api/internal/memberships/revoke-shares': () =>
     import('../api/internal/memberships/revoke-shares.js'),
   '/api/internal/tenant-members/sync': () => import('../api/internal/tenant-members/sync.js'),
+  '/api/internal/sessions/invalidate': () => import('../api/internal/sessions/invalidate.js'),
   '/api/company-members': () => import('../api/company-members/index.js'),
   '/api/document-requests': () => import('../api/document-requests/index.js'),
   '/api/inbound-shares': () => import('../api/inbound-shares/index.js'),
@@ -484,10 +487,31 @@ function resolveRoute(pathname: string): RouteMatch | null {
   return null;
 }
 
+/**
+ * Teto do corpo lido pelo dispatcher (JSON e texto; multipart não passa por aqui).
+ *
+ * Todo corpo era bufferizado inteiro antes da rota e da autenticação, limitado só pelos 60 MB do
+ * nginx — rotas sem login inclusive. Nenhum JSON do app chega perto de 1 MB: arquivo vai direto ao
+ * R2 por URL assinada.
+ */
+const MAX_BODY_BYTES = 1_000_000;
+
+class BodyTooLargeError extends Error {}
+
 async function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk) => chunks.push(chunk));
+    let size = 0;
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        req.removeAllListeners('data');
+        req.resume();
+        reject(new BodyTooLargeError());
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on('end', () => resolve(Buffer.concat(chunks).toString()));
     req.on('error', reject);
   });
@@ -566,6 +590,16 @@ export async function startApiServer(options?: StartApiServerOptions): Promise<S
     });
   }
 
+  // Mesmo canal, fila própria: convite de compartilhamento/assinatura externo não tem `userId`
+  // por trás, então drena de uma coleção separada — ver `externalEmailOutbox.ts`.
+  try {
+    startExternalEmailOutboxDrain();
+  } catch (error) {
+    logger.error('canal de e-mail externo não iniciado', {
+      message: error instanceof Error ? error.message : 'unknown',
+    });
+  }
+
   // Alertas de vencimento: registra a varredura diária e sobe o consumidor. Sem Redis ambos são
   // no-op — o recurso simplesmente não opera, em vez de derrubar o boot.
   if (options?.expirySweep !== false) {
@@ -622,11 +656,58 @@ export async function startApiServer(options?: StartApiServerOptions): Promise<S
         !isMultipart &&
         (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')
       ) {
-        const raw = await readBody(req);
+        let raw: string;
+        try {
+          raw = await readBody(req);
+        } catch (error) {
+          if (!(error instanceof BodyTooLargeError)) throw error;
+          res.statusCode = 413;
+          res.setHeader('Connection', 'close');
+          res.end(
+            JSON.stringify({
+              message: 'Corpo da requisição grande demais.',
+              code: 'PAYLOAD_TOO_LARGE',
+            }),
+          );
+          return;
+        }
         if (raw) {
-          body = contentType.includes('application/json') ? JSON.parse(raw) : raw;
+          if (contentType.includes('application/json')) {
+            // JSON malformado é erro de quem mandou: antes virava 500 e contava como falha do
+            // servidor nas métricas e nos alertas.
+            try {
+              body = JSON.parse(raw);
+            } catch {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ message: 'JSON inválido.', code: 'INVALID_JSON' }));
+              return;
+            }
+          } else {
+            body = raw;
+          }
         }
       }
+
+      /**
+       * Toda resposta declara em que idioma está, e que o idioma pedido muda o corpo.
+       *
+       * `Vary` é o que importa: sem ele, um proxy ou CDN entre o navegador e a API pode servir
+       * a alguém em espanhol a resposta que guardou para alguém em português — e o defeito
+       * aparece só na máquina de quem está atrás do cache, o que o torna quase impossível de
+       * reproduzir.
+       *
+       * Enquanto o servidor não traduz nada, o valor é o que o cliente pediu. Quando a Fase 3
+       * mudar o contrato de erro, ele passa a ser o idioma em que a resposta foi de fato
+       * montada, que pode ser o de fallback.
+       */
+      const requestedLanguage = req.headers['accept-language'];
+      if (typeof requestedLanguage === 'string' && requestedLanguage.trim()) {
+        res.setHeader('Content-Language', requestedLanguage.split(',')[0]!.trim());
+      }
+      res.setHeader(
+        'Vary',
+        res.getHeader('Vary') ? `${res.getHeader('Vary')}, Accept-Language` : 'Accept-Language',
+      );
 
       const mod = await route.loader();
       const vercelReq = toVercelReq(req, query, body);

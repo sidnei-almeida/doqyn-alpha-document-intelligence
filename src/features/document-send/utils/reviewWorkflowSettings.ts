@@ -5,7 +5,12 @@ import type {
   PerItemNamingChoice,
   WorkflowReviewSettings,
 } from '../types/reviewWorkflowSettings';
-import { DEFAULT_TENANT_UPLOAD_POLICY, normalizeTenantUploadPolicy } from '@shared/uploadPolicy';
+import {
+  DEFAULT_TENANT_UPLOAD_POLICY,
+  normalizeTenantUploadPolicy,
+  type CategorySuggestionMode,
+  type EmptyDocumentMode,
+} from '@shared/uploadPolicy';
 import type { DocumentNamingMode } from './resolveDocumentNaming';
 import { previewFinalFileName } from './resolveDocumentNaming';
 import { MIN_CLASSIFICATION_CONFIDENCE } from '../uploadConstants';
@@ -137,21 +142,44 @@ export function canAutoAcceptWithSettings(
   return true;
 }
 
-export function getReviewSettingsSummaryLabel(settings: WorkflowReviewSettings): string | null {
-  if (!settings.autoReviewEnabled) return null;
-  return `Auto · ${settings.autoAcceptDelaySeconds}s`;
-}
-
-export const NAMING_POLICY_LABELS: Record<DefaultNamingPolicy, string> = {
-  original: 'Manter nome original',
-  ai_suggested: 'Usar nome sugerido pela IA',
-  ask_each_file: 'Perguntar em cada arquivo',
-  manual_required: 'Nome manual obrigatório',
+/**
+ * Chaves com namespace explícito: a política aparece no painel de envio (`documentSend`) e no
+ * resumo das configurações (`settings`), e a mesma chave precisa resolver nos dois.
+ */
+export const NAMING_POLICY_LABEL_KEYS: Record<DefaultNamingPolicy, string> = {
+  original: 'documentSend:namingPolicy.label.original',
+  ai_suggested: 'documentSend:namingPolicy.label.aiSuggested',
+  ask_each_file: 'documentSend:namingPolicy.label.askEachFile',
+  manual_required: 'documentSend:namingPolicy.label.manualRequired',
 };
 
-export const NAMING_POLICY_DESCRIPTIONS: Record<DefaultNamingPolicy, string> = {
-  original: 'Mantém o arquivo como enviado (sanitizado).',
-  ai_suggested: 'Aplica o nome padronizado sugerido pela análise.',
-  ask_each_file: 'Exibe a escolha de nome na revisão de cada arquivo.',
-  manual_required: 'Exige digitar o nome final antes de confirmar.',
+export const NAMING_POLICY_DESCRIPTION_KEYS: Record<DefaultNamingPolicy, string> = {
+  original: 'documentSend:namingPolicy.description.original',
+  ai_suggested: 'documentSend:namingPolicy.description.aiSuggested',
+  ask_each_file: 'documentSend:namingPolicy.description.askEachFile',
+  manual_required: 'documentSend:namingPolicy.description.manualRequired',
+};
+
+export const CATEGORY_SUGGESTION_LABEL_KEYS: Record<CategorySuggestionMode, string> = {
+  off: 'documentSend:categorySuggestion.label.off',
+  suggest: 'documentSend:categorySuggestion.label.suggest',
+  auto_create: 'documentSend:categorySuggestion.label.autoCreate',
+};
+
+export const EMPTY_DOCUMENT_LABEL_KEYS: Record<EmptyDocumentMode, string> = {
+  review: 'documentSend:reviewWorkflowSettings.emptyDocument.review',
+  auto_save: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_save',
+  auto_reject: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_reject',
+};
+
+export const EMPTY_DOCUMENT_DESCRIPTION_KEYS: Record<EmptyDocumentMode, string> = {
+  review: 'documentSend:reviewWorkflowSettings.emptyDocument.reviewHint',
+  auto_save: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_saveHint',
+  auto_reject: 'documentSend:reviewWorkflowSettings.emptyDocument.auto_rejectHint',
+};
+
+export const CATEGORY_SUGGESTION_DESCRIPTION_KEYS: Record<CategorySuggestionMode, string> = {
+  off: 'documentSend:categorySuggestion.description.off',
+  suggest: 'documentSend:categorySuggestion.description.suggest',
+  auto_create: 'documentSend:categorySuggestion.description.autoCreate',
 };

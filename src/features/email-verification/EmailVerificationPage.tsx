@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { AuthFooterLink, AuthHeading } from '@/components/layout/AuthSplitShell';
 import { AUTH_PRIMARY_BUTTON } from '@/features/auth/components/authControls';
-import { plural } from '@/lib/plural';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/apiErrors';
 import { CodeInput } from './components/CodeInput';
@@ -18,6 +17,7 @@ import {
   readVerificationTicket,
   storeVerificationTicket,
 } from './verificationTicket';
+import { useTranslation } from 'react-i18next';
 
 /** Segundos que faltam até `iso`, nunca negativo. */
 function secondsUntil(iso: string | undefined): number {
@@ -33,11 +33,19 @@ function secondsUntil(iso: string | undefined): number {
  * primeiro estado é "digite", e não "clique para enviar".
  */
 export function EmailVerificationPage() {
+  const { t } = useTranslation('auth');
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  const ticketFromNavigation = (location.state as { ticket?: string } | null)?.ticket;
+  const navigationState = location.state as { ticket?: string; emailSent?: boolean } | null;
+  const ticketFromNavigation = navigationState?.ticket;
   const [ticket] = useState<string | null>(ticketFromNavigation ?? readVerificationTicket());
+
+  // Só `false` explícito muda a afirmação da tela. Ausente ou `undefined` — inclusive depois de
+  // um F5, já que `location.state` não sobrevive a recarga — mantém o comportamento de sempre:
+  // um aviso que reaparecesse sozinho sem essa base seria pior que nenhum.
+  const [firstSendFailed, setFirstSendFailed] = useState(navigationState?.emailSent === false);
 
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<EmailVerificationStatus | null>(null);
@@ -64,7 +72,7 @@ export function EmailVerificationPage() {
       // esta aba esperava. Não há o que digitar aqui.
       if (next.verified) {
         clearVerificationTicket();
-        toast.success('E-mail confirmado. Faça login para entrar.');
+        toast.success(t('emailVerificationPage.confirmedSignIn'));
         navigate('/login', { replace: true });
       }
     } catch {
@@ -100,7 +108,7 @@ export function EmailVerificationPage() {
     try {
       await emailVerificationApi.confirmCode(ticket, value);
       clearVerificationTicket();
-      toast.success('E-mail confirmado. Faça login para entrar.');
+      toast.success(t('emailVerificationPage.confirmedSignIn'));
       navigate('/login', { replace: true });
     } catch (err) {
       setCode('');
@@ -121,7 +129,16 @@ export function EmailVerificationPage() {
       const result = await emailVerificationApi.resend(ticket);
       setCode('');
       setDevCode(result.code ?? null);
-      toast.success(result.message);
+      // A rota devolve 200 mesmo quando o envio falha — `emailSent` é quem conta a verdade. Sem
+      // ler esse campo, um reenvio que também não saiu apagava o aviso e pintava um toast verde,
+      // mandando a pessoa esperar de novo um e-mail que de novo não partiu.
+      const reenvioSaiu = result.emailSent !== false;
+      if (reenvioSaiu) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+      setFirstSendFailed(!reenvioSaiu);
       await refreshStatus();
     } catch (err) {
       const message = getEmailVerificationErrorMessage(err);
@@ -138,11 +155,11 @@ export function EmailVerificationPage() {
     return (
       <>
         <AuthHeading
-          title="Confirmação expirada"
-          description="O passe desta confirmação venceu ou foi aberto noutro navegador. Entre com seu e-mail e senha para receber um código novo."
+          title={t('emailVerificationPage.confirmacaoExpirada')}
+          description={t('emailVerificationPage.oPasseDestaConfirmacao')}
         />
         <Link to="/login" className={cn(AUTH_PRIMARY_BUTTON, 'w-full')}>
-          Voltar ao login
+          {t('emailVerificationPage.voltarAoLogin')}
         </Link>
       </>
     );
@@ -154,17 +171,33 @@ export function EmailVerificationPage() {
   return (
     <>
       <AuthHeading
-        title="Confirme seu e-mail"
+        title={t('emailVerificationPage.confirmeSeuEMail')}
         description={
-          status?.email
-            ? `Enviamos um código de 6 dígitos para ${status.email}. Digite-o abaixo, ou use o link do mesmo e-mail, se estiver no aparelho onde o abriu.`
-            : 'Enviamos um código de 6 dígitos para o endereço do seu cadastro.'
+          firstSendFailed
+            ? t('emailVerificationPage.descriptionSendFailed')
+            : status?.email
+              ? t('emailVerificationPage.descriptionWithEmail', { email: status.email })
+              : t('emailVerificationPage.description')
         }
       />
 
+      {firstSendFailed ? (
+        <div className="mb-6">
+          <AlertBanner
+            variant="warning"
+            title={t('emailVerificationPage.firstSendFailedTitle')}
+            message={t('emailVerificationPage.firstSendFailedMessage')}
+          />
+        </div>
+      ) : null}
+
       {error ? (
         <div className="mb-6">
-          <AlertBanner variant="error" title="Não foi possível confirmar" message={error} />
+          <AlertBanner
+            variant="error"
+            title={t('emailVerificationPage.naoFoiPossivelConfirmar')}
+            message={error}
+          />
         </div>
       ) : null}
 
@@ -183,13 +216,15 @@ export function EmailVerificationPage() {
         {typeof attemptsLeft === 'number' && (error !== null || blocked) ? (
           <p className="text-caption text-doqyn-muted">
             {blocked
-              ? 'Este código foi bloqueado por excesso de tentativas. Peça um novo.'
-              : `${plural(attemptsLeft, 'tentativa restante', 'tentativas restantes')} neste código.`}
+              ? t('emailVerificationPage.codeBlocked')
+              : t('emailVerificationPage.attemptsLeft', { count: attemptsLeft })}
           </p>
         ) : null}
 
         {devCode ? (
-          <p className="text-caption text-doqyn-muted">Código de desenvolvimento: {devCode}</p>
+          <p className="text-caption text-doqyn-muted">
+            {t('emailVerificationPage.codigoDeDesenvolvimento')} {devCode}
+          </p>
         ) : null}
 
         <button
@@ -198,7 +233,9 @@ export function EmailVerificationPage() {
           disabled={code.length !== 6 || submitting || blocked}
           className={cn(AUTH_PRIMARY_BUTTON, 'w-full')}
         >
-          {submitting ? 'Confirmando…' : 'Confirmar e-mail'}
+          {t(
+            submitting ? 'emailVerificationPage.confirming' : 'emailVerificationPage.confirmEmail',
+          )}
         </button>
 
         <button
@@ -208,17 +245,17 @@ export function EmailVerificationPage() {
           className="self-start text-caption text-doqyn-action underline-offset-4 hover:underline disabled:text-doqyn-disabled disabled:no-underline"
         >
           {cooldown > 0
-            ? `Reenviar código em ${cooldown}s`
+            ? t('emailVerificationPage.resendIn', { seconds: cooldown })
             : resending
-              ? 'Reenviando…'
-              : 'Reenviar código'}
+              ? t('emailVerificationPage.resending')
+              : t('emailVerificationPage.resend')}
         </button>
       </div>
 
       <AuthFooterLink>
-        Prefere entrar com outra conta?{' '}
+        {t('emailVerificationPage.prefereEntrarComOutra')}{' '}
         <Link to="/login" className="text-doqyn-action underline-offset-4 hover:underline">
-          Voltar ao login
+          {t('emailVerificationPage.voltarAoLogin2')}
         </Link>
       </AuthFooterLink>
     </>

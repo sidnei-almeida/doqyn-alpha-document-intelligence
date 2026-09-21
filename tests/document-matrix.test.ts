@@ -60,8 +60,8 @@ describe('registro das rotas da matriz', () => {
   });
 
   it('a seção está no menu e na rota do app', () => {
-    assert.match(readRepoFile('src/lib/constants.ts'), /path: '\/matriz'/);
-    assert.match(readRepoFile('src/app/routes.tsx'), /path: '\/matriz'/);
+    assert.match(readRepoFile('src/lib/constants.ts'), /path: '\/access-matrix'/);
+    assert.match(readRepoFile('src/app/routes.tsx'), /path: '\/access-matrix'/);
   });
 });
 
@@ -73,8 +73,8 @@ describe('metadados saíram da matriz e viraram ficha do documento', () => {
 
     assert.match(drawer, /DocumentExpiryEditor/);
     // Dois caminhos, porque são dois momentos: o menu do arquivo e o painel de detalhes aberto.
-    assert.match(menu, /label="Metadados"/);
-    assert.match(details, /Editar metadados/);
+    assert.match(menu, /\.metadados/);
+    assert.match(details, /\.editarMetadados/);
   });
 
   it('o botão da ficha só aparece para quem pode editar', () => {

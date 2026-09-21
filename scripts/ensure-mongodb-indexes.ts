@@ -1,19 +1,13 @@
 import 'dotenv/config';
 import { join } from 'node:path';
 import type { IndexDescription } from 'mongodb';
-import { REGISTRY_COLLECTIONS, SHARED_APP_COLLECTIONS } from '../server/db/constants.js';
+import { REGISTRY_COLLECTIONS } from '../server/db/constants.js';
 import { getMongoDatabaseName } from '../server/db/database.js';
 import { closeMongoConnection, getDb, isMongoNativeConfigured } from '../server/db/mongoClient.js';
 import type { MongoTenant } from '../server/db/types.js';
 import { resolveSharedCollections } from '../server/tenancy/tenantStorage.js';
-import {
-  NOTIFICATION_DELIVERY_INDEXES,
-  NOTIFICATION_INDEXES,
-} from '../server/db/notificationIndexes.js';
-import { ANALYSIS_JOB_INDEXES } from '../server/db/analysisJobIndexes.js';
 import { ensureApprovalRequestIndexes } from '../server/db/approvalRequestIndexes.js';
-import { DOCUMENT_REQUEST_INDEXES } from '../server/db/documentRequestIndexes.js';
-import { DOCUMENT_SHARE_GRANTS_INDEXES } from '../server/db/documentShareGrantsIndexes.js';
+import { sharedAppIndexSpecs } from '../server/db/sharedAppIndexSpecs.js';
 import {
   ensureIndexesForCollection,
   ensureRegistryTenantIndexes,
@@ -39,39 +33,6 @@ const REPORT_PATH = join(process.cwd(), 'docs/RELATORIO_INDICES_MONGODB.txt');
 
 const results: IndexEnsureResult[] = [];
 
-function sharedAppIndexes(): Array<{ collection: string; indexes: IndexDescription[] }> {
-  return [
-    {
-      // Mesma definição canônica que o `setupMongo` aplica — a lista morava só aqui, e quem subia
-      // pelo outro caminho ficava sem índice nenhum nesta coleção.
-      collection: SHARED_APP_COLLECTIONS.analysisJobs,
-      indexes: ANALYSIS_JOB_INDEXES,
-    },
-    {
-      // Importado da definição canônica em vez de recopiado: este script mantém uma segunda lista
-      // de índices, e foi justamente a divergência entre as duas que já causou problema antes.
-      collection: SHARED_APP_COLLECTIONS.notifications,
-      indexes: NOTIFICATION_INDEXES,
-    },
-    {
-      collection: SHARED_APP_COLLECTIONS.notificationDeliveries,
-      indexes: NOTIFICATION_DELIVERY_INDEXES,
-    },
-    {
-      // Mesma razão de `approval_requests`: este script é o que o Compose executa, e ficar só em
-      // `setupMongo` deixaria a coleção sem índice nenhum em produção.
-      collection: SHARED_APP_COLLECTIONS.documentRequests,
-      indexes: DOCUMENT_REQUEST_INDEXES,
-    },
-    {
-      // A terceira coleção com o mesmo problema, e a mais séria delas: sem estes índices em
-      // produção, `document_share_grants` perde o único que impede duas concessões ativas para o
-      // mesmo par documento/pessoa — e toda leitura de "Compartilhados comigo" vira varredura.
-      collection: SHARED_APP_COLLECTIONS.documentShareGrants,
-      indexes: DOCUMENT_SHARE_GRANTS_INDEXES,
-    },
-  ];
-}
 
 async function main() {
   if (!isMongoNativeConfigured()) {
@@ -84,7 +45,8 @@ async function main() {
 
   results.push(...(await ensureRegistryTenantIndexes(CONTINUA)));
 
-  for (const group of sharedAppIndexes()) {
+  // Lista única com o `setupMongo`: ver `server/db/sharedAppIndexSpecs.ts`.
+  for (const group of sharedAppIndexSpecs()) {
     await ensureIndexes(group.collection, group.indexes);
   }
 

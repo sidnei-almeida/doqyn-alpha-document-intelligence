@@ -25,9 +25,11 @@ import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
 import { diagnoseClassAndRuleLookup, getMongoClassAndRule } from './documentRulesService.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
+import { addTenantStoredBytes } from './tenantStorageQuotaService.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { logger } from '../utils/logger.js';
 import { getStorageProvider } from '../storage/index.js';
+import { enqueueStoragePromotionJob } from '../queues/storagePromotionQueue.js';
 import {
   enqueueScheduledDocumentPreview,
   scheduleDocumentPreviewForVersion,
@@ -36,21 +38,28 @@ import { ServiceError } from '../utils/serviceErrors.js';
 import { resolveStorageFileNames, type NamingMode } from '../utils/resolveStorageFileNames.js';
 import { normalizeVersionLabel, parseMajorVersionNumber } from '../utils/versionLabelUtils.js';
 import { ensureUncategorizedCategory } from './documentCategoriesService.js';
+import { resolveAutoCreatedCategoryId } from './categoryAutoCreateService.js';
+import { isUncategorizedCategory } from '../../shared/systemCategory.js';
+import { MIN_TEXT_CHARS } from '../ai/constants.js';
+import { getTenantUploadPolicy } from './settings/uploadPolicySettings.js';
 import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveDocumentOwnerName } from '../utils/userDisplayName.js';
 import { buildInitialDocumentOwnershipFields } from '../utils/documentMutationFields.js';
 import { resolveAnalysisMimeType } from '../ai/constants.js';
 import {
   ConfirmAnalysisError,
+  alreadyConfirmedError,
   assertAiSuggestedNamePresent,
   requireConfirmClassification,
   buildDocumentTitle,
   buildProcessingSteps,
   buildStoragePlaceholders,
   isConfirmAnalysisError,
+  isDuplicateKeyError,
   mapVersionMetadata,
   persistConfirmedVersionFile,
   projectDocumentSearchMeta,
+  type StagingPromotionRequest,
 } from './confirm/confirmVersionShared.js';
 
 export { ConfirmAnalysisError, isConfirmAnalysisError };
@@ -60,6 +69,19 @@ const evidenceSchema = z.object({
   snippet: z.string(),
 });
 
+/**
+ * Proposta de categoria vinda da análise.
+ *
+ * Só é lida quando o tenant está em `auto_create` e ninguém escolheu pasta. Vem do cliente, então
+ * `createCategoryFromSuggestion` revalida tudo que importa — nome, slug, teto — antes de escrever.
+ */
+const suggestedCategorySchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  keywords: z.array(z.string()).optional().default([]),
+  reason: z.string().optional().default(''),
+});
+
 const classificationSchema = z.object({
   classId: z.string().nullable(),
   className: z.string().nullable(),
@@ -67,6 +89,7 @@ const classificationSchema = z.object({
   requiresReview: z.boolean(),
   reason: z.string(),
   evidence: z.array(evidenceSchema).optional().default([]),
+  suggestedCategory: suggestedCategorySchema.nullish(),
 });
 
 /**
@@ -141,6 +164,7 @@ export const confirmAnalysisSchema = z.object({
     pageCount: z.number().optional(),
     charCount: z.number(),
     truncated: z.boolean(),
+    detectedLanguage: z.enum(['pt', 'en', 'es', 'und']).optional(),
   }),
   classification: classificationSchema,
   extraction: extractionSchema,
@@ -268,20 +292,87 @@ export async function confirmAnalysisPersistence(input: {
     ? await resolveRequestForFulfillment(tenantId, ownerUserId, data.documentRequestId.trim())
     : null;
 
+  /**
+   * Documento sem texto, num tenant que escolheu recusá-lo, não entra — e essa decisão é relida
+   * aqui, no servidor.
+   *
+   * A fila já barra o envio antes de chegar aqui, mas quem barra é o navegador, com a política
+   * que ele tinha em mãos: aba velha aberta desde antes da troca, ou requisição montada fora da
+   * tela, passariam. Mesma razão pela qual `resolveAutoCreatedCategoryId` relê a política — é ela
+   * que autoriza a escrita.
+   *
+   * O sinal é a contagem de caracteres declarada, porque abaixo de `MIN_TEXT_CHARS` a análise
+   * sempre aborta antes de classificar: não existe documento classificado com menos que isso. Vale
+   * dizer que o payload inteiro vem do cliente, então isto fecha a aba desatualizada e o erro de
+   * cliente, não um payload forjado de propósito — para esse, nada no confirm é verificável hoje.
+   */
+  if (data.textExtraction.charCount < MIN_TEXT_CHARS) {
+    let emptyDocumentMode;
+    try {
+      emptyDocumentMode = (await getTenantUploadPolicy(tenantId)).emptyDocumentMode;
+    } catch {
+      // Falha de leitura não recusa: na dúvida o documento entra, que é reversível.
+      emptyDocumentMode = undefined;
+    }
+
+    if (emptyDocumentMode === 'auto_reject') {
+      throw new ConfirmAnalysisError(
+        'Este documento voltou sem texto e a política da empresa não aceita arquivo vazio.',
+        'EMPTY_DOCUMENT_REJECTED',
+        422,
+      );
+    }
+  }
+
   // A escolha humana vence a da IA: quem revisou viu o documento.
   const manualClassId = fulfilledRequest?.categoryId ?? (data.manualClassId?.trim() || undefined);
+
+  /**
+   * "Sem categoria" vinda da IA não conta como classificação.
+   *
+   * Ela é o destino de fracasso, e enquanto o classificador a via como prateleira legítima o
+   * documento voltava da análise com `classId` preenchido. Isso bastava para desligar a criação
+   * automática aqui — o tenant escolhia `auto_create`, a IA tinha proposto uma pasta, e mesmo
+   * assim o documento era arquivado na pasta genérica sem que nada fosse criado. O classificador
+   * já não a recebe, mas análise antiga, ainda parada na fila do navegador, chega com ela.
+   */
+  const aiClassId =
+    data.classification.classId &&
+    !isUncategorizedCategory({
+      id: data.classification.classId,
+      name: data.classification.className,
+    })
+      ? data.classification.classId
+      : null;
+
+  /**
+   * A pasta que a IA propôs, quando o tenant escolheu criar sozinho.
+   *
+   * Vem antes de "Sem categoria" de propósito: a proposta é o que a IA leu do documento, e a
+   * pasta genérica é o que sobra quando não se leu nada. Falhar aqui não custa o documento —
+   * `createCategoryFromSuggestion` devolve `null` e o fallback de sempre assume.
+   */
+  const autoCreatedClassId =
+    manualClassId || aiClassId
+      ? undefined
+      : await resolveAutoCreatedCategoryId({
+          tenantId,
+          userId: ownerUserId ?? input.user.id,
+          suggestion: data.classification.suggestedCategory,
+          requestId: input.ctx.requestId,
+        });
 
   // Sem classe da IA e sem escolha humana, o documento ia para "Sem categoria" em vez de ser
   // recusado. Recusar custava o documento inteiro: o binário já está no R2 e o registro em Mongo só
   // nasce aqui, então o arquivo ficava no bucket sem existir para ninguém. Numa pasta ele aparece
   // na Biblioteca e pode ser reclassificado depois.
   const fallbackClassId =
-    manualClassId || data.classification.classId
+    manualClassId || aiClassId || autoCreatedClassId
       ? undefined
       : await ensureUncategorizedCategory(tenantId, ownerUserId ?? input.user.id);
 
   const classId = requireConfirmClassification({
-    classId: manualClassId ?? data.classification.classId ?? fallbackClassId ?? null,
+    classId: manualClassId ?? aiClassId ?? autoCreatedClassId ?? fallbackClassId ?? null,
     // Categoria escolhida à mão encerra a dúvida da classificação; o que a extração pediu de
     // revisão continua valendo.
     requiresReview: manualClassId ? false : data.classification.requiresReview,
@@ -417,10 +508,6 @@ export async function confirmAnalysisPersistence(input: {
     ? 'document.metadata.reviewed_confirmed'
     : 'document.metadata.confirmed';
 
-  const auditDescription = needsReview
-    ? 'Documento salvo após revisão manual dos metadados extraídos.'
-    : 'Documento criado a partir da análise automática confirmada pelo usuário.';
-
   let resolvedNames;
   try {
     resolvedNames = resolveStorageFileNames({
@@ -439,10 +526,33 @@ export async function confirmAnalysisPersistence(input: {
     throw error;
   }
 
+  /**
+   * O mesmo job não confirma duas vezes.
+   *
+   * Isto é o caminho curto, para a repetição que chega depois de a primeira ter terminado: poupa o
+   * trabalho de storage e devolve o aviso certo. Quem garante de verdade é a chave `_id` da linha
+   * do job, gravada antes do documento e da versão — duas tentativas simultâneas passam as duas
+   * por esta leitura.
+   */
+  if (
+    data.jobId &&
+    (await input.ctx.collections.processingJobs.findOne({ _id: data.jobId } as Record<
+      string,
+      unknown
+    >))
+  ) {
+    throw new ConfirmAnalysisError(
+      'Esta análise já foi confirmada.',
+      'ANALYSIS_ALREADY_CONFIRMED',
+      409,
+    );
+  }
+
   let versionStorage: MongoDocumentVersion['storage'] = buildStoragePlaceholders();
   let persistedObjectKey: string | null = null;
   let persistedBucketAlias: string | null = null;
   let confirmedPdfBuffer: Buffer | null = null;
+  let stagingPromotion: StagingPromotionRequest | null = null;
 
   try {
     const persisted = await persistConfirmedVersionFile({
@@ -460,6 +570,7 @@ export async function confirmAnalysisPersistence(input: {
     });
     versionStorage = persisted.storage;
     confirmedPdfBuffer = persisted.buffer;
+    stagingPromotion = persisted.promotion;
     persistedObjectKey = versionStorage.primary.objectKey;
     persistedBucketAlias = versionStorage.primary.bucketAlias;
   } catch (error) {
@@ -505,6 +616,9 @@ export async function confirmAnalysisPersistence(input: {
       className: docClass.name,
       title: buildDocumentTitle(docClass.name, versionMetadata),
       currentFileName: resolvedNames.finalFileName,
+      ...(data.textExtraction.detectedLanguage && data.textExtraction.detectedLanguage !== 'und'
+        ? { detectedLanguage: data.textExtraction.detectedLanguage }
+        : {}),
       status: 'active',
       processingStatus: needsReview ? 'processed_with_review' : 'processed',
       access: {
@@ -614,14 +728,18 @@ export async function confirmAnalysisPersistence(input: {
   const { documents, documentVersions, processingJobs } = input.ctx.collections;
 
   try {
+    // A linha do job vem antes do documento e da versão: `_id` é a chave primária, então é ela que
+    // decide quem confirma quando duas tentativas do mesmo job correm juntas. Quem perde para aqui
+    // sem ter criado documento nenhum.
+    await processingJobs.insertOne(processingJob);
     await documents.insertOne(document);
     await documentVersions.insertOne(version);
-    await processingJobs.insertOne(processingJob);
 
-    if (confirmedPdfBuffer) {
+    if (confirmedPdfBuffer || stagingPromotion) {
       await scheduleChunkPersistenceAfterVersionConfirm({
         ctx: input.ctx,
         pdfBuffer: confirmedPdfBuffer,
+        primary: versionStorage.primary,
         documentId,
         versionId,
         versionLabel,
@@ -645,12 +763,44 @@ export async function confirmAnalysisPersistence(input: {
         requestId: input.requestId,
       });
     }
+
+    if (stagingPromotion) {
+      // Fora do caminho de quem espera: a versão já vale apontando para o provisório, e a cópia para
+      // a chave definitiva não pode segurar a resposta nem desfazer o documento se falhar.
+      await enqueueStoragePromotionJob({
+        tenantId,
+        ownerUserId,
+        documentId,
+        versionId,
+        bucket: stagingPromotion.bucket,
+        stagingKey: stagingPromotion.stagingKey,
+        destinationKey: stagingPromotion.destinationKey,
+        contentType: stagingPromotion.contentType,
+        requestId: input.requestId,
+      }).catch((error: unknown) => {
+        logger.warn('promoção do arquivo não enfileirada; a versão segue no provisório', {
+          requestId: input.requestId,
+          documentId,
+          versionId,
+          reason: error instanceof Error ? error.message : 'unknown',
+        });
+      });
+    }
   } catch (error) {
-    if (persistedObjectKey) {
+    // O provisório pertence ao job, não a esta tentativa: apagá-lo aqui tiraria o arquivo de outra
+    // confirmação do mesmo job que já tenha dado certo.
+    if (persistedObjectKey && !stagingPromotion) {
       await getStorageProvider()
         ?.deleteDocumentVersion(persistedObjectKey, tenantId, persistedBucketAlias)
         .catch(() => undefined);
     }
+    // Perdeu a corrida pela linha do job: é o mesmo aviso da leitura de guarda, não um erro nosso.
+    if (isDuplicateKeyError(error)) throw alreadyConfirmedError();
+    // Falhou depois de marcar o job. A marca é o que barra a repetição, e com ela de pé a pessoa
+    // nunca mais conseguiria confirmar esta análise — então some junto com a tentativa.
+    await processingJobs
+      .deleteOne({ _id: jobId } as Record<string, unknown>)
+      .catch(() => undefined);
     throw error;
   }
 
@@ -701,7 +851,7 @@ export async function confirmAnalysisPersistence(input: {
   const auditEvents: DocumentAuditEventInput[] = [
     {
       action: 'document.review_confirmed',
-      description: auditDescription,
+      params: needsReview ? { context: 'manualReview' } : {},
       documentId,
       versionId,
       analysisJobId: jobId,
@@ -728,7 +878,6 @@ export async function confirmAnalysisPersistence(input: {
     },
     {
       action: 'document.version_created',
-      description: 'Nova versão do documento criada.',
       documentId,
       versionId,
       target: documentTarget,
@@ -751,7 +900,6 @@ export async function confirmAnalysisPersistence(input: {
   if (versionStorage.primary.status === 'stored') {
     auditEvents.push({
       action: 'document.storage_promoted',
-      description: 'Arquivo promovido ao storage definitivo.',
       documentId,
       versionId,
       target: documentTarget,
@@ -772,7 +920,6 @@ export async function confirmAnalysisPersistence(input: {
   if (previewResult.slot.status === 'ready') {
     auditEvents.push({
       action: 'document.preview_generated',
-      description: 'Preview do documento gerado com sucesso.',
       documentId,
       versionId,
       target: documentTarget,
@@ -789,7 +936,7 @@ export async function confirmAnalysisPersistence(input: {
   } else if (previewResult.slot.status === 'failed') {
     auditEvents.push({
       action: 'document.preview_failed',
-      description: 'Falha ao gerar preview do documento.',
+      params: { context: 'generation' },
       documentId,
       versionId,
       result: 'error',
@@ -805,6 +952,11 @@ export async function confirmAnalysisPersistence(input: {
   }
 
   await createDocumentAuditLogs(auditCtx, auditEvents).catch(() => undefined);
+
+  // Depois do try/catch: rollback nunca chega aqui, então o contador só soma byte que ficou de pé.
+  if (versionStorage.primary.status === 'stored') {
+    await addTenantStoredBytes(tenantId, data.fileSizeBytes);
+  }
 
   // Quem alcança a categoria fica sabendo que entrou documento nela. A chave é a versão, não o
   // documento: reconfirmar o mesmo envio não avisa de novo, mas uma versão nova sim.
@@ -866,7 +1018,6 @@ export async function confirmAnalysisPersistence(input: {
         await createDocumentAuditLogs(auditCtx, [
           {
             action: 'document_request.fulfilled',
-            description: 'Requisição de documento atendida.',
             documentId,
             versionId,
             target: documentTarget,

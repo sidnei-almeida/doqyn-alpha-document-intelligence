@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import type { ExpiryAlertConfig } from '@/types/rules';
 import { EmptyHint } from '@/components/ui/EmptyHint';
+import { useTranslation } from 'react-i18next';
 
 export type ExpiryAlertConfigValue = ExpiryAlertConfig;
 
@@ -31,6 +32,8 @@ export function ExpiryAlertConfigSection({
   onChange,
   groups,
 }: ExpiryAlertConfigSectionProps) {
+  const { t } = useTranslation('rules');
+
   const patch = (next: Partial<ExpiryAlertConfigValue>) => onChange({ ...value, ...next });
 
   /**
@@ -58,19 +61,18 @@ export function ExpiryAlertConfigSection({
 
   return (
     <DrawerSection
-      label="Alertas de vencimento"
+      label={t('expiryAlertConfigSection.alertasDeVencimento')}
       bodyClassName="space-y-4"
       aside={
         <Switch
           checked={value.enabled}
           onCheckedChange={(checked) => patch({ enabled: checked })}
-          aria-label="Ativar alertas de vencimento"
+          aria-label={t('expiryAlertConfigSection.ativarAlertasDeVencimento')}
         />
       }
     >
       <p className="text-caption text-doqyn-muted">
-        Avisa quem tem acesso a esta categoria pelo mapa de regras quando um documento estiver perto
-        de vencer. O dono do documento é sempre avisado.
+        {t('expiryAlertConfigSection.avisaQuemTemAcesso')}
       </p>
 
       {value.enabled && (
@@ -79,7 +81,7 @@ export function ExpiryAlertConfigSection({
             <Input
               id="expiry-offsets"
               variant="rule"
-              label="Avisar com antecedência de (dias)"
+              label={t('expiryAlertConfigSection.avisarComAntecedenciaDe')}
               value={offsetsText}
               onChange={(event) => setOffsetsText(event.target.value)}
               onBlur={(event) => commitOffsets(event.target.value)}
@@ -87,7 +89,7 @@ export function ExpiryAlertConfigSection({
               className="font-mono tabular-nums"
             />
             <p className="text-micro text-doqyn-muted">
-              Um aviso por marco. Use 0 para avisar no próprio dia do vencimento.
+              {t('expiryAlertConfigSection.umAvisoPorMarco')}
             </p>
           </div>
 
@@ -96,18 +98,20 @@ export function ExpiryAlertConfigSection({
               checked={value.notifyAfterExpiry}
               onChange={(event) => patch({ notifyAfterExpiry: event.target.checked })}
             />
-            Continuar avisando depois de vencido (use números negativos acima, ex.: -7)
+
+            {t('expiryAlertConfigSection.continuarAvisandoDepoisDe')}
           </label>
 
           <div>
-            <p className="register-label text-doqyn-subtle">Restringir a grupos (opcional)</p>
+            <p className="register-label text-doqyn-subtle">
+              {t('expiryAlertConfigSection.restringirAGruposOpcional')}
+            </p>
             <p className="mt-1 text-micro text-doqyn-muted">
-              Marcar grupos limita o aviso a eles. Grupo sem permissão de ver a categoria no mapa de
-              regras não recebe, mesmo marcado aqui.
+              {t('expiryAlertConfigSection.marcarGruposLimitaO')}
             </p>
             {groups.length === 0 ? (
               <EmptyHint bare className="mt-2">
-                Nenhum grupo documental cadastrado. Sem grupos, só o dono do documento é avisado.
+                {t('expiryAlertConfigSection.nenhumGrupoDocumentalCadastrado')}
               </EmptyHint>
             ) : (
               <div className="scrollbar-thin mt-2 max-h-40 divide-y divide-doqyn-border-subtle overflow-y-auto">
@@ -134,10 +138,7 @@ export function ExpiryAlertConfigSection({
           </div>
 
           {notifiesEveryoneWithAccess && (
-            <EmptyHint bare>
-              Nenhum grupo marcado: todos os grupos com acesso de leitura a esta categoria serão
-              avisados.
-            </EmptyHint>
+            <EmptyHint bare>{t('expiryAlertConfigSection.nenhumGrupoMarcadoTodos')}</EmptyHint>
           )}
         </>
       )}

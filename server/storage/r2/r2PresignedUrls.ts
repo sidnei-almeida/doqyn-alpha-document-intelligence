@@ -12,6 +12,8 @@ export type StagingPresignedPutInput = {
   jobId: string;
   mimeType: string;
   originalFileName: string;
+  /** Já conferido contra o limite de upload; vira header assinado da URL. */
+  sizeBytes: number;
   storageScope?: TenantStorageScope;
 };
 
@@ -53,14 +55,20 @@ export async function createStagingPresignedPutUrl(
   const contentType = input.mimeType?.trim() || 'application/pdf';
   const expiresInSeconds = getPresignedUploadTtlSeconds();
 
+  // O tamanho declarado entra na assinatura. Sem isso a API conferia o `sizeBytes` informado pelo
+  // cliente contra o limite, mas a URL aceitava qualquer corpo: declarava-se 1 KB e subia-se 5 GB
+  // direto ao R2. Com `content-length` em SignedHeaders, corpo de outro tamanho não bate a
+  // assinatura. O navegador preenche o header sozinho com o tamanho do `File`.
   const command = new PutObjectCommand({
     Bucket: bucket,
     Key: stagingKey,
     ContentType: contentType,
+    ContentLength: input.sizeBytes,
   });
 
   const uploadUrl = await getSignedUrl(provider.getRuntimeClient(), command, {
     expiresIn: expiresInSeconds,
+    signableHeaders: new Set(['content-length']),
   });
 
   const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();

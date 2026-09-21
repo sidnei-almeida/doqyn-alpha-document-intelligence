@@ -66,12 +66,16 @@ import { downloadSignatureRequestSignedPdf } from '@/features/signature/api/sign
 import { signedPdfDownloadName } from '@/features/signature/utils/signatureSummaryDisplay';
 import { UpdateDocumentVersionDrawer } from '@/features/document-update-version';
 import { TransferOwnershipModal } from '@/features/documents/components/TransferOwnershipModal';
+import { useTranslation } from 'react-i18next';
+import { i18n } from '@/i18n';
 
 /**
  * Biblioteca — File Explorer com pastas inteligentes (categorias de governança).
  * Raiz: pastas em destaque. Dentro da pasta: arquivos como protagonistas.
  */
 export function LibraryPage() {
+  const { t } = useTranslation('library');
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -130,7 +134,7 @@ export function LibraryPage() {
 
   useEffect(() => {
     if (isDeactivatedView && !canManageDeactivated) {
-      navigate('/biblioteca', { replace: true });
+      navigate('/library', { replace: true });
     }
   }, [isDeactivatedView, canManageDeactivated, navigate]);
   const {
@@ -207,20 +211,20 @@ export function LibraryPage() {
   const trimmedQuery = state.q.trim();
 
   const pageTitle = trimmedQuery
-    ? 'Resultados da busca'
+    ? t('libraryPage.searchResults')
     : explorer.isInsideFolder
-      ? (activeSpace?.name ?? 'Pasta')
+      ? (activeSpace?.name ?? t('libraryPage.folderFallback'))
       : explorer.isBrowseRoot
-        ? 'Biblioteca'
-        : (collection.label ?? 'Biblioteca');
+        ? t('libraryPage.title')
+        : t(collection.labelKey);
 
   const pageDescription = trimmedQuery
-    ? `${documents.length} ${documents.length === 1 ? 'documento encontrado' : 'documentos encontrados'} para “${trimmedQuery}”`
+    ? t('libraryPage.searchDescription', { count: documents.length, query: trimmedQuery })
     : explorer.isInsideFolder
-      ? 'Documentos classificados nesta categoria pela IA.'
+      ? t('libraryPage.folderDescription')
       : explorer.isBrowseRoot
-        ? 'Documentos e categorias deste ambiente'
-        : collection.description;
+        ? t('libraryPage.rootDescription')
+        : t(collection.descriptionKey);
 
   // A raiz não leva subtítulo: "Documentos e categorias deste ambiente"
   // descreve o óbvio embaixo de um título que já diz Biblioteca. O texto
@@ -264,12 +268,12 @@ export function LibraryPage() {
       setRenameFolder(null);
       showAppToast({
         type: 'success',
-        title: 'Categoria renomeada',
-        message: `Agora ela se chama ${variables.name}.`,
+        title: t('libraryPage.renamedTitle'),
+        message: t('libraryPage.renamedMessage', { name: variables.name }),
       });
       await invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível renomear a categoria.'),
+    onError: (error) => showApiErrorToast(error, t('libraryPage.renameFailed')),
   });
 
   const deleteCategory = useMutation({
@@ -277,14 +281,14 @@ export function LibraryPage() {
     onSuccess: async (result) => {
       showAppToast({
         type: 'success',
-        title: 'Categoria excluída',
+        title: t('libraryPage.deletedTitle'),
         message: result.movedDocuments
-          ? `${result.movedDocuments} ${result.movedDocuments === 1 ? 'documento foi' : 'documentos foram'} para Sem categoria.`
-          : 'A categoria estava vazia.',
+          ? t('libraryPage.deletedMoved', { count: result.movedDocuments })
+          : t('libraryPage.deletedEmpty'),
       });
       await invalidateLibraryQueries(queryClient, tenant?.tenantId ?? user?.companyId);
     },
-    onError: (error) => showApiErrorToast(error, 'Não foi possível excluir a categoria.'),
+    onError: (error) => showApiErrorToast(error, t('libraryPage.deleteFailed')),
   });
 
   const handleDeleteFolder = useCallback(
@@ -301,7 +305,7 @@ export function LibraryPage() {
 
   const breadcrumbSegments = useMemo(() => {
     const built = buildLibraryBreadcrumbSegments({
-      collectionLabel: collection.label,
+      collectionLabel: t(collection.labelKey),
       spaceName: activeSpace?.name,
       isRootCollection: explorer.isRootCollection,
     });
@@ -313,17 +317,18 @@ export function LibraryPage() {
           : segment.key === 'collection'
             ? () => {
                 clearSelection();
-                navigate(`/biblioteca/${collection.slug}`);
+                navigate(`/library/${collection.slug}`);
               }
             : undefined,
     }));
   }, [
     activeSpace?.name,
     clearSelection,
-    collection.label,
+    collection.labelKey,
     collection.slug,
     explorer.isRootCollection,
     navigate,
+    t,
   ]);
 
   const openSpace = useCallback(
@@ -347,7 +352,7 @@ export function LibraryPage() {
     if (explorer.isRootCollection) {
       update({ space: '' });
     } else {
-      navigate('/biblioteca');
+      navigate('/library');
     }
   }, [clearSelection, explorer.isRootCollection, navigate, update]);
 
@@ -436,7 +441,7 @@ export function LibraryPage() {
       const { blob, fileName } = await downloadDocument(doc.documentId, doc.latestVersionId);
       triggerBlobDownload(blob, fileName || doc.currentFileName);
     } catch (error) {
-      showApiErrorToast(error, 'Não foi possível baixar o documento.');
+      showApiErrorToast(error, i18n.t('library:libraryPage.downloadFailed'));
     }
   }, []);
 
@@ -556,7 +561,7 @@ export function LibraryPage() {
   const handleDownloadSignedPdf = useCallback(async (doc: DocumentListItem) => {
     const requestId = doc.signatureSummary?.latestRequestId;
     if (!requestId || !doc.signatureSummary?.hasSignedPdf) {
-      toast.error('PDF assinado indisponível para este documento.');
+      toast.error(i18n.t('library:libraryPage.signedPdfUnavailable'));
       return;
     }
     try {
@@ -569,7 +574,7 @@ export function LibraryPage() {
         ),
       );
     } catch (error) {
-      showApiErrorToast(error, 'Falha ao baixar PDF assinado.');
+      showApiErrorToast(error, i18n.t('library:libraryPage.signedPdfFailed'));
     }
   }, []);
 
@@ -636,7 +641,7 @@ export function LibraryPage() {
         className="explorer-root-home flex flex-col gap-8 pb-6"
         data-testid="explorer-root-loading"
         aria-busy="true"
-        aria-label="Carregando biblioteca"
+        aria-label={t('libraryPage.carregandoBiblioteca')}
       >
         <div className="space-y-3">
           <div className="skeleton-line h-4 w-16 rounded bg-doqyn-card" />
@@ -668,10 +673,10 @@ export function LibraryPage() {
     mainContent = (
       <EmptyFolderState
         hasActiveFilters={false}
-        title="Esta pasta ainda está vazia"
-        description="Envie um documento para o DOQYN analisar e classificar nesta categoria."
+        title={t('libraryPage.estaPastaAindaEsta')}
+        description={t('libraryPage.envieUmDocumentoPara')}
         showUploadActions
-        uploadButtonLabel="Enviar documento"
+        uploadButtonLabel={t('emptyFolderState.upload')}
         onClearFilters={clearFilters}
         onUploadClick={triggerUploadPicker}
       />
@@ -686,17 +691,15 @@ export function LibraryPage() {
         title={
           hasActiveFilters
             ? trimmedQuery
-              ? 'Nenhum documento encontrado'
-              : 'Nenhum documento para os filtros atuais'
-            : collection.emptyTitle
+              ? t('libraryPage.noDocumentsFound')
+              : t('emptyFolderState.nenhumDocumentoParaOs')
+            : t(collection.emptyTitleKey)
         }
         description={
-          hasActiveFilters
-            ? 'Tente ajustar os filtros ou buscar outro termo.'
-            : collection.emptyDescription
+          hasActiveFilters ? t('libraryPage.adjustFilters') : t(collection.emptyDescriptionKey)
         }
         showUploadActions={explorer.isInsideFolder}
-        uploadButtonLabel="Enviar documento"
+        uploadButtonLabel={t('emptyFolderState.upload')}
         onClearFilters={clearFilters}
         onUploadClick={triggerUploadPicker}
       />
@@ -704,7 +707,11 @@ export function LibraryPage() {
   } else {
     mainContent = renderFileList(
       documents,
-      explorer.isInsideFolder ? `Arquivos em ${activeSpace?.name ?? 'pasta'}` : undefined,
+      explorer.isInsideFolder
+        ? t('libraryPage.filesIn', {
+            folder: activeSpace?.name ?? t('libraryPage.folderFallbackLower'),
+          })
+        : undefined,
     );
   }
 
@@ -810,7 +817,7 @@ export function LibraryPage() {
               />
               {isError && (
                 <p className="mt-3 text-[12px] text-doqyn-danger">
-                  Não foi possível carregar os documentos agora.
+                  {t('libraryPage.naoFoiPossivelCarregar')}
                 </p>
               )}
             </div>
@@ -923,12 +930,12 @@ export function LibraryPage() {
 
         <PromptDialog
           open={Boolean(renameFolder)}
-          title="Renomear categoria"
-          description="O nome novo vale para a pasta e para todos os documentos que já estão dentro dela."
-          label="Nome da categoria"
+          title={t('libraryPage.renomearCategoria')}
+          description={t('libraryPage.oNomeNovoVale')}
+          label={t('libraryPage.nomeDaCategoria')}
           initialValue={renameFolder?.name ?? ''}
           multiline={false}
-          confirmLabel="Renomear"
+          confirmLabel={t('libraryPage.renomear')}
           saving={renameCategory.isPending}
           onClose={() => setRenameFolder(null)}
           onConfirm={(name) => {

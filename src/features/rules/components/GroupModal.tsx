@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { DEFAULT_GROUP_COLOR, type GroupColor } from '@shared/groupPalette';
 import { GroupPalettePicker } from './GroupPalettePicker';
+import { useTranslation } from 'react-i18next';
 
 interface GroupModalProps {
   open: boolean;
@@ -14,6 +15,8 @@ interface GroupModalProps {
 const FORM_ID = 'novo-grupo';
 
 export function GroupModal({ open, onClose, onCreate }: GroupModalProps) {
+  const { t } = useTranslation('rules');
+
   const [name, setName] = useState('');
   const [color, setColor] = useState<GroupColor>(DEFAULT_GROUP_COLOR);
 
@@ -35,16 +38,16 @@ export function GroupModal({ open, onClose, onCreate }: GroupModalProps) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Novo grupo"
-      subtitle="Grupo é o que conecta pessoas a categorias de documentos."
+      title={t('groupModal.novoGrupo')}
+      subtitle={t('groupModal.subtitle')}
       dismissOnOverlay={false}
       footer={
         <>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            Cancelar
+            {t('groupModal.cancelar')}
           </Button>
           <Button type="submit" form={FORM_ID} size="sm" disabled={!name.trim()}>
-            Criar grupo
+            {t('groupModal.criarGrupo')}
           </Button>
         </>
       }
@@ -53,8 +56,8 @@ export function GroupModal({ open, onClose, onCreate }: GroupModalProps) {
         <Input
           id="group-name"
           variant="rule"
-          label="Nome do grupo"
-          placeholder="Jurídico, Financeiro…"
+          label={t('groupModal.nomeDoGrupo')}
+          placeholder={t('groupModal.juridicoFinanceiro')}
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
@@ -62,9 +65,7 @@ export function GroupModal({ open, onClose, onCreate }: GroupModalProps) {
 
         <GroupPalettePicker value={color} onChange={setColor} />
 
-        <p className="type-caption text-doqyn-subtle">
-          As pessoas entram no grupo pela tela de Usuários.
-        </p>
+        <p className="type-caption text-doqyn-subtle">{t('groupModal.asPessoasEntramNo')}</p>
       </form>
     </Modal>
   );

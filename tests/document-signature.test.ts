@@ -376,8 +376,8 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(badge.includes('document-signature-badge-button'));
     assert.ok(summaryDisplay.includes('signedSigners'));
     assert.ok(summaryService.includes('signedSigners'));
-    assert.ok(menu.includes('Ver assinaturas'));
-    assert.ok(menu.includes('Baixar PDF assinado'));
+    assert.ok(menu.includes('.verAssinaturas'));
+    assert.ok(menu.includes('.baixarPdfAssinado'));
     assert.ok(menu.includes('disabled={!canShare}'));
     assert.ok(drawer.includes('document-signatures-drawer'));
     assert.ok(drawer.includes('document-signatures-drawer-close'));
@@ -387,7 +387,7 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(drawer.includes('signature-drawer-revoke'));
     assert.ok(drawer.includes('cancelDocumentSignatureRequest'));
     assert.ok(drawer.includes('buildRevokeSignatureRequestConfirm'));
-    assert.ok(details.includes('Assinatura'));
+    assert.ok(details.includes('.assinatura'));
     assert.ok(page.includes('DocumentSignaturesDrawer'));
     assert.ok(page.includes('downloadSignatureRequestSignedPdf'));
     assert.ok(api.includes('/signature-requests/'));
@@ -431,7 +431,8 @@ describe('document electronic signature — fase 1', () => {
     const statusUtils = read('server/services/signatures/signatureRequestStatus.ts');
     const service = read('server/services/signatures/documentSignatureService.ts');
     const confirmMessages = read('src/components/confirm/confirmMessages.ts');
-    const tracking = read('src/features/tracking/utils/trackingDisplay.ts');
+    // A frase do evento saiu do código para o catálogo na extração de i18n.
+    const tracking = read('src/i18n/catalog/pt-BR/tracking.json');
     const audit = read('server/audit/documentAuditTypes.ts');
     assert.ok(cancelApi.includes('cancelDocumentSignatureRequest'));
     assert.ok(nestedCancelApi.includes('expectedDocumentId'));
@@ -444,7 +445,7 @@ describe('document electronic signature — fase 1', () => {
     assert.ok(service.includes("status: 'cancelled'"));
     assert.ok(service.includes('signatureTokenHash: null'));
     assert.ok(confirmMessages.includes('buildRevokeSignatureRequestConfirm'));
-    assert.ok(tracking.includes('document.signature_request_cancelled'));
+    assert.ok(JSON.parse(tracking).actionLabel.document.signature_request_cancelled);
     assert.ok(audit.includes('document.signature_request_cancelled'));
   });
 });
@@ -560,8 +561,8 @@ describe('document electronic signature — alinhamento com compartilhamento', (
     const hook = read('src/features/signature/hooks/useAssignedSignatureRequests.ts');
     const page = read('src/features/library/LibraryPage.tsx');
     assert.ok(collections.includes('para-assinar'));
-    assert.ok(collections.includes("slug: 'assinaturas'"));
-    assert.ok(constants.includes('Para assinar'));
+    assert.ok(collections.includes("slug: 'signatures'"));
+    assert.ok(constants.includes('nav.assinaturas'));
     assert.ok(panel.includes('signatures-assigned-list'));
     assert.ok(hook.includes('fetchAssignedSignatureRequests'));
     assert.ok(page.includes('SignaturesAssignedPanel'));
@@ -577,7 +578,7 @@ describe('document electronic signature — alinhamento com compartilhamento', (
     assert.ok(internal.includes('signDocumentViaRequest'));
     assert.ok(viewer.includes('fetchInternalSignaturePreviewAssetBlob'));
     assert.ok(api.includes('/api/signature-requests/assigned-to-me'));
-    assert.ok(routes.includes('/assinaturas/:signatureRequestId'));
+    assert.ok(routes.includes('/signatures/:signatureRequestId'));
   });
 
   it('portal externo permanece isolado sem sidebar', () => {

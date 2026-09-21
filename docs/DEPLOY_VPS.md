@@ -52,6 +52,7 @@ próprio nginx do compose, com certificado Let's Encrypt emitido durante o deplo
 | `doqyn-worker` | Processa jobs da fila `document-analysis` (`node dist/...`) |
 | `doqyn-worker-preview` | Gera previews PDF/imagem (Ghostscript) via fila `document-preview` |
 | `nginx` | SPA estática + proxy `/api` e `/auth` (least_conn, réplicas) |
+| `minio` | *(profile `mirror`, só com `STORAGE_MIRROR_ENABLED=true`)* Espelho S3 do acervo na própria VPS — ver `docs/STORAGE_MIRROR.md` |
 | `prometheus` | *(profile observability)* Métricas e alertas |
 | `grafana` | *(profile observability)* Dashboards |
 | `redis-exporter` | *(profile observability)* Métricas Redis |

@@ -1,7 +1,5 @@
 /** Remove entradas vazias antes de URLSearchParams — evita `search=undefined` na query. */
-export function serializeQueryParams(
-  params?: Record<string, string | undefined | null>,
-): string {
+export function serializeQueryParams(params?: Record<string, string | undefined | null>): string {
   if (!params) return '';
 
   const entries = Object.entries(params).filter(

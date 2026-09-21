@@ -1,4 +1,4 @@
-import { getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
+import { genericFailureMessage, getFriendlyAuthErrorMessage } from '@/lib/authErrorMessages';
 
 export type ApiErrorDetails = Record<string, unknown>;
 
@@ -60,10 +60,12 @@ function extractMessage(data: ErrorBody, fallback: string): string {
 export function parseApiErrorBody(
   status: number,
   data: unknown,
-  fallbackMessage = 'Não foi possível concluir a ação agora. Tente novamente.',
+  fallbackMessage = genericFailureMessage(),
 ): ParsedApiError {
   const body = (data && typeof data === 'object' ? data : {}) as ErrorBody;
-  const code = extractCode(body) ?? (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
+  const code =
+    extractCode(body) ??
+    (status === 401 ? 'AUTH_REQUIRED' : status === 403 ? 'FORBIDDEN' : 'UNKNOWN_ERROR');
   const message = extractMessage(body, fallbackMessage);
 
   return {
@@ -76,15 +78,24 @@ export function parseApiErrorBody(
   };
 }
 
+/**
+ * `body` é para quem já leu a resposta: o corpo de um `Response` só pode ser lido uma vez, e a
+ * segunda leitura falha calada. Os cadastros liam o JSON antes de checar `ok` e depois chamavam
+ * isto — o motivo que o auth devolvia ("CPF inválido (campo: taxId)") virava o genérico "Não foi
+ * possível criar seu acesso".
+ */
 export async function parseApiError(
   response: Response,
   fallbackMessage?: string,
+  body?: unknown,
 ): Promise<ApiError> {
-  let data: unknown = {};
-  try {
-    data = await response.json();
-  } catch {
-    // body vazio ou não-JSON
+  let data: unknown = body ?? {};
+  if (body === undefined) {
+    try {
+      data = await response.json();
+    } catch {
+      // body vazio ou não-JSON
+    }
   }
 
   const parsed = parseApiErrorBody(response.status, data, fallbackMessage);
@@ -96,7 +107,13 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 export function shouldLogoutForError(code: string): boolean {
-  return ['INVALID_SESSION', 'SESSION_EXPIRED', 'AUTH_REQUIRED', 'NO_SESSION', 'UNAUTHORIZED'].includes(code);
+  return [
+    'INVALID_SESSION',
+    'SESSION_EXPIRED',
+    'AUTH_REQUIRED',
+    'NO_SESSION',
+    'UNAUTHORIZED',
+  ].includes(code);
 }
 
 export function shouldRedirectToLogin(code: string): boolean {

@@ -1,4 +1,5 @@
 import type { MongoTenantMember } from '../../db/types.js';
+import { compactNotificationParams } from '../../../shared/notificationText.js';
 import { logger } from '../../utils/logger.js';
 import { listTenantMembers } from '../tenantMemberRepository.js';
 import { emitNotifications } from './notificationService.js';
@@ -37,10 +38,7 @@ function displayName(member: Pick<MongoTenantMember, 'firstName' | 'lastName' | 
  * `invitedBy` vem do auth como **membershipId**, não como id de usuário; a tradução acontece na
  * mesma lista que já foi carregada para achar os administradores, sem uma segunda ida ao banco.
  */
-function resolveRecipients(
-  members: MongoTenantMember[],
-  invitedByMembershipId?: string,
-): string[] {
+function resolveRecipients(members: MongoTenantMember[], invitedByMembershipId?: string): string[] {
   const recipients = new Set<string>();
 
   if (invitedByMembershipId) {
@@ -83,8 +81,11 @@ export async function notifyMemberJoined(input: {
       // Uma entrada, um aviso. A membership é única e não se repete, então reprocessar o sync não
       // enche a caixa de quem administra.
       eventKey: `member_joined:${input.member._id}`,
-      title: `${nome} entrou na empresa`,
-      body: cargo ? `${input.member.email} · ${cargo}` : input.member.email,
+      params: compactNotificationParams({
+        memberName: nome,
+        email: input.member.email,
+        jobTitle: cargo,
+      }),
       // O próprio recém-chegado não recebe: `emitNotifications` descarta o ator da lista, e é
       // dele que o fato fala.
       actorUserId: input.member.authUserId,

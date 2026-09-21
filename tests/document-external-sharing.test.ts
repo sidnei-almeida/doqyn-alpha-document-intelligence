@@ -138,6 +138,18 @@ describe('document external sharing — API e ACL', () => {
     assert.ok(preview.includes('EXTERNAL_SHARE_DOWNLOAD_DENIED'));
     assert.ok(preview.includes('canDownload'));
   });
+
+  it('criar, re-compartilhar e renovar convite externo enfileiram e-mail ao convidado', () => {
+    const service = read('server/services/sharing/externalDocumentShareService.ts');
+    assert.ok(service.includes('enqueueExternalEmail'));
+    assert.ok(service.includes('buildExternalShareInviteEmail'));
+
+    const regenerateFn = service.slice(
+      service.indexOf('export async function regenerateDocumentExternalShareGrant'),
+      service.indexOf('export type ExternalShareAccessResult'),
+    );
+    assert.ok(regenerateFn.includes('enqueueExternalEmail'));
+  });
 });
 
 describe('document external sharing — tracking', () => {
@@ -246,7 +258,7 @@ describe('document external sharing — UI', () => {
     const api = read('src/features/sharing/api/externalShareApi.ts');
     const hooks = read('src/features/sharing/hooks/useExternalShareMutations.ts');
     // As ações viraram itens de menu da própria linha do convite, em vez de badges soltos.
-    assert.ok(modal.includes('Revogar'));
+    assert.ok(modal.includes("shareDocumentModal.revoke'"));
     assert.ok(modal.includes('revokeExternalShare'));
     assert.ok(modal.includes('regenerateExternalShare'));
     assert.ok(api.includes('regenerate-invite'));
@@ -285,7 +297,7 @@ describe('document external sharing — UI', () => {
   it('botão baixar depende de canDownload no portal', () => {
     const guestViewer = read('src/features/external-share/GuestDocumentViewer.tsx');
     assert.ok(guestViewer.includes('permissions.canDownload'));
-    assert.ok(guestViewer.includes('Download indisponível neste convite'));
+    assert.ok(guestViewer.includes('.visualizacaoProtegidaDownloadIndisponivel'));
   });
 });
 
@@ -341,7 +353,7 @@ describe('document external sharing — telefone do convidado', () => {
     );
     assert.ok(
       read('src/features/documents/recipients/RecipientFlow.tsx').includes(
-        'label="Telefone (opcional)"',
+        ".telefoneOpcional",
       ),
     );
     assert.ok(read('src/features/documents/recipients/RecipientFlow.tsx').includes('phoneError'));

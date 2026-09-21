@@ -1,0 +1,136 @@
+{
+  "categoryQuickPicker": {
+    "carregandoCategorias": "Carregando categorias…",
+    "categorias": "Categorias",
+    "filtrarCategorias": "Filtrar categorias",
+    "filtrarCategorias2": "Filtrar categorias",
+    "nenhumaCategoriaComEsse": "Nenhuma categoria com esse nome.",
+    "nenhumaCategoriaConfiguradaCrie": "Nenhuma categoria configurada. Crie uma em Regras antes de classificar à mão.",
+    "suggestion": {
+      "eyebrow": "Categoria sugerida pela IA",
+      "createButton": "Criar categoria «{{name}}»",
+      "adminOnly": "Só quem administra documentos pode criar categorias. Escolha uma das existentes.",
+      "createFailed": "Não foi possível criar a categoria. Tente novamente."
+    }
+  },
+  "quickFieldsEditor": {
+    "camposDoDocumento": "Campos do documento",
+    "carregandoCamposDaCategoria": "Carregando campos da categoria…",
+    "empty": "—",
+    "estaCategoriaNaoTem": "Esta categoria não tem campos configurados. O documento salva assim mesmo.",
+    "fill": "Preencher",
+    "missingRequired_one": "{{count}} obrigatório em branco",
+    "missingRequired_other": "{{count}} obrigatórios em branco",
+    "oQueVoceDigitar": "O que você digitar entra como preenchimento manual\n        na auditoria.",
+    "valorExtraidoPelaIa": "Valor extraído pela IA"
+  },
+  "reviewDrawer": {
+    "aCategoriaFinalSeguira": ". A categoria final seguirá a análise da IA.",
+    "aIaClassificouComo": "A IA classificou como:",
+    "aIaSugeriu": "A IA sugeriu",
+    "aguardandoRevisao": "aguardando revisão",
+    "categoria": "Categoria",
+    "changeCategory": "Trocar",
+    "closePicker": "Fechar",
+    "confiancaDaClassificacao": "Confiança da classificação",
+    "confirmSave": "Revisei os dados extraídos e confirmo o salvamento deste documento.",
+    "confirmSaveButton": "Confirmar e salvar",
+    "confirmSubmit": "Revisei os dados extraídos e confirmo o envio para aprovação deste documento.",
+    "deixarParaDepois": "Deixar para depois",
+    "fecharRevisao": "Fechar revisão",
+    "masVoceEstaEnviando": ", mas você está enviando para",
+    "nomeFinal": "Nome final",
+    "pastaAtual": "Pasta atual:",
+    "preferenciasDeUpload": "Preferências de upload",
+    "preferenciasDeUpload2": "Preferências de upload",
+    "submitForApprovalButton": "Enviar para aprovação",
+    "tipoDeDocumento": "Tipo de documento",
+    "umAdministradorRevisaraOs": "Um administrador revisará os metadados na Auditoria antes de publicar na\n            Biblioteca.",
+    "title": {
+      "requiresReview": "Revisão necessária",
+      "confirm": "Confirmar análise"
+    },
+    "category": {
+      "fromRequest": "Definida pelo pedido",
+      "unclassified": "A IA não conseguiu classificar"
+    },
+    "categoryHint": {
+      "fromRequest": "Escolhida por quem pediu o documento. Não é possível alterar aqui.",
+      "manual": "Escolhida por você. A IA fica registrada na auditoria.",
+      "ai": "Sugerida pela análise automática.",
+      "pick": "Escolha a categoria para salvar este documento.",
+      "suggested": "Nenhuma categoria existente serve. A IA propôs uma abaixo.",
+      "willCreate": "Nenhuma pasta existente serve. A IA vai criar «{{name}}» ao salvar."
+    },
+    "descartarEnvio": "Descartar envio"
+  },
+  "uploadDropOverlay": {
+    "aIaAnalisaraClassificara": "A IA analisará, classificará e preparará o documento para revisão antes de salvá-lo na\n            Biblioteca.",
+    "solteParaEnviarAo": "Solte para enviar ao DOQYN"
+  },
+  "uploadQueueDrawer": {
+    "autoAcceptIn": "Automático em {{seconds}}s",
+    "collapseQueue": "Recolher fila",
+    "expandQueue": "Expandir fila",
+    "filaDeUpload": "Fila de upload",
+    "itemProgress": "Progresso de {{fileName}}",
+    "limpar": "Limpar",
+    "pausar": "Pausar",
+    "preferenciasDeUpload": "Preferências de upload",
+    "preferenciasDeUpload2": "Preferências de upload",
+    "processedOf": "{{done}}/{{total}} processados",
+    "removerDaFila": "Remover da fila",
+    "revisar": "Revisar",
+    "tentarNovamente": "Tentar novamente",
+    "status": {
+      "queued": "Na fila",
+      "analyzing": "Analisando com IA…",
+      "review": "Aguardando revisão",
+      "confirming": "Salvando na Biblioteca…",
+      "awaitingApproval": "Aguardando aprovação do admin",
+      "aiPaused": "IA indisponível. Tente novamente",
+      "stillRunning": "Análise em andamento no servidor",
+      "done": "Salvo na Biblioteca",
+      "error": "Erro"
+    },
+    "savedIn": "Salvo em {{category}} · {{size}}",
+    "savedLibrary": "Salvo na Biblioteca · {{size}}",
+    "sentForApproval": "Enviado para aprovação · {{size}}",
+    "autoSaving": "Salvando automaticamente em {{seconds}}s · {{size}}",
+    "withSize": "{{label}} · {{size}}",
+    "headline": {
+      "review_one": "{{count}} arquivo aguardando revisão",
+      "review_other": "{{count}} arquivos aguardando revisão",
+      "processing_one": "{{count}} arquivo em processamento",
+      "processing_other": "{{count}} arquivos em processamento",
+      "savedAndApproval": "{{saved}} salvos · {{approval}} aguardando aprovação",
+      "processed_one": "{{count}} documento processado",
+      "processed_other": "{{count}} documentos processados",
+      "errors_one": "{{count}} upload com erro",
+      "errors_other": "{{count}} uploads com erro"
+    },
+    "cancelarEnvio": "Cancelar envio"
+  },
+  "provider": {
+    "savedIn": "Salvo em {{category}}.",
+    "openFolder": "Abrir pasta",
+    "invalidName": "Informe um nome válido para o arquivo.",
+    "sentForApproval": "\"{{name}}\" enviado para aprovação. Um administrador revisará na Auditoria.",
+    "saveFailed": "Não foi possível salvar o documento.",
+    "fileUnavailable": "Arquivo indisponível. Tente novamente.",
+    "reviewReady": "Análise concluída. Revise e confirme para salvar na Biblioteca.",
+    "analyzeFailed": "Erro ao analisar o documento."
+  },
+  "policySaveFailed": "Não foi possível salvar a política.",
+  "emptyDocument": {
+    "rejectedByPolicy": "Recusado: o documento voltou sem texto e a política da empresa não aceita arquivo vazio.",
+    "title": "A análise não encontrou texto neste documento.",
+    "bodyOcr": "O OCR foi tentado nas {{pages}} página(s) e não devolveu nada. Pode ser digitalização em branco, muito clara ou de baixa resolução.",
+    "bodyNoText": "Nenhum texto foi lido nas {{pages}} página(s). Pode ser folha em branco, ou uma imagem sem OCR disponível.",
+    "choice": "Sem texto não há classificação, resumo nem nome sugerido. Salve assim mesmo, ou descarte o envio.",
+    "titleNoText": "A análise não encontrou texto neste documento.",
+    "titleTooLittle": "A análise leu pouco texto para classificar este documento.",
+    "bodyTooLittle": "Foram lidos {{chars}} caractere(s) em {{pages}} página(s) — abaixo do mínimo para classificar. O documento parece ser foto ou digitalização, e o OCR não devolveu o resto.",
+    "choiceTooLittle": "O pouco que foi lido não sustenta classificação, resumo nem nome sugerido. Salve assim mesmo, ou descarte o envio."
+  }
+}

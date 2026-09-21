@@ -285,8 +285,16 @@ describe('OCR que falha chega até a revisão manual', () => {
 
     // 4. Sem classe da IA, a gaveta não deixa confirmar até alguém escolher — é o que impede o
     //    beco sem saída que justificava o `failed`.
+    //
+    //    Os termos, não a linha: a expressão já foi quebrada pelo Prettier uma vez e o teste caiu
+    //    sem que nada de comportamento tivesse mudado. A exceção é `auto_create`, onde a pasta que
+    //    a IA propôs resolve a categoria e o servidor a cria na confirmação.
     const drawer = read('src/features/upload/review/ReviewDrawer.tsx');
-    assert.ok(drawer.includes('const needsManualCategory = !aiClassId'));
+    const needsManual = drawer.slice(drawer.indexOf('const needsManualCategory'));
+    assert.ok(needsManual.startsWith('const needsManualCategory'), 'a guarda sumiu da gaveta');
+    for (const term of ['!aiClassId', '!manualCategory', '!suggestionResolvesCategory']) {
+      assert.ok(needsManual.slice(0, 260).includes(term), `a guarda perdeu ${term}`);
+    }
     assert.ok(drawer.includes('!needsManualCategory'));
 
     // 5. E a confirmação aceita a categoria escolhida no lugar da que a IA não deu.

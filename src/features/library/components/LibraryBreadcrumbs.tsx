@@ -3,6 +3,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { truncateBreadcrumbLabel } from '../utils/libraryItemActions';
 import { ICON_SIZE } from '@/lib/iconDefaults';
+import { useTranslation } from 'react-i18next';
 
 type BreadcrumbSegment = {
   label: string;
@@ -16,11 +17,13 @@ type LibraryBreadcrumbsProps = {
 };
 
 export function LibraryBreadcrumbs({ segments, onNavigateRoot }: LibraryBreadcrumbsProps) {
+  const { t } = useTranslation('library');
+
   const isAtRoot = segments.length === 0;
 
   return (
     <nav
-      aria-label="Localização na Biblioteca"
+      aria-label={t('libraryBreadcrumbs.localizacaoNaBiblioteca')}
       className="flex min-w-0 items-center gap-0.5 text-[12px]"
     >
       <button
@@ -32,7 +35,7 @@ export function LibraryBreadcrumbs({ segments, onNavigateRoot }: LibraryBreadcru
             : 'shrink-0 text-doqyn-muted transition-colors duration-[var(--transition-duration)] hover:text-doqyn-text'
         }
       >
-        Biblioteca
+        {t('libraryBreadcrumbs.biblioteca')}
       </button>
       {segments.map((segment, index) => {
         const isLast = index === segments.length - 1;

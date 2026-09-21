@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Biblioteca vazia — o primeiro dia de quem acabou de entrar.
@@ -13,6 +14,8 @@ import { Link } from 'react-router-dom';
  * acontecendo; o fio está no lugar onde ela começaria.
  */
 export function ExplorerRootEmpty() {
+  const { t } = useTranslation('library');
+
   return (
     <div
       className="flex min-h-[min(420px,55vh)] flex-col items-center justify-center px-6 py-16 text-center"
@@ -50,16 +53,15 @@ export function ExplorerRootEmpty() {
       </svg>
 
       <p className="text-[15px] font-medium text-doqyn-text">
-        A biblioteca começa no primeiro documento
+        {t('explorerRootEmpty.aBibliotecaComecaNo')}
       </p>
       <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-doqyn-muted">
-        Envie pela barra lateral, ou arraste arquivos para esta janela. Cada um é lido, classificado
-        e guardado na pasta que a classificação indicar.
+        {t('explorerRootEmpty.enviePelaBarraLateral')}
       </p>
       <p className="mt-4 text-[12px] text-doqyn-subtle">
-        As pastas inteligentes saem das suas categorias. Ajuste em{' '}
+        {t('explorerRootEmpty.asPastasInteligentesSaem')}{' '}
         <Link to="/rules" className="text-doqyn-accent-active hover:underline">
-          Regras
+          {t('explorerRootEmpty.regras')}
         </Link>
         .
       </p>

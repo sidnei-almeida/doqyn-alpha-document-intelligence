@@ -5,11 +5,14 @@ import { AnchoredPopover } from '@/components/ui/popover/AnchoredPopover';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { useNotifications } from '../hooks/useNotifications';
 import { NotificationList } from './NotificationList';
+import { useTranslation } from 'react-i18next';
 
 /** Acima disto o contador vira "9+" — o objetivo é sinalizar acúmulo, não a contagem exata. */
 const BADGE_CAP = 9;
 
 export function NotificationsBell({ className }: { className?: string }) {
+  const { t } = useTranslation('notifications');
+
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -27,7 +30,11 @@ export function NotificationsBell({ className }: { className?: string }) {
         ref={anchorRef}
         type="button"
         className={className}
-        aria-label={unreadCount > 0 ? `Notificações (${unreadCount} não lidas)` : 'Notificações'}
+        aria-label={
+          unreadCount > 0
+            ? t('notificationsBell.ariaUnread', { count: unreadCount })
+            : t('notificationsBell.aria')
+        }
         onClick={() => setOpen((value) => !value)}
       >
         <span className="relative inline-flex">
@@ -55,17 +62,17 @@ export function NotificationsBell({ className }: { className?: string }) {
         // lista — e a lista rolando dentro de um painel que também rola dava dois scrolls.
         panelStyle={{ overflowY: 'hidden' }}
         role="dialog"
-        aria-label="Notificações"
+        aria-label={t('notificationsBell.notificacoes')}
       >
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-doqyn-border-subtle px-3 py-2">
-          <p className="register-label text-doqyn-subtle">Notificações</p>
+          <p className="register-label text-doqyn-subtle">{t('notificationsBell.notificacoes2')}</p>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={() => markAllRead()}
               className="text-caption text-doqyn-muted underline-offset-4 transition-colors hover:text-doqyn-text hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
             >
-              Marcar tudo como lido
+              {t('notificationsBell.marcarTudoComoLido')}
             </button>
           )}
         </div>
@@ -90,11 +97,11 @@ export function NotificationsBell({ className }: { className?: string }) {
             type="button"
             onClick={() => {
               setOpen(false);
-              void navigate('/notificacoes');
+              void navigate('/notifications');
             }}
             className="text-caption text-doqyn-primary underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-doqyn-accent-active/30"
           >
-            Ver todas
+            {t('notificationsBell.verTodas')}
           </button>
         </div>
       </AnchoredPopover>

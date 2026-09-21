@@ -1,0 +1,209 @@
+{
+  "accountSettingsSection": {
+    "acesso": "Acesso",
+    "fotoPapeisEDetalhes": "Foto, papéis e detalhes da conta.",
+    "identidade": "Identidade",
+    "idiomaTemaEVisualizacao": "Idioma, tema e visualização da Biblioteca.",
+    "preferencias": "Preferências",
+    "senhaEEMail": "Senha e e-mail da conta."
+  },
+  "authenticationSettingsSection": {
+    "alterarSenha": "Alterar senha",
+    "aoTrocarASenha": "Ao trocar a senha, as outras sessões ativas são encerradas."
+  },
+  "changeEmailCard": {
+    "codigoDeDesenvolvimento": "Código de desenvolvimento:",
+    "confirmeSuaIdentidade": "Confirme sua identidade",
+    "digiteOAbaixoOu": ".\n            Digite-o abaixo, ou use o link do mesmo e-mail.",
+    "enviamosUmCodigoDe": ". Enviamos um código de 6 dígitos ao novo e-mail\n          antes de aplicar a troca.",
+    "enviamosUmCodigoPara": "Enviamos um código para",
+    "novoEMail": "Novo e-mail",
+    "oEnderecoAtualE": "O endereço atual é",
+    "senhaAtual": "Senha atual",
+    "trocarEMail": "Trocar e-mail",
+    "placeholderIndividual": "voce@exemplo.com",
+    "placeholderBusiness": "voce@suaempresa.com.br",
+    "codeBlocked": "Este código foi bloqueado por excesso de tentativas. Peça um novo.",
+    "attemptsLeft_one": "{{count}} tentativa restante neste código.",
+    "attemptsLeft_other": "{{count}} tentativas restantes neste código.",
+    "resendIn": "Reenviar em {{seconds}}s",
+    "resending": "Reenviando…",
+    "resend": "Reenviar código",
+    "confirming": "Confirmando…",
+    "confirmChange": "Confirmar troca",
+    "sending": "Enviando…",
+    "requestChange": "Solicitar troca de e-mail"
+  },
+  "changePasswordForm": {
+    "confirmarNovaSenha": "Confirmar nova senha",
+    "novaSenha": "Nova senha",
+    "requisitosDaSenha": "Requisitos da senha",
+    "senhaAtual": "Senha atual",
+    "req": {
+      "length": "Mínimo de 8 caracteres",
+      "letters": "Contém letras",
+      "numbers": "Contém números"
+    },
+    "strength": {
+      "empty": "Digite a nova senha",
+      "weak": "Fraca",
+      "medium": "Média",
+      "strong": "Forte"
+    },
+    "currentRequired": "Informe a senha atual.",
+    "tooShort": "A nova senha deve ter pelo menos 8 caracteres.",
+    "mismatch": "A confirmação não confere com a nova senha.",
+    "changed": "Senha alterada com sucesso.",
+    "sessionExpired": "Sessão expirada. Faça login novamente.",
+    "wrongCurrent": "Senha atual incorreta.",
+    "changeFailed": "Não foi possível alterar a senha. Tente novamente.",
+    "changeFailedShort": "Não foi possível alterar a senha.",
+    "saving": "Salvando…",
+    "submit": "Alterar senha"
+  },
+  "confirmEmailChangePage": {
+    "changingFrom": "Você está alterando o <old>{{current}}</old> para <new>{{next}}</new>.",
+    "confirmarNovoEMail": "Confirmar novo e-mail",
+    "eMailAtualizado": "E-mail atualizado",
+    "irParaLogin": "Ir para login",
+    "validandoLink": "Validando link…",
+    "voltarAoLogin": "Voltar ao login",
+    "invalidLinkTitle": "Link inválido",
+    "incompleteLink": "O link de confirmação está incompleto.",
+    "validateFailedTitle": "Não foi possível validar o link",
+    "notCompletedTitle": "Confirmação não concluída",
+    "confirming": "Confirmando…",
+    "confirmChange": "Confirmar alteração",
+    "success": "E-mail alterado. Entre de novo com o endereço novo."
+  },
+  "nav": {
+    "contaLabel": "Minha conta",
+    "contaDescription": "Identidade, aparência e acesso",
+    "organizacaoDescription": "Envio, retenção e governança"
+  },
+  "organizationSection": {
+    "alteracoesEm": "Alterações em",
+    "armazenamento": "Armazenamento",
+    "envioEIa": "Envio e IA",
+    "governanca": "Governança",
+    "impactamClassificacaoAutomaticaAlertas": "impactam\n              classificação automática, alertas e permissões na Biblioteca.",
+    "ondeAClassificacaoOs": "Onde a classificação, os fluxos e a visibilidade são definidos.",
+    "porQuantoTempoUm": "Por quanto tempo um documento excluído continua recuperável.",
+    "regras": "Regras",
+    "retencaoDaLixeira": "Retenção da lixeira",
+    "uploadAiDescription": {
+      "business": "Vale para toda a organização: quando a IA renomeia o arquivo e quando o envio para para revisão.",
+      "individual": "Vale para todo o seu acervo: quando a IA renomeia o arquivo e quando o envio para para revisão."
+    },
+    "storageDescription": {
+      "business": "O que os documentos da empresa já ocupam.",
+      "individual": "O que os documentos da sua conta já ocupam."
+    },
+    "rulesTitle": "Regras e governança",
+    "rulesDescription": "Políticas de classificação, fluxos de aprovação e mapeamento entre categorias e grupos.",
+    "openRules": "Abrir Regras",
+    "groupsTitle": "Grupos de acesso",
+    "groupsDescription": "Grupos vinculados às regras de visibilidade e permissões por área.",
+    "manageUsers": "Gerenciar usuários"
+  },
+  "preferencesSettingsSection": {
+    "aplicadoAoAbrirA": "Aplicado ao abrir a Biblioteca sem preferência na URL.",
+    "padraoClaroOuEscuro": "Padrão, claro ou escuro. Salvo neste navegador.",
+    "tema": "Tema",
+    "temaDaInterface": "Tema da interface",
+    "visualizacaoPadraoDaBiblioteca": "Visualização padrão da Biblioteca",
+    "visualizacaoPadraoDaBiblioteca2": "Visualização padrão da Biblioteca",
+    "view": {
+      "grid": "Grade",
+      "list": "Lista"
+    }
+  },
+  "profileSettingsSection": {
+    "alterarFoto": "Alterar foto",
+    "alterarFoto2": "Alterar foto",
+    "eMail": "E-mail",
+    "jpgPngOuWebp": "JPG, PNG ou WebP · até 5 MB",
+    "nome": "Nome",
+    "organizacao": "Organização",
+    "papeis": "Papéis",
+    "removerFoto": "Remover foto",
+    "sobrenome": "Sobrenome",
+    "identitySaved": "Identidade salva",
+    "identitySavedMessage": "Seu nome já aparece assim no app.",
+    "saveFailed": "Não foi possível salvar",
+    "tryAgain": "Tente novamente.",
+    "photoUploadFailed": "Não foi possível enviar a foto.",
+    "photoRemoveFailed": "Não foi possível remover a foto.",
+    "saving": "Salvando…",
+    "saveIdentity": "Salvar identidade"
+  },
+  "settingsLayout": {
+    "conteudoDaSecaoDe": "Conteúdo da seção de configurações",
+    "navegacaoDeConfiguracoes": "Navegação de configurações"
+  },
+  "settingsSaveBar": {
+    "acoesDeSalvamento": "Ações de salvamento",
+    "save": "Salvar configurações",
+    "discard": "Descartar",
+    "unsaved": "Alterações não salvas",
+    "allSaved": "Tudo salvo",
+    "saving": "Salvando…"
+  },
+  "settingsSidebarNav": {
+    "secoesDeConfiguracoes": "Seções de configurações",
+    "secoesDeConfiguracoes2": "Seções de configurações"
+  },
+  "storageUsageSection": {
+    "armazenamentoUsado": "Armazenamento usado",
+    "arquivosOriginais": "Arquivos originais",
+    "carregandoUsoDoArmazenamento": "Carregando uso do armazenamento…",
+    "naoFoiPossivelCarregar": "Não foi possível carregar o uso do armazenamento. Recarregue a página para tentar de\n          novo.",
+    "ofQuota": "de {{quota}}",
+    "preVisualizacoes": "Pré-visualizações",
+    "percentUsed": "{{percent}} do espaço usado",
+    "noQuota": "Sem teto de armazenamento definido."
+  },
+  "toast": {
+    "salvo": "Configurações salvas",
+    "falhaSalvar": "Não foi possível salvar",
+    "falhaSalvarMessage": "Tente novamente.",
+    "salvoMessage": {
+      "business": "As mudanças já valem para toda a organização.",
+      "individual": "As mudanças já valem para todo o seu acervo."
+    }
+  },
+  "trashRetentionSettingsSection": {
+    "aumentarDias": "Aumentar dias",
+    "carregandoConfiguracoes": "Carregando configurações…",
+    "defineSeAposO": "Define se, após o prazo, documentos da lixeira passam automaticamente para Desativados.",
+    "desativarAutomaticamenteAposPeriodo": "Desativar automaticamente após período",
+    "diasNaLixeira": "Dias na lixeira",
+    "diasNaLixeira2": "Dias na lixeira",
+    "diminuirDias": "Diminuir dias",
+    "entre1E365": "Entre 1 e 365 dias. Após esse prazo, o documento é desativado (R2/Mongo permanecem).",
+    "modoDeRetencao": "Modo de retenção",
+    "retencaoManualSemDesativacao": "Retenção manual (sem desativação automática)",
+    "previewManual": "Arquivos excluídos permanecem na lixeira até desativação manual ou ação do job de retenção.",
+    "previewDays_one": "Após {{count}} dia na lixeira, o documento é desativado (não excluído do storage). Administradores podem recuperá-lo em Desativados.",
+    "previewDays_other": "Após {{count}} dias na lixeira, o documento é desativado (não excluído do storage). Administradores podem recuperá-lo em Desativados."
+  },
+  "uploadAiSettingsSection": {
+    "quemDefineEstaPolitica": "Quem define esta política é o administrador da organização. Ela decide quando a IA\n          renomeia o seu arquivo e quando o envio para para revisão.",
+    "summaryDraft": "Resumo do rascunho",
+    "summaryCurrent": "Resumo atual",
+    "inEffect": "Em vigor",
+    "autoDelay": "Auto {{seconds}}s",
+    "manualReview": "Revisão manual"
+  },
+  "settingsPage": {
+    "eyebrow": "Configurações"
+  },
+  "settingsRegisterList": {
+    "open": "Abrir"
+  },
+  "profileAvatar": {
+    "invalidType": "Use JPG, PNG ou WebP.",
+    "tooLarge": "A imagem deve ter no máximo 5 MB.",
+    "notAllowed": "SVG e GIF não são permitidos."
+  }
+}

@@ -14,7 +14,8 @@ import type {
 } from '../types/documentAi.types.js';
 import type { DocumentRuleField } from '../types/documentAi.types.js';
 import { isConfidentialityClassRule } from './documentClassHeuristics.js';
-import { deriveEndDates, normalizeDateValue } from './derivedDates.js';
+import { deriveEndDates, isAmbiguousNumericDate, normalizeDateValue } from './derivedDates.js';
+import type { DocumentLanguage } from './detectDocumentLanguage.js';
 import {
   normalizeCurrency,
   normalizeCpf,
@@ -159,16 +160,29 @@ export function applyFieldNormalization(
   field: DocumentRuleField,
   value: string | number | null,
   modelNormalized?: string | number | null,
+  options: { documentLanguage?: DocumentLanguage } = {},
 ): { value: string | number | null; normalizedValue: string | number | null; currency?: string } {
   const normalizedValue = normalizeStringFieldValue(value, field);
+  const monthFirst = options.documentLanguage === 'en';
 
   // Data: o prompt pede ISO em normalizedValue, mas esta função recalculava tudo a partir do
   // `value` cru e não tratava data — então o ISO do modelo era descartado e o campo chegava ao
   // banco por extenso. Aceita o ISO do modelo quando ele veio válido; senão converte aqui.
   // Ter o ISO também é pré-requisito da derivação de data final (deriveEndDates).
   if (field.type === 'date' && value !== null) {
+    /**
+     * Data em algarismos e ambígua num documento em inglês: vale o literal, lido mês antes do dia.
+     *
+     * É o único caso em que o código desautoriza o ISO do modelo. `03/09/2026` num contrato
+     * americano é 9 de março, e o modelo — lendo um prompt em português — devolve 3 de setembro por
+     * hábito. A convenção vem do idioma do documento, que é determinístico; o palpite do modelo não.
+     */
+    if (monthFirst && isAmbiguousNumericDate(value)) {
+      const fromLiteral = normalizeDateValue(value, { monthFirst: true });
+      if (fromLiteral) return { value, normalizedValue: fromLiteral };
+    }
     const fromModel = normalizeDateValue(modelNormalized);
-    const fromValue = normalizeDateValue(value);
+    const fromValue = normalizeDateValue(value, { monthFirst });
     const iso = fromModel ?? fromValue;
     if (iso) return { value, normalizedValue: iso };
   }
@@ -203,6 +217,18 @@ const EMPTY_TYPE_TOKENS = new Set([
   'geral',
   'gerais',
   'outros',
+  // Os mesmos vazios em inglês e espanhol: o tipo sai no idioma de quem enviou.
+  'document',
+  'documents',
+  'file',
+  'files',
+  'attachment',
+  'other',
+  'general',
+  'archivo',
+  'archivos',
+  'adjunto',
+  'otros',
 ]);
 
 /**
@@ -277,6 +303,8 @@ export function validateMetadataResult(
    * classe do tenant não tem campo para guardá-lo — e ela não tem quase nunca.
    */
   documentText?: string,
+  /** Idioma do documento: decide a ordem dia/mês de data em algarismos. */
+  options: { documentLanguage?: DocumentLanguage } = {},
 ): MetadataExtractionResult {
   const requiredFieldKeys = selectedClass.fields.filter((f) => f.required).map((f) => f.key);
 
@@ -332,7 +360,7 @@ export function validateMetadataResult(
       typeof field.normalizedValue === 'string' || typeof field.normalizedValue === 'number'
         ? field.normalizedValue
         : null;
-    const normalized = applyFieldNormalization(fieldDef, value, modelNormalized);
+    const normalized = applyFieldNormalization(fieldDef, value, modelNormalized, options);
 
     metadata[key] = {
       label: fieldDef.label,

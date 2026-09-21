@@ -218,8 +218,8 @@ interface PdfAnalysisInput {
 |---------|---------|---------------------|
 | Uploads / hora | 60 | 500 |
 | Análises IA / dia | 200 | 2.000 |
-| Páginas PDF / análise | 10 | 50 |
-| Tamanho arquivo | 15 MB | 25 MB |
+| Páginas PDF / análise | 300 | a definir |
+| Tamanho arquivo | 50 MB | a definir |
 | Requisições API / min (por tenant) | 300 | 3.000 |
 | Storage total | por contrato | por contrato |
 

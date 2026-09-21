@@ -1,4 +1,7 @@
-import type { AnalyzePdfResponse, AnalyzePdfUpdateResponse } from '../../ai/types/documentAi.types.js';
+import type {
+  AnalyzePdfResponse,
+  AnalyzePdfUpdateResponse,
+} from '../../ai/types/documentAi.types.js';
 
 export type AnalysisJobKind = 'initial' | 'version_update';
 
@@ -53,6 +56,8 @@ export type AnalysisQueueJobPayload = {
   jobKind?: AnalysisJobKind;
   documentId?: string;
   membershipId?: string;
+  /** Idioma de quem enviou, gravado no enfileiramento: o worker não tem sessão para perguntar. */
+  outputLocale?: string;
   /**
    * Quantas vezes o job já voltou para a fila por saturação da vazão da Groq. Vive no payload
    * (Redis) porque `moveToDelayed` não consome tentativa do BullMQ.

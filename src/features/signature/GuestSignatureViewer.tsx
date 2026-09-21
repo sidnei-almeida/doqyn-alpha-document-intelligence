@@ -10,6 +10,7 @@ import type { DocumentPreviewManifest } from '@/types/preview-manifest';
 import type { SignaturePortalPayload } from '@/features/signature/api/signatureApi';
 import { fetchSignaturePreviewAssetBlob } from '@/features/signature/api/signatureApi';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type GuestSignatureViewerProps = {
   manifest: DocumentPreviewManifest;
@@ -19,12 +20,10 @@ type GuestSignatureViewerProps = {
   isDownloading?: boolean;
 };
 
-function viewerTypeBadge(viewerType: string | undefined): string | null {
-  if (viewerType === 'pdf_pages') return 'PDF';
-  if (viewerType === 'image') return 'Imagem';
-  if (viewerType === 'unsupported') return 'Sem preview';
-  return null;
-}
+const VIEWER_TYPE_BADGE_KEYS: Record<string, string> = {
+  image: 'shared.imageBadge',
+  unsupported: 'shared.noPreviewBadge',
+};
 
 export function GuestSignatureViewer({
   manifest,
@@ -33,6 +32,8 @@ export function GuestSignatureViewer({
   onDownload,
   isDownloading = false,
 }: GuestSignatureViewerProps) {
+  const { t } = useTranslation('signature');
+
   const viewerActionsRef = useRef<ViewerActions | null>(null);
   const [viewerToolbar, setViewerToolbar] = useState<ViewerToolbarState>({
     scale: 1,
@@ -46,10 +47,11 @@ export function GuestSignatureViewer({
   const ViewerComponent = useMemo(() => resolveViewerComponent(manifest), [manifest]);
   const isPdfViewer = manifest.viewerType === 'pdf_pages';
 
+  const badgeKey = manifest.viewerType ? VIEWER_TYPE_BADGE_KEYS[manifest.viewerType] : undefined;
   const subtitleParts = [
-    payload.versionLabel ? `Versão ${payload.versionLabel}` : '',
+    payload.versionLabel ? t('shared.versionLabel', { version: payload.versionLabel }) : '',
     payload.issuerName,
-    viewerTypeBadge(manifest.viewerType),
+    manifest.viewerType === 'pdf_pages' ? 'PDF' : badgeKey ? t(badgeKey) : null,
   ].filter(Boolean);
   const subtitle = subtitleParts.join(' • ');
 
@@ -63,7 +65,10 @@ export function GuestSignatureViewer({
 
   const pageLabel =
     isPdfViewer && viewerToolbar.totalPages > 0
-      ? `Página ${viewerToolbar.currentPage} de ${viewerToolbar.totalPages}`
+      ? t('shared.pageOf', {
+          current: viewerToolbar.currentPage,
+          total: viewerToolbar.totalPages,
+        })
       : undefined;
 
   const registerViewerActions = useCallback((actions: ViewerActions) => {
@@ -100,7 +105,7 @@ export function GuestSignatureViewer({
           data-testid="signature-preview-viewer"
         >
           <p className="shrink-0 border-b border-doqyn-border-subtle bg-doqyn-bg/80 px-4 py-2 text-xs text-doqyn-muted">
-            Visualização protegida. Leia o documento antes de assinar.
+            {t('guestSignatureViewer.visualizacaoProtegidaLeiaO')}
           </p>
           <ViewerComponent
             manifest={manifest}

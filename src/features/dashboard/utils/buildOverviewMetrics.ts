@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+import { formatNumber } from '@/i18n/formats';
 import type { DashboardOverviewResponse, DashboardPeriodKey } from '@/types/dashboard-overview';
 
 export type OverviewMetric = {
@@ -9,64 +11,78 @@ export type OverviewMetric = {
   tone?: 'default' | 'attention' | 'danger';
 };
 
-/** "1 downloads" aparecia no painel — o subtexto conta, então concorda. */
-function plural(count: number, singular: string): string {
-  return `${count} ${singular}${count === 1 ? '' : 's'}`;
-}
-
+/**
+ * As métricas do painel: rótulo e subtexto vêm do catálogo, o número vem do servidor.
+ *
+ * A função recebe o `t` porque roda dentro de um `useMemo` da tela — sem ele nas dependências, o
+ * painel ficaria no idioma anterior depois de trocar.
+ *
+ * O plural saiu do código junto. Havia dois jeitos aqui, ambos presos ao português: um helper
+ * que colava um `s` no fim (`${count} preview${count === 1 ? '' : 's'}`) e um ternário escolhendo
+ * entre "pronto" e "prontos". Nenhum dos dois sobrevive a um idioma com mais de duas categorias
+ * de plural, e o `s` colado nem ao inglês. Agora são frases inteiras no catálogo, com sufixo
+ * `_one`/`_other`, e quem escolhe é o `Intl.PluralRules`.
+ */
 export function buildOverviewMetrics(
   data: DashboardOverviewResponse,
   period: DashboardPeriodKey,
+  t: TFunction,
 ): OverviewMetric[] {
   const { summary } = data;
-  const periodDays = period === '7d' ? '7' : period === '90d' ? '90' : '30';
+  const periodDays = period === '7d' ? 7 : period === '90d' ? 90 : 30;
 
   return [
     {
       key: 'documents',
-      label: 'Documentos',
+      label: t('dashboard:metric.documentsLabel'),
       value: summary.totalDocuments,
-      subtext: `+${summary.documentsUploadedInPeriod} nos últimos ${periodDays} dias`,
-      path: '/biblioteca',
+      subtext: t('dashboard:metric.documentsSubtext', {
+        count: summary.documentsUploadedInPeriod,
+        days: periodDays,
+      }),
+      path: '/library',
     },
     {
       key: 'analysis',
-      label: 'Em análise',
+      label: t('dashboard:metric.analysisLabel'),
       value: summary.documentsInAnalysis,
-      subtext: 'processamento em andamento',
-      path: '/biblioteca?status=analyzing',
+      subtext: t('dashboard:metric.analysisSubtext'),
+      path: '/library?status=analyzing',
       tone: summary.documentsInAnalysis > 0 ? 'attention' : 'default',
     },
     {
       key: 'review',
-      label: 'Aguardando revisão',
+      label: t('dashboard:metric.reviewLabel'),
       value: summary.documentsAwaitingReview,
-      subtext: 'confirmação manual',
-      path: '/biblioteca?status=pending_review',
+      subtext: t('dashboard:metric.reviewSubtext'),
+      path: '/library?status=pending_review',
       tone: summary.documentsAwaitingReview > 0 ? 'attention' : 'default',
     },
     {
       key: 'processed',
-      label: 'Processados',
+      label: t('dashboard:metric.processedLabel'),
       value: summary.documentsProcessed,
-      subtext: `${plural(summary.previewReady, 'preview')} ${summary.previewReady === 1 ? 'pronto' : 'prontos'}`,
-      path: '/biblioteca?status=processed',
+      subtext: t('dashboard:metric.processedSubtext', { count: summary.previewReady }),
+      path: '/library?status=processed',
     },
     {
       key: 'errors',
-      label: 'Erros',
+      label: t('dashboard:metric.errorsLabel'),
       value: summary.documentsWithErrors,
       // "preview ou análise" descrevia a origem do erro, não o que o número
       // conta — e o número conta documentos, não incidentes.
-      subtext: summary.documentsWithErrors === 1 ? 'documento afetado' : 'documentos afetados',
+      subtext: t('dashboard:metric.errorsSubtext', { count: summary.documentsWithErrors }),
       path: '/audit',
       tone: summary.documentsWithErrors > 0 ? 'danger' : 'default',
     },
     {
       key: 'events',
-      label: 'Eventos',
+      label: t('dashboard:metric.eventsLabel'),
       value: summary.trackingEventsInPeriod,
-      subtext: `${plural(summary.viewsInPeriod, 'preview')} · ${plural(summary.downloadsInPeriod, 'download')}`,
+      subtext: t('dashboard:metric.eventsSubtext', {
+        views: t('dashboard:metric.previewCount', { count: summary.viewsInPeriod }),
+        downloads: t('dashboard:metric.downloadCount', { count: summary.downloadsInPeriod }),
+      }),
       path: '/tracking',
     },
   ];
@@ -81,5 +97,6 @@ export function formatStorageBytes(bytes: number): string {
     value /= 1024;
     unit += 1;
   }
-  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+  const digits = value >= 10 || unit === 0 ? 0 : 1;
+  return `${formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${units[unit]}`;
 }

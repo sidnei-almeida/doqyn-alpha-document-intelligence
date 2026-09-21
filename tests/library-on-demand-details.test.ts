@@ -33,7 +33,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
     assert.ok(page.includes('ContextInfoButton'));
     const button = readSrc('features/library/components/ContextInfoButton.tsx');
     assert.ok(button.includes('library-context-info-button'));
-    assert.ok(button.includes('Informações'));
+    assert.ok(button.includes('.informacoes'));
   });
 
   it('clicar no ícone abre popover de informações', () => {
@@ -47,19 +47,19 @@ describe('detalhes sob demanda na Biblioteca', () => {
   it('menu de contexto da área vazia tem ver informações', () => {
     const menu = readSrc('features/library/components/ExplorerContextMenu.tsx');
     assert.ok(menu.includes('onShowContextInfo'));
-    assert.ok(menu.includes('Ver informações'));
-    assert.ok(menu.includes('Ver informações da pasta atual'));
+    assert.ok(menu.includes('.verInformacoes'));
+    assert.ok(menu.includes('.infoCurrentFolder'));
   });
 
   it('menu de contexto da pasta tem ver informações', () => {
     const menu = readSrc('features/library/components/ExplorerContextMenu.tsx');
     assert.ok(menu.includes('onShowFolderInfo'));
-    assert.match(menu, /label="Ver informações"/);
+    assert.match(menu, /\.verInformacoes/);
   });
 
   it('menu de contexto do arquivo tem ver detalhes', () => {
     const menu = readSrc('features/library/components/ExplorerContextMenu.tsx');
-    assert.ok(menu.includes('Ver detalhes'));
+    assert.ok(menu.includes('.verDetalhes'));
     assert.ok(menu.includes('onSelectFileDetails'));
   });
 
@@ -75,7 +75,7 @@ describe('detalhes sob demanda na Biblioteca', () => {
     // Escape passou a consultar a pilha de camadas: só a do topo fecha, senão fechar um
     // popover fecharia a gaveta atrás dele junto.
     assert.ok(shell.includes("event.key !== 'Escape' || !isTopLayer()"));
-    assert.ok(drawer.includes('Fechar painel de detalhes'));
+    assert.ok(drawer.includes('.closeDetails'));
     assert.ok(drawer.includes('canPreview'));
     assert.ok(drawer.includes('/tracking?documentId='));
   });

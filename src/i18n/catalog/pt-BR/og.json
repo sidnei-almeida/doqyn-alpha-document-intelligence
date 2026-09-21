@@ -1,0 +1,35 @@
+{
+  "title": {
+    "sign": "Documento para assinar · DOQYN",
+    "share": "Documento compartilhado · DOQYN"
+  },
+  "description": {
+    "sign": "Alguém solicitou sua assinatura em um documento. Abra o link para ver e assinar.",
+    "share": "Um documento foi compartilhado com você. Abra o link para acessar."
+  },
+  "unavailable": {
+    "titleSign": "Assinatura indisponível · DOQYN",
+    "titleShare": "Compartilhamento indisponível · DOQYN",
+    "descriptionSign": "Este link de assinatura não está mais disponível.",
+    "descriptionShare": "Este link de compartilhamento não está mais disponível.",
+    "cta": "Tentar abrir",
+    "status": "Indisponível"
+  },
+  "status": {
+    "shareWaiting": "Aguardando aceite",
+    "shareActive": "Documento compartilhado",
+    "signPending": "Assinatura pendente"
+  },
+  "cta": {
+    "shareAccept": "Aceitar e abrir",
+    "shareOpen": "Abrir documento",
+    "sign": "Abrir e assinar"
+  },
+  "page": {
+    "eyebrowSign": "Solicitação de assinatura",
+    "eyebrowShareVia": "Compartilhado via {{tenant}}",
+    "eyebrowShare": "Compartilhamento seguro",
+    "documentFallback": "Documento",
+    "footer": "Gestão segura, inteligente e rastreável de documentos empresariais."
+  }
+}

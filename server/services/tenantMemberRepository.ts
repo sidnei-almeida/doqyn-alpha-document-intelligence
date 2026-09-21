@@ -13,6 +13,7 @@ import {
   mapLegacyRoleFromPlatformRoles,
 } from '../auth/memberAuth.js';
 import { memberIdFromEmail } from '../utils/slugify.js';
+import { compareNames } from '../utils/textCollation.js';
 import { normalizeEmail } from '../utils/contactNormalize.js';
 import {
   ensureTenantMembersSyncedForOperations,
@@ -177,10 +178,9 @@ export async function listTenantMembers(tenantId: string) {
   const legacy = await db
     .collection<MongoCompanyMember>(REGISTRY_COLLECTIONS.companyMembers)
     .find({ companyId: tenantId } as Record<string, unknown>)
-    .sort({ name: 1 })
     .toArray();
 
-  return legacy.map(companyMemberToTenantMember);
+  return legacy.sort((a, b) => compareNames(a.name, b.name)).map(companyMemberToTenantMember);
 }
 
 /** Lista membros do tenant após garantir espelhamento auth → Mongo (fonte operacional única). */

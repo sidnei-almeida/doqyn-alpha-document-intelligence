@@ -3,9 +3,11 @@ import { Icon } from '@/components/ui/Icon';
 import { ICON_SIZE } from '@/lib/iconDefaults';
 import { cn } from '@/lib/utils';
 import { SidebarTooltip } from './SidebarTooltip';
+import { useTranslation } from 'react-i18next';
 
 export type SidebarNavItemConfig = {
-  label: string;
+  /** Chave do catálogo, não a frase: a lista vem de `lib/constants.ts`, que é `.ts` e não traduz. */
+  labelKey: string;
   path: string;
   icon: string;
   /** Ativa apenas em match exato (evita destacar a raiz junto com sub-rotas). */
@@ -31,6 +33,7 @@ const navLinkClass = (isActive: boolean, collapsed: boolean) =>
 
 /** Item de navegação — ícone + label; ativo marcado por régua de acento. */
 export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps) {
+  const { t } = useTranslation('common');
   const link = (
     <NavLink
       to={item.path}
@@ -54,14 +57,14 @@ export function SidebarNavItem({ item, collapsed = false }: SidebarNavItemProps)
                 : 'text-doqyn-muted group-hover:text-doqyn-text',
             )}
           />
-          {!collapsed && <span className="truncate">{item.label}</span>}
+          {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
         </>
       )}
     </NavLink>
   );
 
   return (
-    <SidebarTooltip label={item.label} collapsed={collapsed}>
+    <SidebarTooltip label={t(item.labelKey)} collapsed={collapsed}>
       {link}
     </SidebarTooltip>
   );

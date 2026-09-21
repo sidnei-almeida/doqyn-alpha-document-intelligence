@@ -1,0 +1,309 @@
+{
+  "accessBoard": {
+    "desfazer": "Deshacer",
+    "dispensar": "Descartar",
+    "grupos": "Grupos",
+    "gruposDaEmpresa": "Grupos de la empresa",
+    "verb": {
+      "view": "ver",
+      "download": "descargar",
+      "upload": "subir"
+    },
+    "state": {
+      "deny": "desactivado",
+      "allow": "permitido",
+      "require": "pasa a requerir aprobación"
+    },
+    "toggled": "{{group}}: {{verb}} {{state}}.",
+    "removed": "{{group}} salió de {{category}}.",
+    "reached_one": "{{group}} alcanza {{category}}: {{count}} persona más la ve.",
+    "reached_other": "{{group}} alcanza {{category}}: {{count}} personas más la ven.",
+    "reached_many": "{{group}} alcanza {{category}}: {{count}} personas más la ven.",
+    "reachedEmpty": "{{group}} alcanza {{category}}, pero el grupo aún no tiene personas.",
+    "focusHint": "Los grupos que aún no alcanzan {{category}} aparecen resaltados.",
+    "dragHint": "Arrastra un grupo a la categoría que debe alcanzar.",
+    "laneEmpty": "Nadie alcanza esta categoría, solo los administradores."
+  },
+  "accessMatrixView": {
+    "categoria": "Categoría",
+    "ordemDosPontos": "Orden de los puntos",
+    "verBaixarEnviar": "ver · descargar · subir",
+    "clickToEdit": "Haz clic en una celda para editarla"
+  },
+  "categoryLane": {
+    "camposDaAnalise": "Campos del análisis",
+    "detalhesDaCategoria": "Detalles de la categoría",
+    "outOfReach": "fuera del alcance",
+    "previewReach_one": "{{count}} persona lo ve",
+    "previewReach_many": "{{count}} personas lo ven",
+    "previewReach_other": "{{count}} personas lo ven",
+    "options": "Opciones de {{category}}",
+    "peopleReach_one": "persona alcanza",
+    "peopleReach_other": "personas alcanzan",
+    "peopleReach_many": "personas alcanzan",
+    "groupsConnected_one": "grupo conectado",
+    "groupsConnected_other": "grupos conectados",
+    "groupsConnected_many": "grupos conectados",
+    "coverage": "El {{percent}}% de las personas de la empresa alcanza esta categoría",
+    "reach": {
+      "reached": "alcanzada",
+      "emptyGroups": "sin personas",
+      "unreached": "sin nadie"
+    }
+  },
+  "categoryModal": {
+    "cancelar": "Cancelar",
+    "contratosNotasFiscais": "Contratos, Facturas…",
+    "criarCategoria": "Crear categoría",
+    "depoisDeCriadaVoce": "Una vez creada, conectas los grupos que ven sus documentos.",
+    "nomeDaCategoria": "Nombre de la categoría",
+    "novaCategoria": "Nueva categoría",
+    "subtitle": "Una categoría es la carpeta de la Biblioteca vista desde la gobernanza."
+  },
+  "error": {
+    "categoriaNaoEncontrada": "Categoría no encontrada."
+  },
+  "expiryAlertConfigSection": {
+    "alertasDeVencimento": "Alertas de vencimiento",
+    "ativarAlertasDeVencimento": "Activar alertas de vencimiento",
+    "avisaQuemTemAcesso": "Avisa a quien tiene acceso a esta categoría por el mapa de reglas cuando un documento está por vencer. Al dueño del documento siempre se le avisa.",
+    "avisarComAntecedenciaDe": "Avisar con esta anticipación (días)",
+    "continuarAvisandoDepoisDe": "Seguir avisando después del vencimiento (usa números negativos arriba, ej.: -7)",
+    "marcarGruposLimitaO": "Marcar grupos limita el aviso a ellos. Un grupo sin permiso de ver la categoría en el mapa de reglas no recibe nada, aunque esté marcado aquí.",
+    "nenhumGrupoDocumentalCadastrado": "Ningún grupo documental registrado. Sin grupos, solo se avisa al dueño del documento.",
+    "nenhumGrupoMarcadoTodos": "Ningún grupo marcado: se avisará a todos los grupos con acceso de lectura a esta categoría.",
+    "restringirAGruposOpcional": "Restringir a grupos (opcional)",
+    "umAvisoPorMarco": "Un aviso por hito. Usa 0 para avisar el mismo día del vencimiento."
+  },
+  "extractionConfigDrawer": {
+    "abaixoDissoAExtracao": "Por debajo de eso, la extracción va a revisión en lugar de valer por sí sola.",
+    "aliasesSeparadosPorVirgula": "Alias (separados por coma)",
+    "analise": "Análisis",
+    "ativa": "Activa",
+    "campo": "Campo",
+    "camposDaAnalise": "Campos del análisis",
+    "camposExtraidos": "Campos extraídos",
+    "cancelar": "Cancelar",
+    "chaveExParteReceptora": "Clave (ej.: parte_receptora)",
+    "comoODocumentoE": "Cómo se nombra el documento al entrar, y a partir de qué confianza la extracción vale sin revisión.",
+    "confiancaMinima": "Confianza mínima",
+    "descricao": "Descripción",
+    "ePorEstesTermos": "Es por estos términos que el análisis reconoce un documento como de esta categoría.",
+    "nomeSugerido": "Nombre sugerido",
+    "obrigatorio": "Obligatorio",
+    "reconhecimento": "Reconocimiento",
+    "regraAtivaParaAnalise": "Regla activa para el análisis",
+    "removerCampo": "Quitar campo",
+    "rotulo": "Etiqueta",
+    "separePorVirgula": "Separa con comas",
+    "separePorVirgula2": "Separa con comas",
+    "termosAEvitar": "Términos a evitar",
+    "termosQueIdentificamEste": "Términos que identifican este documento",
+    "useCampoParaVariaveis": "Usa {campo} para variables",
+    "fieldType": {
+      "string": "Texto",
+      "date": "Fecha",
+      "number": "Número",
+      "currency": "Moneda",
+      "boolean": "Sí/No"
+    },
+    "saving": "Guardando…"
+  },
+  "governanceDetailDialog": {
+    "accesses": "alcanza",
+    "camposDaAnalise": "Campos del análisis",
+    "categoriasConectadas": "Categorías conectadas",
+    "conectarCategoria": "Conectar categoría",
+    "conexaoPendenteSalveO": "Conexión pendiente. Guarda el mapa para aplicarla en el servidor.",
+    "desativarCategoria": "Desactivar categoría",
+    "desativarGrupo": "Desactivar grupo",
+    "desconectar": "Desconectar",
+    "descricao": "Descripción",
+    "descricao2": "Descripción",
+    "gerenciarEmUsuarios": "gestionar en Usuarios",
+    "gruposComAcesso": "Grupos con acceso",
+    "nenhumGrupoConectado": "Ningún grupo conectado.",
+    "nenhumaCategoriaConectada": "Ninguna categoría conectada.",
+    "nome": "Nombre",
+    "nome2": "Nombre",
+    "pessoasNoGrupo": "Personas en el grupo",
+    "salvarAlteracoes": "Guardar cambios",
+    "salvarPermissoes": "Guardar permisos",
+    "title": {
+      "category": "Categoría documental",
+      "group": "Grupo documental",
+      "connection": "Regla de acceso"
+    },
+    "fallback": {
+      "category": "Categoría",
+      "group": "Grupo",
+      "connection": "Conexión"
+    },
+    "disconnectAria": "Desconectar la categoría {{category}} del grupo {{group}}",
+    "noDescription": "Sin descripción."
+  },
+  "governanceScoreboard": {
+    "cobertura": "Cobertura",
+    "coberturaDaGovernanca": "Cobertura de la gobernanza",
+    "colocarPessoas": "Agregar personas",
+    "criarGrupo": "Crear grupo",
+    "governancaIncompleta": "Gobernanza incompleta",
+    "peopleReached": "<count>{{reached}}</count> de {{total}} personas alcanzan al menos una categoría por grupo. Los administradores ven todo.",
+    "stepsDone": "{{done}} de {{total}}",
+    "trilhaDaGovernanca": "Ruta de la gobernanza",
+    "coverageAria": "El {{percent}}% de las personas alcanza alguna categoría",
+    "step": {
+      "groups_one": "{{count}} grupo creado",
+      "groups_other": "{{count}} grupos creados",
+      "groups_many": "{{count}} grupos creados",
+      "people_one": "{{done}} de {{count}} persona en grupos",
+      "people_other": "{{done}} de {{count}} personas en grupos",
+      "people_many": "{{done}} de {{count}} personas en grupos",
+      "categories_one": "{{done}} de {{count}} categoría conectada",
+      "categories_other": "{{done}} de {{count}} categorías conectadas",
+      "categories_many": "{{done}} de {{count}} categorías conectadas"
+    },
+    "hint": {
+      "groups": "Crea el primer grupo. Es el grupo el que recibe acceso.",
+      "people": "Un grupo vacío no alcanza a nadie. Agrega personas en Usuarios.",
+      "categories": "Arrastra un grupo hasta la franja de la categoría que debe alcanzar."
+    }
+  },
+  "groupModal": {
+    "asPessoasEntramNo": "Las personas entran al grupo desde la pantalla de Usuarios.",
+    "cancelar": "Cancelar",
+    "criarGrupo": "Crear grupo",
+    "juridicoFinanceiro": "Legal, Finanzas…",
+    "nomeDoGrupo": "Nombre del grupo",
+    "novoGrupo": "Nuevo grupo",
+    "subtitle": "Un grupo es lo que conecta a las personas con las categorías de documentos."
+  },
+  "permissionPopover": {
+    "detalhes": "Detalles",
+    "em": "· en «",
+    "removerAcessoDoGrupo": "Quitar el acceso del grupo",
+    "hint": {
+      "view": "aparecen en la biblioteca y en el visor",
+      "download": "descarga del archivo original",
+      "upload": "aportar nuevos documentos",
+      "share": "enviar el documento a otra persona"
+    }
+  },
+  "rulesPage": {
+    "carregandoGovernancaDocumental": "Cargando la gobernanza documental…",
+    "naoFoiPossivelCarregar": "No se pudieron cargar las reglas ahora.",
+    "nenhumaCategoriaDeDocumentos": "Ninguna categoría de documentos todavía.",
+    "novaCategoria": "Nueva categoría",
+    "novaCategoria2": "Nueva categoría",
+    "novoGrupo": "Nuevo grupo",
+    "regrasDeAcesso": "Reglas de acceso",
+    "regrasDeAcesso2": "Reglas de acceso",
+    "tentarNovamente": "Intentar de nuevo",
+    "verifiqueSuaConexaoE": "Revisa tu conexión e inténtalo de nuevo.",
+    "eyebrow": "Gobernanza",
+    "descriptionGroups": "Conecta grupos de personas con las categorías de documentos.",
+    "descriptionGroupsReady": "Quien no está en un grupo conectado no ve los documentos de la categoría.",
+    "descriptionCategories": "Categorías y lo que la IA extrae de cada una.",
+    "tabAccess": "Accesos",
+    "tabMatrix": "Matriz",
+    "emptyGroups": "Crea una categoría para empezar a organizar el acceso por grupos.",
+    "emptyCategories": "Crea una categoría para indicarle a la IA qué extraer de cada documento."
+  },
+  "rulesRoute": {
+    "verificandoPermissoes": "Verificando permisos..."
+  },
+  "simulateAccessBar": {
+    "sairDaSimulacao": "Salir de la simulación",
+    "vendoComo": "Viendo como",
+    "verComo": "Ver como",
+    "nobody": "Nadie (vista de admin)",
+    "memberAdmin": "administra la empresa: ve todas las categorías.",
+    "memberNoGroups": "no está en ningún grupo; solo ve lo que subió.",
+    "memberGroups": "está en {{groups}}."
+  },
+  "toast": {
+    "grupoCriado": "Grupo creado.",
+    "grupoDesativado": "Grupo desactivado.",
+    "grupoAtualizado": "Grupo actualizado.",
+    "permissoesAtualizadas": "Permisos actualizados.",
+    "categoriaAtualizada": "Categoría actualizada.",
+    "categoriaCriada": "Categoría creada.",
+    "categoriaDesativada": "Categoría desactivada.",
+    "configuracaoSalva": "Configuración guardada."
+  },
+  "toastError": {
+    "createGroup": "No se pudo crear el grupo.",
+    "deactivateGroup": "No se pudo desactivar el grupo.",
+    "updateGroup": "No se pudo actualizar el grupo.",
+    "updatePermissions": "No se pudieron actualizar los permisos.",
+    "updateCategory": "No se pudo actualizar la categoría.",
+    "createCategory": "No se pudo crear la categoría.",
+    "deactivateCategory": "No se pudo desactivar la categoría.",
+    "saveConfig": "No se pudo guardar la configuración."
+  },
+  "groupPalettePicker": {
+    "label": "Color del grupo"
+  },
+  "groupPalette": {
+    "ardosia": "Pizarra",
+    "azul": "Azul",
+    "indigo": "Índigo",
+    "violeta": "Violeta",
+    "magenta": "Magenta",
+    "carmim": "Carmín",
+    "telha": "Teja",
+    "ambar": "Ámbar",
+    "oliva": "Oliva",
+    "musgo": "Musgo",
+    "esmeralda": "Esmeralda",
+    "turquesa": "Turquesa"
+  },
+  "permission": {
+    "short": {
+      "view": "Ver",
+      "download": "Descargar",
+      "upload": "Modificar",
+      "share": "Compartir",
+      "manage": "Gestionar"
+    },
+    "label": {
+      "view": "Visualizar",
+      "download": "Descargar",
+      "upload": "Modificar",
+      "share": "Compartir",
+      "manage": "Gestionar"
+    },
+    "hint": {
+      "view": "Abre los documentos de esta categoría en el visor.",
+      "download": "Permite descargar el archivo original.",
+      "upload": "Puede subir nuevas versiones, editar metadatos y archivar documentos de esta categoría.",
+      "share": "Puede compartir documentos con terceros.",
+      "manage": "Acceso administrativo: metadatos, auditoría y configuración."
+    },
+    "state": {
+      "allow": "permitido",
+      "require": "con aprobación"
+    },
+    "none": "Sin acceso",
+    "ariaLabel": "Permisos de {{group}} en {{category}}"
+  },
+  "permissionVerbs": {
+    "view": {
+      "label": "Ver documentos",
+      "short": "ver"
+    },
+    "download": {
+      "label": "Descargar",
+      "short": "descargar"
+    },
+    "upload": {
+      "label": "Subir",
+      "short": "subir"
+    },
+    "withState": "{{verb}}: {{state}}"
+  },
+  "groupToken": {
+    "ariaInCategory": "{{group}} en {{category}}: abrir opciones o arrastrar para mover",
+    "ariaPool": "{{group}}: arrastra para conceder acceso"
+  }
+}

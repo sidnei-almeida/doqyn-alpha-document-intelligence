@@ -4,6 +4,7 @@ import type {
   MetadataExtractionResult,
   RetrievedChunk,
 } from '../types/documentAi.types.js';
+import type { DocumentLanguageContext } from '../utils/detectDocumentLanguage.js';
 
 export type DocumentAnalysisProviderName = 'groq' | 'google_vision';
 
@@ -12,7 +13,7 @@ export type AnalysisProviderContext = {
   jobId: string;
   companyId: string;
   database?: string;
-};
+} & DocumentLanguageContext;
 
 export interface DocumentAnalysisProvider {
   readonly name: DocumentAnalysisProviderName;
