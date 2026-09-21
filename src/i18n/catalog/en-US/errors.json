@@ -260,6 +260,7 @@
   "TENANT_REQUIRED": "This action requires an active workspace.",
   "TENANT_SCOPE_REQUIRED": "tenantId is required for vector search.",
   "TENANT_SEED_FAILED": "Failed to ensure the development tenant.",
+  "TENANT_STORAGE_QUOTA_EXCEEDED": "Your plan's storage space is full. Deactivate documents you no longer use, or talk to whoever administers the space.",
   "TENANT_TYPE_MISMATCH": "A business tenant must use a company tax ID.",
   "TENANT_TYPE_UNSUPPORTED": "Tenant type not supported.",
   "TERMS_ACCEPTANCE_REQUIRED": "You must accept the Terms and Conditions of Use to continue.",

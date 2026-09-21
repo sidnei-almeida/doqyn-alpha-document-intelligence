@@ -51,6 +51,19 @@ export type MongoTenantSettings = {
   uploadPolicy?: TenantUploadPolicy;
 };
 
+/**
+ * Consumo medido do tenant. Separado de `storage`, que descreve o bucket, não o que cabe nele.
+ *
+ * `storedBytes` é o byte de original guardado, mantido por `$inc` na confirmação — é o que a cota
+ * governa (ver `tenantStorageQuotaService`). Lido direto do Mongo pelo portão, nunca da cópia em
+ * cache de `resolveTenant`: invalidar esse cache a cada envio custaria uma releitura do registry em
+ * toda requisição do tenant, por um campo que só o portão consulta.
+ */
+export type MongoTenantUsage = {
+  storedBytes?: number;
+  reconciledAt?: Date;
+};
+
 export type MongoTenantQuotas = {
   analysisPerDay?: number;
   uploadsPerHour?: number;
@@ -87,6 +100,7 @@ export type MongoTenant = {
   storage?: MongoTenantStorage;
   settings?: MongoTenantSettings;
   quotas?: MongoTenantQuotas;
+  usage?: MongoTenantUsage;
   createdAt: Date;
   updatedAt: Date;
   /** @deprecated alias de tenantId */

@@ -260,6 +260,7 @@
   "TENANT_REQUIRED": "Esta ação exige um ambiente ativo.",
   "TENANT_SCOPE_REQUIRED": "tenantId é obrigatório para busca vetorial.",
   "TENANT_SEED_FAILED": "Falha ao garantir tenant de desenvolvimento.",
+  "TENANT_STORAGE_QUOTA_EXCEEDED": "O espaço de armazenamento do plano acabou. Desative documentos que não usa mais, ou fale com quem administra o espaço.",
   "TENANT_TYPE_MISMATCH": "Tenant business deve usar CNPJ.",
   "TENANT_TYPE_UNSUPPORTED": "Tipo de tenant não suportado.",
   "TERMS_ACCEPTANCE_REQUIRED": "É necessário aceitar os Termos e Condições de Uso para continuar.",

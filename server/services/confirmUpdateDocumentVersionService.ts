@@ -58,6 +58,7 @@ import {
 import { getMongoDatabaseName } from '../db/database.js';
 import { scheduleChunkPersistenceAfterVersionConfirm } from './confirmVersionChunkPersistence.js';
 import { resolveAnalysisMimeType } from '../ai/constants.js';
+import { addTenantStoredBytes } from './tenantStorageQuotaService.js';
 
 export { ConfirmAnalysisError, isConfirmAnalysisError };
 
@@ -599,6 +600,12 @@ export async function confirmUpdateDocumentVersionPersistence(input: {
   }
 
   await createDocumentAuditLogs(auditCtx, auditEvents).catch(() => undefined);
+
+  // Versão nova não é barrada pelo portão, mas ocupa disco e conta. Senão o número da tela mentiria,
+  // e a cota deixaria de valer para quem cresce por versão em vez de por documento.
+  if (versionStorage.primary.status === 'stored') {
+    await addTenantStoredBytes(tenantId, data.fileSizeBytes);
+  }
 
   // Versão nova avisa de novo: a chave é o id da versão, não o do documento.
   await notifyDocumentUpdated({

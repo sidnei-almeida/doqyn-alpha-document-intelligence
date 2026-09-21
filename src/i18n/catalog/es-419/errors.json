@@ -260,6 +260,7 @@
   "TENANT_REQUIRED": "Esta acción exige un espacio de trabajo activo.",
   "TENANT_SCOPE_REQUIRED": "tenantId es obligatorio para la búsqueda vectorial.",
   "TENANT_SEED_FAILED": "Falló al garantizar el tenant de desarrollo.",
+  "TENANT_STORAGE_QUOTA_EXCEEDED": "El espacio de almacenamiento del plan se agotó. Desactiva documentos que ya no uses, o habla con quien administra el espacio.",
   "TENANT_TYPE_MISMATCH": "El tenant business debe usar documento fiscal de empresa.",
   "TENANT_TYPE_UNSUPPORTED": "Tipo de tenant no soportado.",
   "TERMS_ACCEPTANCE_REQUIRED": "Es necesario aceptar los Términos y Condiciones de Uso para continuar.",

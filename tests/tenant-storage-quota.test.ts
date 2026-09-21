@@ -1,0 +1,164 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, it } from 'node:test';
+import {
+  assertTenantStorageAvailable,
+  readStorageQuotaBytes,
+} from '../server/services/tenantStorageQuotaService.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(__dirname, '..');
+
+function read(path: string): string {
+  return readFileSync(join(repoRoot, path), 'utf8');
+}
+
+const GB = 1024 * 1024 * 1024;
+
+function withQuota<T>(raw: string | undefined, run: () => T): T {
+  const previous = process.env.TENANT_STORAGE_QUOTA_BYTES;
+  if (raw === undefined) delete process.env.TENANT_STORAGE_QUOTA_BYTES;
+  else process.env.TENANT_STORAGE_QUOTA_BYTES = raw;
+  try {
+    return run();
+  } finally {
+    if (previous === undefined) delete process.env.TENANT_STORAGE_QUOTA_BYTES;
+    else process.env.TENANT_STORAGE_QUOTA_BYTES = previous;
+  }
+}
+
+describe('cota de armazenamento — leitura do teto', () => {
+  it('sem variável, o padrão é 10 GB', () => {
+    assert.equal(
+      withQuota(undefined, () => readStorageQuotaBytes()),
+      10 * GB,
+    );
+  });
+
+  it('valor explícito vence o padrão', () => {
+    assert.equal(
+      withQuota(String(2 * GB), () => readStorageQuotaBytes()),
+      2 * GB,
+    );
+  });
+
+  it('zero, negativo ou lixo desliga a cota em vez de inventar um teto', () => {
+    for (const raw of ['0', '-1', 'ilimitado', '']) {
+      const value = withQuota(raw, () => readStorageQuotaBytes());
+      // String vazia cai no padrão (`?.trim()` devolve ''), o resto desliga.
+      assert.ok(value === null || value === 10 * GB, `"${raw}" não deveria virar teto arbitrário`);
+    }
+    assert.equal(
+      withQuota('ilimitado', () => readStorageQuotaBytes()),
+      null,
+    );
+  });
+});
+
+describe('cota de armazenamento — o portão', () => {
+  it('sem cota configurada, não consulta o banco nem recusa', async () => {
+    const decision = await withQuota('0', () =>
+      assertTenantStorageAvailable({ tenantId: 'tenant_a', incomingBytes: 500 * GB }),
+    );
+    assert.equal(decision.quotaBytes, null);
+  });
+
+  it('nova versão passa mesmo com o acervo no teto', async () => {
+    // O caminho de versão nem lê o contador: trocar um contrato pela versão corrigida não faz o
+    // acervo crescer, e travar isso prenderia a pessoa no documento errado.
+    const decision = await withQuota(String(1), () =>
+      assertTenantStorageAvailable({
+        tenantId: 'tenant_a',
+        incomingBytes: 500 * GB,
+        isNewVersion: true,
+      }),
+    );
+    assert.equal(decision.incomingBytes, 500 * GB);
+  });
+
+  it('tamanho inválido não vira crédito negativo', async () => {
+    const decision = await withQuota('0', () =>
+      assertTenantStorageAvailable({ tenantId: 'tenant_a', incomingBytes: Number.NaN }),
+    );
+    assert.equal(decision.incomingBytes, 0);
+  });
+});
+
+describe('cota de armazenamento — onde está ligada', () => {
+  it('o portão roda no presign, antes de o arquivo existir', () => {
+    const handler = read('api/documents/upload-url.ts');
+    assert.ok(handler.includes('assertTenantStorageAvailable'));
+    // Depois do ritmo, antes de emitir a URL: recusar após o upload deixaria o arquivo no R2 e no
+    // provisório `tmp/`, com dois caminhos de limpeza para falhar em silêncio.
+    assert.ok(
+      handler.indexOf('assertTenantStorageAvailable') <
+        handler.indexOf('issueAnalysisStagingUploadUrl({'),
+    );
+    // O presign precisa saber se é versão; sem isso o portão barraria troca de versão também.
+    assert.ok(handler.includes('isNewVersion'));
+  });
+
+  it('o front declara o documentId no presign, não só na análise', () => {
+    const client = read('src/features/document-send/services/analyzePdf.ts');
+    assert.ok(
+      client.includes('requestStagingUploadUrl(file, options?.signal, options?.documentId)'),
+    );
+  });
+
+  it('as duas confirmações somam ao contador só quando o original ficou guardado', () => {
+    for (const path of [
+      'server/services/confirmAnalysisService.ts',
+      'server/services/confirmUpdateDocumentVersionService.ts',
+    ]) {
+      const service = read(path);
+      assert.ok(service.includes('addTenantStoredBytes'), `${path} não soma ao contador`);
+      const call = service.indexOf('addTenantStoredBytes(tenantId');
+      const guard = service.lastIndexOf("versionStorage.primary.status === 'stored'", call);
+      assert.ok(guard > 0 && call - guard < 400, `${path} soma sem conferir se guardou`);
+    }
+  });
+
+  it('o contador fica em usage, separado do registro do bucket', () => {
+    const types = read('server/db/types.ts');
+    assert.ok(types.includes('MongoTenantUsage'));
+    assert.ok(types.includes('usage?: MongoTenantUsage'));
+    // `storage` descreve o bucket; misturar consumo ali confundiria as duas coisas.
+    assert.ok(types.includes('storage?: MongoTenantStorage'));
+  });
+
+  it('o teto tem um dono só: o serviço da cota', () => {
+    const usage = read('server/services/tenantUsageService.ts');
+    assert.ok(usage.includes("readStorageQuotaBytes } from './tenantStorageQuotaService.js'"));
+    assert.equal(usage.includes('const DEFAULT_STORAGE_QUOTA_BYTES'), false);
+  });
+
+  it('a reconciliação existe e não grava sem --apply', () => {
+    const script = read('scripts/reconcile-tenant-storage.ts');
+    assert.ok(script.includes("includes('--apply')"));
+    assert.ok(script.includes('setTenantStoredBytes'));
+    assert.ok(script.includes('sumTenantStoredBytes'));
+    assert.ok(read('package.json').includes('storage:reconcile'));
+  });
+});
+
+describe('cota de armazenamento — o erro que chega na tela', () => {
+  it('é ServiceError 413 com código próprio', () => {
+    const service = read('server/services/tenantStorageQuotaService.ts');
+    assert.ok(service.includes('TENANT_STORAGE_QUOTA_EXCEEDED'));
+    assert.ok(service.includes('413'));
+    // 413 e não 403: é volume, não permissão — e o front já traduz erro por código.
+    assert.equal(service.includes("'TENANT_QUOTA_EXCEEDED'"), false);
+  });
+
+  it('somar ao contador nunca derruba uma confirmação que deu certo', () => {
+    const service = read('server/services/tenantStorageQuotaService.ts');
+    const block = service.slice(
+      service.indexOf('export async function addTenantStoredBytes'),
+      service.indexOf('export type TenantStorageDecision'),
+    );
+    assert.ok(block.includes('catch'));
+    assert.equal(block.includes('throw'), false);
+  });
+});

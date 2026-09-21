@@ -4,6 +4,7 @@ import { requireAuth } from '../../server/auth/requireAuth.js';
 import { getCompanyIdFromUser } from '../../server/auth/companyContext.js';
 import { resolveTenantStorageScopeFromAuthUser } from '../../server/tenancy/documentRequestContext.js';
 import { assertTenantQuota } from '../../server/tenancy/tenantQuotas.js';
+import { assertTenantStorageAvailable } from '../../server/services/tenantStorageQuotaService.js';
 import { issueAnalysisStagingUploadUrl } from '../../server/services/analysis/analysisStagingUploadService.js';
 import { isServiceError } from '../../server/utils/serviceErrors.js';
 import { extractRequestContext } from '../../server/utils/requestContext.js';
@@ -14,6 +15,14 @@ type UploadUrlRequestBody = {
   originalFileName?: string;
   mimeType?: string;
   sizeBytes?: number;
+  /**
+   * Presente quando o envio é nova versão de documento que já existe.
+   *
+   * O teto de volume não se aplica aí: trocar um contrato pela versão corrigida não faz o acervo
+   * crescer, e travar isso prenderia a pessoa no documento errado. O que para no teto é entrar
+   * documento novo.
+   */
+  documentId?: string;
 };
 
 function parseUploadUrlBody(body: unknown): UploadUrlRequestBody {
@@ -53,6 +62,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const tenantId = getCompanyIdFromUser(user);
     await assertTenantQuota(tenantId, 'uploads_per_hour');
+    // Antes do presign: recusar depois do upload deixaria o arquivo no R2 e no provisório `tmp/`,
+    // com dois caminhos de limpeza para falhar em silêncio.
+    await assertTenantStorageAvailable({
+      tenantId,
+      incomingBytes: sizeBytes,
+      isNewVersion: Boolean(body.documentId?.trim()),
+    });
 
     const storageScope = resolveTenantStorageScopeFromAuthUser(user);
     const issued = await issueAnalysisStagingUploadUrl({

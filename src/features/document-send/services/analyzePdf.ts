@@ -182,6 +182,7 @@ async function computeFileSha256(file: File): Promise<string | undefined> {
 async function requestStagingUploadUrl(
   file: File,
   signal?: AbortSignal,
+  documentId?: string,
 ): Promise<StagingUploadUrlResponse> {
   const response = await authFetch('/api/documents/upload-url', {
     method: 'POST',
@@ -191,6 +192,9 @@ async function requestStagingUploadUrl(
       fileName: file.name,
       mimeType: resolveClientMimeType(file),
       sizeBytes: file.size,
+      // O servidor precisa saber se é documento novo ou versão de um que já existe: a cota de
+      // volume só barra o primeiro caso.
+      ...(documentId?.trim() ? { documentId: documentId.trim() } : {}),
     }),
     signal,
   });
@@ -533,7 +537,7 @@ export async function analyzePdf(
     // O hash corre junto com o pedido da URL: os dois são independentes, e somar os tempos seria
     // pagar em série o que cabe em paralelo.
     const [issued, sha256] = await Promise.all([
-      requestStagingUploadUrl(file, options?.signal),
+      requestStagingUploadUrl(file, options?.signal, options?.documentId),
       computeFileSha256(file),
     ]);
     await putFileToStagingUploadUrl(file, issued, options?.signal);

@@ -25,6 +25,7 @@ import { buildDocumentNameSnapshot } from '../audit/documentNameSnapshot.js';
 import type { DocumentAuditEventInput } from '../audit/documentAuditTypes.js';
 import { diagnoseClassAndRuleLookup, getMongoClassAndRule } from './documentRulesService.js';
 import { sanitizeAuditMetadata } from '../utils/sanitizeAuditMetadata.js';
+import { addTenantStoredBytes } from './tenantStorageQuotaService.js';
 import { getMongoDatabaseName } from '../db/database.js';
 import { logger } from '../utils/logger.js';
 import { getStorageProvider } from '../storage/index.js';
@@ -866,6 +867,11 @@ export async function confirmAnalysisPersistence(input: {
   }
 
   await createDocumentAuditLogs(auditCtx, auditEvents).catch(() => undefined);
+
+  // Depois do try/catch: rollback nunca chega aqui, então o contador só soma byte que ficou de pé.
+  if (versionStorage.primary.status === 'stored') {
+    await addTenantStoredBytes(tenantId, data.fileSizeBytes);
+  }
 
   // Quem alcança a categoria fica sabendo que entrou documento nela. A chave é a versão, não o
   // documento: reconfirmar o mesmo envio não avisa de novo, mas uma versão nova sim.

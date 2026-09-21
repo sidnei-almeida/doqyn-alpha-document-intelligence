@@ -24,6 +24,7 @@
     "i18n:gate": "node scripts/i18n-literals.mjs --gate src",
     "i18n:parity": "tsx scripts/i18n-parity.ts",
     "i18n:stale": "tsx scripts/i18n-stale.ts",
+    "storage:reconcile": "tsx scripts/reconcile-tenant-storage.ts",
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"api/**/*.ts\" \"server/**/*.ts\"",
